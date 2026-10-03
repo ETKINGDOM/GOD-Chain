@@ -1,6 +1,6 @@
 # GOD Chain bridge prototype
 
-`x/godbridge` and `contracts/GodBridgeEscrow.sol` are isolated ledger and custody components for one-for-one GOD transfer accounting. An opt-in codec, authenticated bridge message adapters and initialization-only reserve reconciliation are implemented and tested separately. They remain unmounted in both ordinary applications and do not connect to Robinhood Chain. No deployment, relayer, observer, populated signer configuration or real assets are supplied.
+`x/godbridge` and `contracts/GodBridgeEscrow.sol` are ledger and custody components for one-for-one GOD transfer accounting. Authenticated message adapters are tested separately; explicit synthetic node genesis now mounts and initializes the ledger atomically before staking. Participant bridge routes remain disabled and nothing connects to Robinhood Chain. No deployment, relayer, observer, populated signer configuration or real assets are supplied.
 
 ## Trust and backing
 
@@ -30,7 +30,7 @@ Canonical GOD accounts, positive bounded integer amounts, nonzero source recipie
 
 ## Initial reserve reconciliation
 
-`InitBootstrap` is a trusted initialization-only API, not a participant message or a running node genesis path. It requires height zero, the configured native chain and exact genesis time, an empty bridge store and the entire fixed supply in reserve. Credited accounts must not preexist; initialized or synthetic allocations cannot be reset or relabeled as backing.
+`InitBootstrap` is a trusted initialization-only API, not a participant message or a migration. The optional synthetic node calls it at genesis. It requires height zero, the configured native chain and exact genesis time, an empty bridge store and the entire fixed supply in reserve. Credited accounts must not preexist; initialized or synthetic allocations cannot be reset or relabeled as backing.
 
 The complete source-deposit sequence must start at one, contain no gaps or repeated events and agree with the checkpoint's heights and block identities. Its sum must equal attested credited escrow, not raw token balance. The checkpoint additionally asserts no prior source payment or cancellation outcomes. The code cannot independently verify these source statements; a quorum must do so.
 
@@ -38,7 +38,15 @@ Every deposit keeps its own quorum approvals. The complete canonical plan separa
 
 An outer cache makes initialization, account creation, reserve releases and replay records atomic. Fresh base accounts receive exact deposit-funded balances. A hash-bound initial reconciliation record survives committed disk reopen and detects missing or altered records. It describes initial funding, not current escrow or spendable fee balances. The API neither stakes funds nor installs validators.
 
-Prototype input bounds are 256 deposits, 256 funded accounts and 32 planned validators. Existing exposure limits are unchanged: 10,000 GOD cannot fund ten 1,000-GOD validators plus positive fee budgets. No 32-validator launch is established. Private fixtures stake reconciled synthetic balances through the real keeper without changing supply. Actual source finality, full node execution/gas/staking configuration, owner consent and matching genesis validator updates remain integration gates.
+Prototype input bounds are 256 deposits, 256 funded accounts and 32 planned validators. Existing exposure limits are unchanged: 10,000 GOD cannot fund ten 1,000-GOD validators plus positive fee budgets. No 32-validator launch is established. Private fixtures stake reconciled synthetic balances through the real keeper without changing supply. Actual source finality and production backing remain integration gates.
+
+## Node authorization and atomic initialization
+
+Explicit `Config.BridgeGenesis` requires complete-plan and individual-deposit quorums, exact participant/validator funding and separate node-policy approvals. Every validator supplies account-owner consent and consensus-key possession in distinct domains; neither is a consensus vote. The node digest binds canonical configuration, consensus parameters, exact genesis time and actual execution, fee, staking, penalty and bridge policy. Missing, repeated or invalid proofs reject initialization before engine assignment.
+
+The node initializes full restricted reserve rather than preallocating participant declarations, then calls `InitBootstrap` and applies self-staking. Account, bank, bridge replay, staking, rewards, execution and metadata writes share one cache. Failures discard the financial batch; internally failed ABCI instances cannot commit or retry sealed execution globals. The authorization digest and immutable bootstrap record persist across blocks and reopen. Replayed deposits and repeated initialization cannot release reserve twice. Snapshots and block boundaries check aggregate reserve and pending custody.
+
+This mode uses runtime binding version 3 and node digest domain version 2; the certificate schema remains version 1. Earlier gate-only data/signatures must not be silently reinterpreted. Ordinary nil-policy nodes retain version-2 binding without a bridge store. No migration, signer reset, signing service or populated certificate is supplied. This is synthetic accounting, not independent RH source verification. Node participant bridge envelopes and routes remain disabled.
 
 ## Packet encoding
 
@@ -56,4 +64,4 @@ Private checks exercised compiled custody bytecode and native stores with synthe
 
 Private signed-message checks cover ownership, envelope tampering, quorum verification, fees, gas, rollback and disk replay. Seven initial reconciliation tests cover complete funding, real staking custody, plan binding, canonical ordering, atomic rejection and record integrity. None fetches an actual RH checkpoint or proves source backing.
 
-Application mounting, production-backed validators/genesis, full node configuration and owner consent, finalized-source observation, independent signer operations and recoverable relaying remain required. The separate node also has an unresolved shutdown read-after-close defect. Custody continuity and governance need additional design. Deployment, bridge funding and real-asset activation require separate explicit authorization.
+Authenticated node bridge transactions, production-backed validators/genesis, finalized-source observation, independent signer operations and recoverable relaying remain required. The checksum-bound shutdown repair passed local regression checks, not operator-grade reliability. Custody continuity and governance need additional design. Deployment, bridge funding and real-asset activation require separate explicit authorization.

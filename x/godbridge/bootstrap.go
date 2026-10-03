@@ -51,8 +51,11 @@ type BootstrapFeeBudget struct {
 
 // BootstrapPlan describes initial deposit-funded account balances and budgets.
 // It does not install validators, reserve/spend fee budgets or start consensus.
-// Validator key possession/owner consent and full node-config binding remain
-// separate mounting requirements. No populated plan belongs in public source.
+// The node's optional certificate separately checks validator consent and
+// node-policy binding; this plan alone never authorizes staking. Independent
+// source evidence and authenticated node transaction mounting remain release
+// requirements.
+// No populated plan belongs in public source.
 type BootstrapPlan struct {
 	Version     uint32
 	GenesisTime time.Time
@@ -79,7 +82,7 @@ func bootstrapAmount(n sdkmath.Int) bool {
 }
 
 func (k Keeper) canonicalBootstrap(input BootstrapPlan) (BootstrapPlan, error) {
-	if !k.IsConfigured() || input.Version != 1 || !validTime(input.GenesisTime) ||
+	if len(k.binding) == 0 || input.Version != 1 || !validTime(input.GenesisTime) ||
 		input.Checkpoint.Height == 0 || input.Checkpoint.BlockHash == [32]byte{} ||
 		!input.Checkpoint.NoWithdrawalOutcomes || !bootstrapAmount(input.Checkpoint.CreditedGod) ||
 		len(input.Deposits) == 0 || len(input.Deposits) > MaxBootstrapDeposits ||
@@ -197,11 +200,96 @@ func (k Keeper) bootstrapDigest(p BootstrapPlan) [32]byte {
 // validator keys, fee budgets and configuration. Deposit approvals are verified
 // separately; their byte order is not part of the plan's content identity.
 func (k Keeper) BootstrapDigest(plan BootstrapPlan) ([32]byte, error) {
+	if !k.IsConfigured() {
+		return [32]byte{}, ErrConfig
+	}
 	p, err := k.canonicalBootstrap(plan)
 	if err != nil {
 		return [32]byte{}, err
 	}
 	return k.bootstrapDigest(p), nil
+}
+
+// CanonicalConfig validates and detaches the immutable attestation policy.
+// It supplies neither operational addresses nor independent source evidence.
+func CanonicalConfig(config Config) (Config, error) { return config.canonical() }
+
+func bootstrapVerifier(config Config) (Keeper, error) {
+	config, err := config.canonical()
+	if err != nil {
+		return Keeper{}, err
+	}
+	binding, err := json.Marshal(config)
+	if err != nil {
+		return Keeper{}, ErrConfig
+	}
+	return Keeper{config: config, binding: binding}, nil
+}
+
+// DepositAttestationDigest is the configured deposit digest without ledger
+// dependencies. It is only a signing proposal, not approval or source proof.
+func DepositAttestationDigest(config Config, deposit Deposit) ([32]byte, error) {
+	k, err := bootstrapVerifier(config)
+	if err != nil {
+		return [32]byte{}, err
+	}
+	return k.DepositDigest(deposit)
+}
+
+// CanonicalBootstrap performs bounded structural reconciliation without a
+// ledger, account keeper or state writes. A digest is NOT signature approval
+// or proof of backing. Returned slices and amounts are detached from input.
+func CanonicalBootstrap(config Config, plan BootstrapPlan) (BootstrapPlan, [32]byte, error) {
+	k, err := bootstrapVerifier(config)
+	if err != nil {
+		return BootstrapPlan{}, [32]byte{}, err
+	}
+	p, err := k.canonicalBootstrap(plan)
+	if err != nil {
+		return BootstrapPlan{}, [32]byte{}, err
+	}
+	return p, k.bootstrapDigest(p), nil
+}
+
+// VerifyAttestation verifies a bounded, distinct configured quorum over an
+// already domain-separated digest. Callers own that digest's protocol domain.
+// It verifies signatures, never the truth or finality of their source claim.
+func VerifyAttestation(config Config, digest [32]byte, approvals [][]byte) error {
+	k, err := bootstrapVerifier(config)
+	if err != nil {
+		return err
+	}
+	if digest == [32]byte{} {
+		return ErrApprovals
+	}
+	return k.verify(digest, approvals)
+}
+
+// ReviewBootstrap checks every deposit and complete-plan approval without any
+// SDK context or writes. Node genesis can use this gate before initialization;
+// InitBootstrap remains the separate atomic ledger initialization API.
+func ReviewBootstrap(config Config, plan BootstrapPlan, approvals [][]byte) (BootstrapPlan, [32]byte, error) {
+	p, digest, err := CanonicalBootstrap(config, plan)
+	if err != nil {
+		return BootstrapPlan{}, [32]byte{}, err
+	}
+	k, err := bootstrapVerifier(config)
+	if err != nil {
+		return BootstrapPlan{}, [32]byte{}, err
+	}
+	if err := k.verify(digest, approvals); err != nil {
+		return BootstrapPlan{}, [32]byte{}, err
+	}
+	for _, d := range p.Deposits {
+		h, err := k.DepositDigest(d.Deposit)
+		if err != nil {
+			return BootstrapPlan{}, [32]byte{}, err
+		}
+		if err := k.verify(h, d.Approvals); err != nil {
+			return BootstrapPlan{}, [32]byte{}, err
+		}
+	}
+	return p, digest, nil
 }
 
 // InitBootstrap is an initialization-only trusted API, never a participant

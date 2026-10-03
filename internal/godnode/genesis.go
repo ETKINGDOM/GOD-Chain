@@ -4,12 +4,14 @@ import (
 	"bytes"
 	"encoding/json"
 	"io"
+	"reflect"
 	"sort"
 	"sync"
 	"time"
 	"unicode/utf8"
 
 	sdkmath "cosmossdk.io/math"
+	"github.com/ETKINGDOM/GOD-Chain/x/godbridge"
 	"github.com/ETKINGDOM/GOD-Chain/x/godrewards"
 	"github.com/ETKINGDOM/GOD-Chain/x/godrewards/msg"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -32,13 +34,32 @@ func stakingkeeperServer(a *App) stakingtypes.MsgServer {
 	return stakingkeeper.NewMsgServerImpl(a.staking)
 }
 
+func stakingGenesisParams() stakingtypes.Params {
+	params := stakingtypes.DefaultParams()
+	params.BondDenom, params.MaxValidators, params.UnbondingTime = godrewards.GodDenom, 32, 21*24*time.Hour
+	params.MinCommissionRate = commission()
+	return params
+}
+
+func executionGenesis(c Config) (*feetypes.GenesisState, *evmtypes.GenesisState) {
+	fg := feetypes.DefaultGenesisState()
+	fg.Params.BaseFee = sdkmath.LegacyNewDecFromInt(c.Policy.MinFeePerGas)
+	fg.Params.MinGasPrice = sdkmath.LegacyNewDecFromInt(c.Policy.MinFeePerGas)
+	vg := evmtypes.DefaultGenesisState()
+	vg.Params.EvmDenom = godrewards.GodDenom
+	vg.Params.ExtendedDenomOptions = &evmtypes.ExtendedDenomOptions{ExtendedDenom: godrewards.GodDenom}
+	vg.Params.ActiveStaticPrecompiles, vg.Params.EVMChannels, vg.Preinstalls = nil, nil, nil
+	return fg, vg
+}
+
 // Runtime-created synthetic fixtures only. No populated genesis, addresses,
 // validator/private keys or endpoint configuration belongs in public source.
 type Genesis struct {
-	Version    uint32             `json:"version"`
-	Prototype  bool               `json:"prototype"`
-	Balances   []GenesisBalance   `json:"balances"`
-	Validators []GenesisValidator `json:"validators"`
+	Version    uint32                    `json:"version"`
+	Prototype  bool                      `json:"prototype"`
+	Balances   []GenesisBalance          `json:"balances"`
+	Validators []GenesisValidator        `json:"validators"`
+	Bridge     *BridgeGenesisCertificate `json:"bridge,omitempty"`
 }
 type GenesisBalance struct {
 	Address string `json:"address"`
@@ -53,10 +74,13 @@ type GenesisValidator struct {
 func strictJSON(raw []byte) error {
 	d := json.NewDecoder(bytes.NewReader(raw))
 	d.UseNumber()
-	var visit func(int) error
-	visit = func(depth int) error {
-		if depth > 8 {
+	var visit func(reflect.Type, int) error
+	visit = func(kind reflect.Type, depth int) error {
+		if depth > 16 {
 			return ErrGenesis
+		}
+		for kind.Kind() == reflect.Pointer {
+			kind = kind.Elem()
 		}
 		t, err := d.Token()
 		if err != nil {
@@ -65,36 +89,68 @@ func strictJSON(raw []byte) error {
 		if delim, ok := t.(json.Delim); ok {
 			switch delim {
 			case '{':
+				if kind.Kind() != reflect.Struct || reflect.PointerTo(kind).Implements(reflect.TypeFor[json.Unmarshaler]()) {
+					return ErrGenesis
+				}
+				fields := map[string]reflect.Type{}
+				for i := 0; i < kind.NumField(); i++ {
+					field := kind.Field(i)
+					if !field.IsExported() {
+						continue
+					}
+					name := field.Name
+					if tag := field.Tag.Get("json"); tag != "" {
+						part := bytes.Split([]byte(tag), []byte(","))[0]
+						if string(part) == "-" {
+							continue
+						}
+						if len(part) != 0 {
+							name = string(part)
+						}
+					}
+					fields[name] = field.Type
+				}
 				seen := map[string]bool{}
 				for d.More() {
 					k, err := d.Token()
 					text, ok := k.(string)
-					allowed := depth == 0 && (text == "version" || text == "prototype" || text == "balances" || text == "validators") || depth == 2 &&
-						(text == "address" || text == "godSmallestUnits" || text == "owner" || text == "consensusPublicKey" || text == "stakeSmallestUnits")
+					field, allowed := fields[text]
 					if err != nil || !ok || seen[text] || !allowed {
 						return ErrGenesis
 					}
 					seen[text] = true
-					if err := visit(depth + 1); err != nil {
+					if err := visit(field, depth+1); err != nil {
 						return err
 					}
 				}
 			case '[':
+				if kind.Kind() != reflect.Array && kind.Kind() != reflect.Slice || kind.Kind() == reflect.Slice && kind.Elem().Kind() == reflect.Uint8 {
+					return ErrGenesis
+				}
+				count := 0
 				for d.More() {
-					if err := visit(depth + 1); err != nil {
+					count++
+					if kind.Kind() == reflect.Array && count > kind.Len() {
+						return ErrGenesis
+					}
+					if err := visit(kind.Elem(), depth+1); err != nil {
 						return err
 					}
+				}
+				if kind.Kind() == reflect.Array && count != kind.Len() {
+					return ErrGenesis
 				}
 			default:
 				return ErrGenesis
 			}
-			if _, err := d.Token(); err != nil {
+			close, err := d.Token()
+			if err != nil || delim == '{' && close != json.Delim('}') || delim == '[' && close != json.Delim(']') {
 				return ErrGenesis
 			}
 		}
 		return nil
 	}
-	if err := visit(0); err != nil {
+	if err := visit(reflect.TypeFor[Genesis](), 0); err != nil {
 		return err
 	}
 	if _, err := d.Token(); err != io.EOF {
@@ -144,6 +200,9 @@ func decodeGenesis(raw []byte) (Genesis, error) {
 				return g, ErrGenesis
 			}
 		}
+		if a.Equals(authtypes.NewModuleAddress(godbridge.PendingModule)) {
+			return g, ErrGenesis
+		}
 		n, err := godAmount(b.Amount)
 		if err != nil {
 			return g, err
@@ -172,12 +231,30 @@ func decodeGenesis(raw []byte) (Genesis, error) {
 }
 
 func (a *App) initChain(ctx sdk.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
+	if err := validateGenesisRequest(req, a.config); err != nil {
+		return nil, err
+	}
 	g, err := decodeGenesis(req.AppStateBytes)
 	if err != nil {
 		return nil, err
 	}
+	var certificate *[32]byte
+	if a.config.BridgeGenesis != nil {
+		digest, err := BridgeGenesisDigest(a.config, req)
+		if err != nil {
+			return nil, err
+		}
+		certificate = &digest
+	}
+	if ctx.KVStore(a.key).Has([]byte{1}) {
+		return nil, ErrLifecycle
+	}
+	// Bank allocation, bridge releases/replay records, staking, execution and
+	// metadata share one cache. Never leave a partially initialized genesis.
+	cache, write := ctx.CacheContext()
+	ctx = cache
 	a.accounts.InitGenesis(ctx, *authtypes.DefaultGenesisState())
-	names := moduleNames()
+	names := nodeModuleNames(a.config)
 	sort.Strings(names)
 	for _, name := range names {
 		a.accounts.GetModuleAccount(ctx, name)
@@ -185,12 +262,14 @@ func (a *App) initChain(ctx sdk.Context, req *abci.RequestInitChain) (*abci.Resp
 	bg := banktypes.DefaultGenesisState()
 	bg.Supply = sdk.NewCoins(sdk.NewCoin(godrewards.GodDenom, godrewards.FixedGodSupply()))
 	total := sdkmath.ZeroInt()
-	for _, b := range g.Balances {
-		address, _ := msg.Account(b.Address)
-		n, _ := godAmount(b.Amount)
-		a.accounts.SetAccount(ctx, a.accounts.NewAccountWithAddress(ctx, address))
-		bg.Balances = append(bg.Balances, banktypes.Balance{Address: b.Address, Coins: sdk.NewCoins(sdk.NewCoin(godrewards.GodDenom, n))})
-		total = total.Add(n)
+	if a.config.BridgeGenesis == nil {
+		for _, b := range g.Balances {
+			address, _ := msg.Account(b.Address)
+			n, _ := godAmount(b.Amount)
+			a.accounts.SetAccount(ctx, a.accounts.NewAccountWithAddress(ctx, address))
+			bg.Balances = append(bg.Balances, banktypes.Balance{Address: b.Address, Coins: sdk.NewCoins(sdk.NewCoin(godrewards.GodDenom, n))})
+			total = total.Add(n)
+		}
 	}
 	if remainder := godrewards.FixedGodSupply().Sub(total); remainder.IsPositive() {
 		bg.Balances = append(bg.Balances, banktypes.Balance{Address: a.accounts.GetModuleAddress(godrewards.ReserveModule).String(), Coins: sdk.NewCoins(sdk.NewCoin(godrewards.GodDenom, remainder))})
@@ -201,9 +280,19 @@ func (a *App) initChain(ctx sdk.Context, req *abci.RequestInitChain) (*abci.Resp
 	if err := a.rewards.Init(ctx); err != nil {
 		return nil, err
 	}
+	if a.config.BridgeGenesis != nil {
+		if a.bridge == nil {
+			return nil, ErrBridgeGenesis
+		}
+		// Balances above are reconciliation declarations, NOT a second bank
+		// allocation. InitBootstrap releases from the full restricted reserve
+		// once and creates fresh accounts before self-staking is applied.
+		if err := a.bridge.InitBootstrap(ctx, g.Bridge.Plan, g.Bridge.PlanApprovals); err != nil {
+			return nil, err
+		}
+	}
 	sg := stakingtypes.DefaultGenesisState()
-	sg.Params.BondDenom, sg.Params.MaxValidators, sg.Params.UnbondingTime = godrewards.GodDenom, 32, 21*24*time.Hour
-	sg.Params.MinCommissionRate = commission()
+	sg.Params = stakingGenesisParams()
 	a.staking.InitGenesis(ctx, sg)
 	pg := slashingtypes.DefaultGenesisState()
 	pg.Params = penaltyParams()
@@ -234,26 +323,28 @@ func (a *App) initChain(ctx sdk.Context, req *abci.RequestInitChain) (*abci.Resp
 	if err != nil {
 		return nil, err
 	}
-	fg := feetypes.DefaultGenesisState()
-	fg.Params.BaseFee = sdkmath.LegacyNewDecFromInt(a.config.Policy.MinFeePerGas)
-	fg.Params.MinGasPrice = sdkmath.LegacyNewDecFromInt(a.config.Policy.MinFeePerGas)
+	fg, vg := executionGenesis(a.config)
 	feemarket.InitGenesis(ctx, a.fees, *fg)
-	vg := evmtypes.DefaultGenesisState()
-	vg.Params.EvmDenom = godrewards.GodDenom
-	vg.Params.ExtendedDenomOptions = &evmtypes.ExtendedDenomOptions{ExtendedDenom: godrewards.GodDenom}
-	vg.Params.ActiveStaticPrecompiles, vg.Params.EVMChannels, vg.Preinstalls = nil, nil, nil
 	evm.InitGenesis(ctx, a.evm, a.accounts, a.evmBank, *vg, new(sync.Once))
-	if err := a.putMetadata(ctx, metadata{Binding: a.binding, Height: 0, Time: req.Time.UTC()}); err != nil {
+	if err := a.putMetadata(ctx, metadata{Binding: a.binding, Height: 0, Time: req.Time.UTC(), BridgeGenesis: certificate}); err != nil {
 		return nil, err
 	}
 	if err := a.initializeSigningSets(ctx, updates); err != nil {
 		return nil, err
 	}
+	if _, err := a.bridgeSnapshot(ctx); err != nil {
+		return nil, err
+	}
+	write()
 	return &abci.ResponseInitChain{Validators: updates}, nil
 }
 
-func validateGenesisRequest(req *abci.RequestInitChain, c Config) error {
+func validateBaseGenesisRequest(req *abci.RequestInitChain, c Config) error {
 	if req == nil || req.ChainId != c.ChainID || !validTime(req.Time) || (req.InitialHeight != 0 && req.InitialHeight != 1) || req.ConsensusParams == nil {
+		return ErrGenesis
+	}
+	// The upstream conversion dereferences these fields before ValidateBasic.
+	if req.ConsensusParams.Block == nil || req.ConsensusParams.Evidence == nil || req.ConsensusParams.Validator == nil || req.ConsensusParams.Version == nil {
 		return ErrGenesis
 	}
 	cp := cmttypes.ConsensusParamsFromProto(*req.ConsensusParams)

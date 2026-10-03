@@ -17,6 +17,7 @@ import (
 	storetypes "cosmossdk.io/store/types"
 	"github.com/ETKINGDOM/GOD-Chain/internal/godaddress"
 	"github.com/ETKINGDOM/GOD-Chain/internal/godtx"
+	"github.com/ETKINGDOM/GOD-Chain/x/godbridge"
 	"github.com/ETKINGDOM/GOD-Chain/x/godrewards"
 	"github.com/ETKINGDOM/GOD-Chain/x/godrewards/msg"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
@@ -70,6 +71,9 @@ type Config struct {
 	MaxBlockBytes   int64
 	MaxBlockTxs     int
 	GPerSignedBlock sdkmath.Int
+	// Optional attested reserve initialization for synthetic local genesis.
+	// This mounts the ledger, not bridge transactions or actual RH backing.
+	BridgeGenesis *godbridge.Config `json:",omitempty"`
 }
 
 func (c Config) validate() error {
@@ -84,13 +88,20 @@ func (c Config) validate() error {
 			return ErrConfig
 		}
 	}
+	if c.BridgeGenesis != nil {
+		b, err := godbridge.CanonicalConfig(*c.BridgeGenesis)
+		if err != nil || b.NativeChain != c.ChainID {
+			return ErrConfig
+		}
+	}
 	return nil
 }
 
 type metadata struct {
-	Binding []byte
-	Height  int64
-	Time    time.Time
+	Binding       []byte
+	Height        int64
+	Time          time.Time
+	BridgeGenesis *[32]byte `json:",omitempty"`
 }
 
 type App struct {
@@ -105,6 +116,7 @@ type App struct {
 	evm                                    *evmkeeper.Keeper
 	evmBank                                evmBank
 	rewards                                godrewards.Keeper
+	bridge                                 *godbridge.Keeper
 	key                                    *storetypes.KVStoreKey
 	config                                 Config
 	binding                                []byte
@@ -127,6 +139,13 @@ func New(db dbm.DB, c Config) (*App, error) {
 		sdk.GetConfig().GetBech32ValidatorAddrPrefix() != godaddress.ValidatorOperatorPrefix || sdk.GetConfig().GetBech32ConsensusAddrPrefix() != godaddress.ConsensusPrefix {
 		return nil, ErrConfig
 	}
+	if c.BridgeGenesis != nil {
+		canonical, err := godbridge.CanonicalConfig(*c.BridgeGenesis)
+		if err != nil {
+			return nil, ErrConfig
+		}
+		c.BridgeGenesis = &canonical
+	}
 	processRuntime.Lock()
 	defer processRuntime.Unlock()
 	if processRuntime.consumed {
@@ -138,7 +157,7 @@ func New(db dbm.DB, c Config) (*App, error) {
 	binding, err := json.Marshal(struct {
 		Version uint32
 		Config  Config
-	}{2, c})
+	}{runtimeBindingVersion(c), c})
 	if err != nil {
 		return nil, ErrConfig
 	}
@@ -152,11 +171,14 @@ func New(db dbm.DB, c Config) (*App, error) {
 	base.SetTxEncoder(enc.TxConfig.TxEncoder())
 	keys := storetypes.NewKVStoreKeys(authtypes.StoreKey, banktypes.StoreKey, consensuskeeper.StoreKey,
 		stakingtypes.StoreKey, slashingtypes.StoreKey, godrewards.StoreKey, feetypes.StoreKey, evmtypes.StoreKey, nodeStore)
+	if c.BridgeGenesis != nil {
+		keys[godbridge.StoreKey] = storetypes.NewKVStoreKey(godbridge.StoreKey)
+	}
 	transients := storetypes.NewTransientStoreKeys(feetypes.TransientKey, evmtypes.TransientKey, settlementStore)
 	base.MountKVStores(keys)
 	base.MountTransientStores(transients)
 	permissions := map[string][]string{}
-	for _, name := range moduleNames() {
+	for _, name := range nodeModuleNames(c) {
 		permissions[name] = nil
 	}
 	permissions[stakingtypes.BondedPoolName] = []string{authtypes.Staking}
@@ -165,7 +187,7 @@ func New(db dbm.DB, c Config) (*App, error) {
 	ak := authkeeper.NewAccountKeeper(enc.Codec, runtime.NewKVStoreService(keys[authtypes.StoreKey]), authtypes.ProtoBaseAccount,
 		permissions, godaddress.Codec{}, godaddress.AccountPrefix, authority.String())
 	blocked := map[string]bool{}
-	for _, name := range moduleNames() {
+	for _, name := range nodeModuleNames(c) {
 		blocked[ak.GetModuleAddress(name).String()] = true
 	}
 	bk := bankkeeper.NewBaseKeeper(enc.Codec, runtime.NewKVStoreService(keys[banktypes.StoreKey]), ak, blocked, authority.String(), logger)
@@ -187,6 +209,13 @@ func New(db dbm.DB, c Config) (*App, error) {
 		disabledERC20{}, c.EVMChainID, "").WithDefaultEvmCoinInfo(evmtypes.EvmCoinInfo{Denom: godrewards.GodDenom, ExtendedDenom: godrewards.GodDenom, DisplayDenom: "god", Decimals: 18})
 	a := &App{base: base, encoding: enc, accounts: ak, bank: bk, staking: sk, slashing: slk, fees: fk, evm: ek, evmBank: eb, rewards: rewards,
 		key: keys[nodeStore], config: c, binding: binding}
+	if c.BridgeGenesis != nil {
+		bridge, err := godbridge.NewKeeper(keys[godbridge.StoreKey], bk, ak, *c.BridgeGenesis)
+		if err != nil {
+			return nil, err
+		}
+		a.bridge = &bridge
+	}
 	native, err := godtx.NewAnteWithMessages(ak, bk, enc.TxConfig, rewards, c.Policy, validateNativeMessage)
 	if err != nil {
 		return nil, err
@@ -231,6 +260,9 @@ func New(db dbm.DB, c Config) (*App, error) {
 		if err != nil || stored.Height != base.LastBlockHeight() {
 			return nil, ErrConfig
 		}
+		if _, err := a.bridgeSnapshot(ctx.WithBlockTime(stored.Time)); err != nil {
+			return nil, ErrConfig
+		}
 		// Genesis does not run again on process restart. Restore the sealed
 		// execution globals from verified committed state, without rewriting
 		// genesis, bank balances, staking or reward progress.
@@ -273,12 +305,55 @@ func moduleNames() []string {
 	return []string{authtypes.FeeCollectorName, godrewards.PendingModule, godrewards.PoolModule, godrewards.ReserveModule,
 		authorityModule, stakingtypes.BondedPoolName, stakingtypes.NotBondedPoolName, quarantineModule, evmtypes.ModuleName}
 }
+
+func nodeModuleNames(c Config) []string {
+	names := moduleNames()
+	if c.BridgeGenesis != nil {
+		names = append(names, godbridge.PendingModule)
+	}
+	return names
+}
+
+// Opt-in ledger initialization changes genesis semantics. Gate-only version 2
+// databases/certificates must not be silently reopened as initialized ledgers.
+// Ordinary nil-policy synthetic configuration keeps its existing binding.
+func runtimeBindingVersion(c Config) uint32 {
+	if c.BridgeGenesis != nil {
+		return 3
+	}
+	return 2
+}
+
+func (a *App) bridgeSnapshot(ctx sdk.Context) (*godbridge.Snapshot, error) {
+	if a.config.BridgeGenesis == nil {
+		if a.bridge != nil {
+			return nil, ErrConfig
+		}
+		return nil, nil
+	}
+	if a.bridge == nil {
+		return nil, ErrBridgeGenesis
+	}
+	s, err := a.bridge.Snapshot(ctx)
+	if err != nil {
+		return nil, err
+	}
+	// This node mode requires an immutable bootstrap record, not an empty
+	// ledger or a reconstruction from ordinary preallocated bank balances.
+	if _, err := a.bridge.Bootstrap(ctx); err != nil {
+		return nil, err
+	}
+	return &s, nil
+}
 func evmModuleAddress() []byte { return authtypes.NewModuleAddress(evmtypes.ModuleName) }
 
 func (a *App) metadata(ctx sdk.Context) (metadata, error) {
 	var m metadata
 	raw := ctx.KVStore(a.key).Get([]byte{1})
 	if raw == nil || json.Unmarshal(raw, &m) != nil || !bytes.Equal(m.Binding, a.binding) || m.Height < 0 || !validTime(m.Time) {
+		return m, ErrConfig
+	}
+	if (a.config.BridgeGenesis == nil) != (m.BridgeGenesis == nil) || m.BridgeGenesis != nil && *m.BridgeGenesis == [32]byte{} {
 		return m, ErrConfig
 	}
 	return m, nil

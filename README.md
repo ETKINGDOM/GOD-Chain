@@ -14,7 +14,7 @@ The balance adapter transfers existing GOD instead of granting mint or burn perm
 
 Consensus-verified duplicate votes apply a 5 percent historical-stake penalty into protected quarantine, never burning GOD or funding G redemption. The consensus key and operator are permanently excluded. More than 1,000 misses in a full 10,000-opportunity signing window suspends a validator for at least one hour without reducing principal. Reactivation requires the authenticated operator and adequate self-stake. Other evidence classes and production recovery governance remain release gates. See [NODE_RUNTIME.md](NODE_RUNTIME.md).
 
-Opt-in disk storage preserves application state, consensus databases, WAL and original file-signing progress. Private fixtures cover normal restart, abrupt process termination and four-validator recovery. Clean shutdown is not reliable: a background consensus peer query can read an already closed block database and panic. This defect is unresolved and blocks production readiness. Existing version 1 local node storage requires a reviewed migration to version 2, not a reset or replacement signer.
+Opt-in disk storage preserves application state, consensus databases, WAL and original file-signing progress. Private fixtures cover normal restart, abrupt process termination and four-validator recovery. The checksum-bound lifecycle build joins admitted peer workers before closing stores and passed the observed shutdown regression and controlled worker tests. This is not operator-grade reliability under every failure. Ordinary nil-policy nodes keep binding version 2; explicit synthetic bridge initialization uses version 3. Incompatible local data requires reviewed migration, not a reset or replacement signer.
 
 ## G rewards and fixed GOD supply
 
@@ -22,7 +22,7 @@ G has no fixed lifetime cap. The prototype bounds issuance to 10,000 G per UTC d
 
 Voluntary redemption pays `floor(P * g / T)` from the settled GOD pool, with at least 1 G, positive minimum output and a consensus-time deadline. Only a successful GOD payment burns the offered G. Empty liquidity, stale quotes and failed payments retain G, which can also be transferred or locked. An accepted transaction can still pay its normal fee on business failure.
 
-GOD bank supply remains 1,000,000,000 with 18 decimal places. Synthetic genesis assigns local balances and holds the remainder in restricted reserve. Equal supply does not prove RH backing. Protected protocol funds cannot be treated as participant balances or redemption liquidity.
+GOD bank supply remains 1,000,000,000 with 18 decimal places. Ordinary synthetic genesis assigns local balances and holds the remainder in restricted reserve. Explicit bridge genesis instead starts with the full reserve and releases authorized synthetic deposits once before staking. Equal supply or quorum statements do not prove RH backing. Protected protocol funds cannot be treated as participant balances or redemption liquidity.
 
 ## Addresses and authentication
 
@@ -34,9 +34,9 @@ The native protobuf path supports claim, transfer, lock, unlock, redeem and dona
 
 `x/godbridge` and `contracts/GodBridgeEscrow.sol` implement isolated one-for-one ledger and custody state machines with five-of-seven approvals, replay protection, segregated withdrawals, FIFO order, a 24-hour delay, rolling limits and permanent cancellation records. Timeout alone cannot authorize a refund. Quorum attestations are a custody trust model, not cryptographic source-finality proofs.
 
-An opt-in native codec and six authenticated bridge message adapters are implemented and tested separately. An initialization-only API checks quorum-attested deposits, a complete initial plan, validator stake budgets and positive fee budgets before atomically releasing reserve funds into fresh accounts. These attestations do not independently verify RH backing, prove owner/key consent or install validators.
+An opt-in native codec and six authenticated bridge message adapters are implemented and tested separately. The optional node certificate checks complete deposit funding, stake/fee budgets, owner consent, consensus-key possession and actual node/consensus policy. It initializes the synthetic ledger from full reserve and applies staking in one cache; failed initialization rolls back financial and replay state. Initial deposits and bootstrap cannot release GOD twice. Aggregate accounting and the immutable record are checked through commits and reopen.
 
-The bridge remains unmounted in both ordinary applications. Finalized-source observation, independent signers, production-backed node genesis and a relayer remain absent. The 10,000 GOD exposure limit cannot fund ten minimum-self-stake validators plus positive fees; a 32-validator launch is not established. No deployment or funding command is provided. See [BRIDGE.md](BRIDGE.md).
+Only explicit synthetic node genesis mounts the ledger; participant bridge envelopes and routes remain disabled. Finalized-source observation, independent signers, production-backed node genesis and a relayer remain absent. The 10,000 GOD exposure limit cannot fund ten minimum-self-stake validators plus positive fees; a 32-validator launch is not established. No deployment or funding command is provided. See [BRIDGE.md](BRIDGE.md).
 
 ## Build and inspect
 
@@ -48,7 +48,9 @@ make check
 make status
 ```
 
-The diagnostic reports `local-consensus-execution-prototype`, `localNodePrototype: true`, `nodeReady: false` and `realAssets: false`. The lock explicitly records the unresolved shutdown defect. Startup and financial commands fail closed. A build does not start a chain or verify backing. `make compile-targets` cross-compiles only this diagnostic; foreign-platform compilation is not runtime certification.
+Make targets use `cmd/godbuild` to verify the exact pinned reactor, prepare an ignored private module copy and select the reviewed compiler overlay. Original dependency caches and pins are unchanged. A plain unpatched node build fails the worker-join API check; do not bypass it. Required upstream patch license and notice are retained under `licenses/`.
+
+The diagnostic reports `local-consensus-execution-prototype`, `localNodePrototype: true`, `nodeReady: false` and `realAssets: false`. Startup and financial commands fail closed. A build does not start a chain or verify backing. `make compile-targets` cross-compiles only this diagnostic; foreign-platform compilation is not runtime certification.
 
 Generated protobuf messages are included, so ordinary builds need no protobuf compiler. `make generate-proto` uses protoc 33.0 and the locked generator. Solidity custody source requires the separately verified compiler described in the lock; no compiler, private fixture, bytecode or operational build script is distributed.
 
@@ -56,7 +58,7 @@ Private test suites, fixtures, runtime data, keys, addresses, binaries and logs 
 
 ## Remaining release gates
 
-Reliable shutdown, physical-durability testing, operator-grade signer lifecycle, adversarial peers and evidence, and governance remain incomplete. Production emission and gas policy, node bridge mounting, source verification and backing, wallet support and ordinary-computer resource measurements need separate approval and verification. Daily settlement scans, delegation work and retained tombstones need growth bounds.
+Operator-grade shutdown, physical-durability testing, signer lifecycle, adversarial peers and evidence, and governance remain incomplete. Production emission and gas policy, authenticated node bridge transactions, source verification and backing, wallet support and ordinary-computer resource measurements need separate approval and verification. Daily settlement scans, delegation work and retained tombstones need growth bounds.
 
 There is no independent audit, guaranteed return, mainnet safety claim or launch date. Publication does not authorize chain activation or real assets. Private faith text must be encrypted by the application on the user's device and must not enter public chat, telemetry or logs.
 

@@ -4,6 +4,8 @@ The isolated bridge tests also use the pinned execution library's in-memory EVM 
 
 God EVM, God SDK and GodCometBFT are project integration names. They do not replace the origin, licenses, package identities or copyright notices of the open-source infrastructure imported by this prototype.
 
+The GodCometBFT lifecycle build helper contains minimal reactor context excerpts from the pinned Apache-2.0 upstream source and applies project modifications for worker admission and joining. The original [Apache license](licenses/GodCometBFT-Apache-2.0.txt) and [NOTICE](licenses/GodCometBFT-NOTICE.txt) are retained verbatim. Generated modified source is explicitly marked; the exact original module copy, full original notices and compiler inputs remain ignored private build material, not a redistributed dependency tree. This patch does not claim original authorship of the upstream reactor or complete future binary license review.
+
 | Component | Upstream technical dependency | Pinned version | License |
 | --- | --- | --- | --- |
 | God EVM | [cosmos/evm](https://github.com/cosmos/evm/tree/v0.6.3) | v0.6.3 | Apache 2.0 |

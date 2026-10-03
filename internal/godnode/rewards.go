@@ -307,6 +307,9 @@ func (a *App) preBlock(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.Re
 	if req.Height != m.Height+1 || req.Time.Before(m.Time) || !validTime(req.Time) {
 		return nil, ErrBlock
 	}
+	if _, err := a.bridgeSnapshot(ctx); err != nil {
+		return nil, err
+	}
 	cache, write := ctx.CacheContext()
 	if err := a.rewards.BeginDay(cache); err != nil {
 		return nil, err
@@ -323,7 +326,8 @@ func (a *App) preBlock(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.Re
 	if req.Height > 2 {
 		cache.KVStore(a.key).Delete(setKey(req.Height - 2))
 	}
-	if err := a.putMetadata(cache, metadata{a.binding, req.Height, req.Time.UTC()}); err != nil {
+	m.Height, m.Time = req.Height, req.Time.UTC()
+	if err := a.putMetadata(cache, m); err != nil {
 		return nil, err
 	}
 	write()
@@ -357,6 +361,9 @@ func (a *App) endBlock(ctx sdk.Context) (sdk.EndBlock, error) {
 	}
 	if !a.bank.GetSupply(ctx, godrewards.GodDenom).Amount.Equal(godrewards.FixedGodSupply()) {
 		return sdk.EndBlock{}, ErrSupply
+	}
+	if _, err := a.bridgeSnapshot(ctx); err != nil {
+		return sdk.EndBlock{}, err
 	}
 	return sdk.EndBlock{ValidatorUpdates: updates}, nil
 }

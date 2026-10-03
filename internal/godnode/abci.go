@@ -6,6 +6,7 @@ import (
 	"math"
 	"time"
 
+	"github.com/ETKINGDOM/GOD-Chain/x/godbridge"
 	"github.com/ETKINGDOM/GOD-Chain/x/godrewards"
 	abci "github.com/cometbft/cometbft/abci/types"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -213,6 +214,7 @@ type Snapshot struct {
 	Height    int64
 	Rewards   godrewards.Snapshot
 	Synthetic bool
+	Bridge    *godbridge.Snapshot `json:"bridge,omitempty"`
 }
 
 func (a *App) snapshot() (Snapshot, error) {
@@ -224,6 +226,13 @@ func (a *App) snapshot() (Snapshot, error) {
 		return Snapshot{}, err
 	}
 	rewards, err := a.rewards.Snapshot(ctx.WithBlockTime(a.clock))
-	return Snapshot{a.base.LastBlockHeight(), rewards, true}, err
+	if err != nil {
+		return Snapshot{}, err
+	}
+	bridge, err := a.bridgeSnapshot(ctx.WithBlockTime(a.clock))
+	if err != nil {
+		return Snapshot{}, err
+	}
+	return Snapshot{Height: a.base.LastBlockHeight(), Rewards: rewards, Synthetic: true, Bridge: bridge}, nil
 }
 func (a *App) Snapshot() (Snapshot, error) { a.mu.Lock(); defer a.mu.Unlock(); return a.snapshot() }

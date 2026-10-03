@@ -67,10 +67,37 @@ func StartLocal(ctx context.Context, a *App, o LocalOptions) (*LocalNode, error)
 	if o.Genesis.ChainID != a.config.ChainID || o.Genesis.ValidateAndComplete() != nil {
 		return nil, ErrGenesis
 	}
+	// Review the same request that consensus will deliver before assigning an
+	// engine or writing a persistent storage binding. InitChain rechecks it.
+	cp := o.Genesis.ConsensusParams.ToProto()
+	request := &abci.RequestInitChain{ChainId: o.Genesis.ChainID, Time: o.Genesis.GenesisTime,
+		InitialHeight: o.Genesis.InitialHeight, AppStateBytes: o.Genesis.AppState, ConsensusParams: &cp}
+	for _, v := range o.Genesis.Validators {
+		if v.PubKey == nil || v.PubKey.Type() != "ed25519" || len(v.PubKey.Bytes()) != 32 {
+			return nil, ErrGenesis
+		}
+		request.Validators = append(request.Validators, abci.Ed25519ValidatorUpdate(v.PubKey.Bytes(), v.Power))
+	}
+	if err := validateGenesisRequest(request, a.config); err != nil {
+		return nil, err
+	}
 	a.mu.Lock()
 	if !a.usable() || a.finalized || a.engineAssigned {
 		a.mu.Unlock()
 		return nil, ErrLifecycle
+	}
+	if a.config.BridgeGenesis != nil && a.base.LastBlockHeight() > 0 {
+		ctx, err := a.base.CreateQueryContext(a.base.LastBlockHeight(), false)
+		if err != nil {
+			a.mu.Unlock()
+			return nil, ErrConfig
+		}
+		stored, err := a.metadata(ctx)
+		digest, digestErr := BridgeGenesisDigest(a.config, request)
+		if err != nil || digestErr != nil || stored.BridgeGenesis == nil || *stored.BridgeGenesis != digest {
+			a.mu.Unlock()
+			return nil, ErrBridgeGenesis
+		}
 	}
 	if o.Persistent {
 		if err := bindLocalStorage(a, o); err != nil {
@@ -161,6 +188,10 @@ func (n *LocalNode) Stop() error {
 	}
 	err := n.node.Stop()
 	n.node.Wait()
+	// This method exists only with the reviewed checksum-bound lifecycle
+	// overlay. A plain unpatched build fails compilation rather than silently
+	// retaining the peer-read/store-close race. OnStop joins before DB closure.
+	n.node.ConsensusReactor().WaitPeerRoutines()
 	if err == nil {
 		n.app.mu.Lock()
 		n.app.engineRunning = false
