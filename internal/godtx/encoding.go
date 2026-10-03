@@ -46,6 +46,11 @@ func NewExecutionEncoding() (Encoding, error) { return newEncoding(true, false) 
 // Registration alone does not supply backed genesis or verify source finality.
 func NewBridgeEncoding() (Encoding, error) { return newEncoding(false, true) }
 
+// NewBridgeExecutionEncoding is explicitly opt-in for synthetic node bridge
+// transactions. A configured ledger, authenticated ante and approval-gas policy
+// are still required; registration does not verify source backing or finality.
+func NewBridgeExecutionEncoding() (Encoding, error) { return newEncoding(true, true) }
+
 func newEncoding(execution, bridge bool) (Encoding, error) {
 	options := txsigning.Options{
 		AddressCodec:          godaddress.Codec{},

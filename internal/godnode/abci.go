@@ -79,7 +79,17 @@ func (x application) CheckTx(_ context.Context, req *abci.RequestCheckTx) (*abci
 	if req == nil || len(req.Tx) == 0 || len(req.Tx) > a.config.Policy.MaxTxBytes || (req.Type != abci.CheckTxType_New && req.Type != abci.CheckTxType_Recheck) {
 		return &abci.ResponseCheckTx{Code: 1}, nil
 	}
+	// FinalizeBlock writes the new working stores before Commit refreshes
+	// BaseApp's CheckTx context. Do not authenticate against that mixed view.
+	// Never wait here: the caller may hold the mempool lock Commit needs.
+	if a.finalized {
+		return &abci.ResponseCheckTx{Code: 1, Codespace: "godnode_commit_pending"}, nil
+	}
 	return a.base.CheckTx(req)
+}
+
+func commitPendingCheck(result *abci.ResponseCheckTx) bool {
+	return result != nil && result.Code == 1 && result.Codespace == "godnode_commit_pending"
 }
 func (a *App) nextBlock(height int64, t time.Time) bool {
 	return a.initialized && a.base.LastBlockHeight() < math.MaxInt64-2 && height == a.base.LastBlockHeight()+1 && validTime(t) && !t.Before(a.clock)

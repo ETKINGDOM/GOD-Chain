@@ -18,6 +18,7 @@ import (
 	"github.com/ETKINGDOM/GOD-Chain/internal/godaddress"
 	"github.com/ETKINGDOM/GOD-Chain/internal/godtx"
 	"github.com/ETKINGDOM/GOD-Chain/x/godbridge"
+	bridgemsg "github.com/ETKINGDOM/GOD-Chain/x/godbridge/msg"
 	"github.com/ETKINGDOM/GOD-Chain/x/godrewards"
 	"github.com/ETKINGDOM/GOD-Chain/x/godrewards/msg"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
@@ -47,11 +48,12 @@ import (
 )
 
 var (
-	ErrConfig    = errors.New("node configuration rejected")
-	ErrLifecycle = errors.New("node lifecycle rejected")
-	ErrGenesis   = errors.New("synthetic node genesis rejected")
-	ErrBlock     = errors.New("node block or verified commit rejected")
-	ErrSupply    = errors.New("noninflating GOD settlement rejected")
+	ErrConfig        = errors.New("node configuration rejected")
+	ErrLifecycle     = errors.New("node lifecycle rejected")
+	ErrGenesis       = errors.New("synthetic node genesis rejected")
+	ErrBlock         = errors.New("node block or verified commit rejected")
+	ErrSupply        = errors.New("noninflating GOD settlement rejected")
+	ErrCommitPending = errors.New("transaction admission deferred until block commit")
 )
 
 const nodeStore = "god_node"
@@ -72,8 +74,12 @@ type Config struct {
 	MaxBlockTxs     int
 	GPerSignedBlock sdkmath.Int
 	// Optional attested reserve initialization for synthetic local genesis.
-	// This mounts the ledger, not bridge transactions or actual RH backing.
+	// Alone this mounts only the ledger, not transactions or RH backing.
 	BridgeGenesis *godbridge.Config `json:",omitempty"`
+	// Nonzero explicitly opts into authenticated synthetic bridge routes and
+	// charges this gas per quorum signature. Zero keeps ledger-only behavior.
+	// There is no production default or source-observation implementation.
+	BridgeApprovalGas uint64 `json:",omitempty"`
 }
 
 func (c Config) validate() error {
@@ -93,6 +99,10 @@ func (c Config) validate() error {
 		if err != nil || b.NativeChain != c.ChainID {
 			return ErrConfig
 		}
+	}
+	if c.BridgeApprovalGas != 0 && (c.BridgeGenesis == nil || c.BridgeApprovalGas > math.MaxInt64/godbridge.SignerCount ||
+		c.BridgeApprovalGas > c.Policy.MaxGas/godbridge.SignerCount) {
+		return ErrConfig
 	}
 	return nil
 }
@@ -161,7 +171,11 @@ func New(db dbm.DB, c Config) (*App, error) {
 	if err != nil {
 		return nil, ErrConfig
 	}
-	enc, err := godtx.NewExecutionEncoding()
+	makeEncoding := godtx.NewExecutionEncoding
+	if c.BridgeApprovalGas != 0 {
+		makeEncoding = godtx.NewBridgeExecutionEncoding
+	}
+	enc, err := makeEncoding()
 	if err != nil {
 		return nil, err
 	}
@@ -216,7 +230,7 @@ func New(db dbm.DB, c Config) (*App, error) {
 		}
 		a.bridge = &bridge
 	}
-	native, err := godtx.NewAnteWithMessages(ak, bk, enc.TxConfig, rewards, c.Policy, validateNativeMessage)
+	native, err := godtx.NewAnteWithMessages(ak, bk, enc.TxConfig, rewards, c.Policy, a.validateNativeMessage)
 	if err != nil {
 		return nil, err
 	}
@@ -239,6 +253,13 @@ func New(db dbm.DB, c Config) (*App, error) {
 	stakingtypes.RegisterMsgServer(base.MsgServiceRouter(), stakingServer{stakingkeeper.NewMsgServerImpl(sk), a})
 	slashingtypes.RegisterMsgServer(base.MsgServiceRouter(), &penaltyServer{app: a})
 	evmtypes.RegisterMsgServer(base.MsgServiceRouter(), ethereumServer{Keeper: ek, bank: eb})
+	if c.BridgeApprovalGas != 0 {
+		server, err := bridgemsg.NewServer(*a.bridge, c.BridgeApprovalGas)
+		if err != nil {
+			return nil, ErrConfig
+		}
+		bridgemsg.RegisterMsgServer(base.MsgServiceRouter(), server)
+	}
 	base.SetInitChainer(a.initChain)
 	base.SetPreBlocker(a.preBlock)
 	base.SetBeginBlocker(func(ctx sdk.Context) (sdk.BeginBlock, error) {
@@ -255,7 +276,7 @@ func New(db dbm.DB, c Config) (*App, error) {
 		return nil, err
 	}
 	if base.LastBlockHeight() > 0 {
-		ctx := a.base.NewUncachedContext(false, cmtproto.Header{ChainID: c.ChainID})
+		ctx := a.base.NewUncachedContext(false, cmtproto.Header{ChainID: c.ChainID, Height: base.LastBlockHeight()})
 		stored, err := a.metadata(ctx)
 		if err != nil || stored.Height != base.LastBlockHeight() {
 			return nil, ErrConfig
@@ -314,10 +335,13 @@ func nodeModuleNames(c Config) []string {
 	return names
 }
 
-// Opt-in ledger initialization changes genesis semantics. Gate-only version 2
-// databases/certificates must not be silently reopened as initialized ledgers.
-// Ordinary nil-policy synthetic configuration keeps its existing binding.
+// Initialization and participant routes require distinct persistent bindings.
+// Never silently reinterpret gate-only, ledger-only or transaction-enabled
+// data or certificates. Ordinary nil-policy nodes retain their old encoding.
 func runtimeBindingVersion(c Config) uint32 {
+	if c.BridgeApprovalGas != 0 {
+		return 4
+	}
 	if c.BridgeGenesis != nil {
 		return 3
 	}

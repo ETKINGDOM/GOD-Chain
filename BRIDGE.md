@@ -1,6 +1,6 @@
 # GOD Chain bridge prototype
 
-`x/godbridge` and `contracts/GodBridgeEscrow.sol` are ledger and custody components for one-for-one GOD transfer accounting. Authenticated message adapters are tested separately; explicit synthetic node genesis now mounts and initializes the ledger atomically before staking. Participant bridge routes remain disabled and nothing connects to Robinhood Chain. No deployment, relayer, observer, populated signer configuration or real assets are supplied.
+`x/godbridge` and `contracts/GodBridgeEscrow.sol` are ledger and custody components for one-for-one GOD transfer accounting. Explicit synthetic node genesis mounts and initializes the ledger atomically before staking. A separate positive approval-gas policy enables six authenticated participant routes in the local node prototype. Ordinary and ledger-only configurations leave them disabled; nothing connects to Robinhood Chain. No deployment, public RPC, relayer, observer, populated signer configuration or real assets are supplied.
 
 ## Trust and backing
 
@@ -24,7 +24,7 @@ Custody rejects failed, false-return and inexact token transfers. Raw donations 
 
 The bridge schema defines six messages: accept deposit, request withdrawal, authorize withdrawal, acknowledge payment, acknowledge cancellation and restrict bridge directions. The outer sender uses native direct signing with chain ID, account number and ordered sequence. Withdrawal ownership comes from that authenticated sender. The other five operations also require distinct valid quorum approvals over their action-specific content; an outer signature alone cannot release reserve or refund funds.
 
-`NewBridgeEncoding` is an explicit native-only opt-in. The normal native and execution codecs reject bridge envelopes, and neither application mounts the adapter. Server construction requires a configured keeper and an explicit positive bounded gas cost per supplied approval. No production gas default is selected. Direct server methods must not be exposed as unsigned public gRPC.
+`NewBridgeEncoding` is an explicit native-only opt-in; `NewBridgeExecutionEncoding` is the combined node opt-in. The normal native and execution codecs reject bridge envelopes. The native-only application remains unmounted; the local node mounts routes only with explicit positive bounded approval gas and authorized synthetic bridge genesis. Server construction requires a configured keeper and charges every supplied approval. No production gas default is selected. Direct server methods must not be exposed as unsigned public gRPC.
 
 Canonical GOD accounts, positive bounded integer amounts, nonzero source recipients, exact hash lengths, positive sequences and bounded approval shapes are checked before keeper execution. Structure does not prove source finality. Ante rejection commits no fee or sequence. Accepted business failure or message-stage gas exhaustion retains the signed fee and sequence while reverting the entire business batch. An incoming unreleased deposit cannot finance its own sender's fee.
 
@@ -46,7 +46,19 @@ Explicit `Config.BridgeGenesis` requires complete-plan and individual-deposit qu
 
 The node initializes full restricted reserve rather than preallocating participant declarations, then calls `InitBootstrap` and applies self-staking. Account, bank, bridge replay, staking, rewards, execution and metadata writes share one cache. Failures discard the financial batch; internally failed ABCI instances cannot commit or retry sealed execution globals. The authorization digest and immutable bootstrap record persist across blocks and reopen. Replayed deposits and repeated initialization cannot release reserve twice. Snapshots and block boundaries check aggregate reserve and pending custody.
 
-This mode uses runtime binding version 3 and node digest domain version 2; the certificate schema remains version 1. Earlier gate-only data/signatures must not be silently reinterpreted. Ordinary nil-policy nodes retain version-2 binding without a bridge store. No migration, signer reset, signing service or populated certificate is supplied. This is synthetic accounting, not independent RH source verification. Node participant bridge envelopes and routes remain disabled.
+Ledger-only initialization uses runtime binding version 3 and node digest domain version 2; the certificate schema remains version 1. Earlier gate-only data/signatures must not be silently reinterpreted. Ordinary nil-policy nodes retain version-2 binding without a bridge store. Zero approval gas leaves participant envelopes and routes disabled. No migration, signer reset, signing service or populated certificate is supplied. This is synthetic accounting, not independent RH source verification.
+
+## Authenticated node integration
+
+Positive `Config.BridgeApprovalGas` requires `BridgeGenesis`, fits signed gas arithmetic and stays within the configured transaction gas bound for the signer count. Runtime binding version 4 and the node authorization digest bind the exact gas setting. A re-signed certificate cannot replace committed genesis or silently enable routes over ledger-only data. The six routes retain authenticated outer ownership and sequence, separate action-specific quorum checks and cached business execution. Fees and sequence persist on accepted business failure; failed batches retain no successful business prefix. EVM, G, staking and bridge messages share the existing authenticated transaction boundary.
+
+Four local persistent validators accepted signed deposits, withdrawal locks, finalized-cancellation acknowledgements and pauses over P2P. State, fees and sequences matched, with transaction/result commitments, following-header linkage and actual signatures independently checked by private fixtures. Three validators continued while one was offline; its original database and file signer caught up. Whole-network restart preserved pending custody, immutable initialization, replay records and continued EVM execution.
+
+Early authorization and queued payment were rejected. The network fixture did not wait 24 hours: successful delayed authorization and payment were checked only in direct synthetic-node and isolated custody fixtures. Those direct checks use synthetic consensus inputs, not a delayed four-node transfer or RH source proof. The private single-transaction receipt helper is not a production proof endpoint.
+
+Checking during the interval between finalization and commitment returns a distinct no-write deferral, avoiding newer ledger state with an older checking timestamp. `LocalNode.Submit` reports `ErrCommitPending` without internal retry; the check does not wait under the mempool lock. Authentication, actual time-regression rejection and withdrawal delay remain unchanged.
+
+`AuthorizationAttestationDigest`, `ResolutionAttestationDigest` and `PauseAttestationDigest` build exact unsigned proposals from explicit configuration without ledger context, bank access or state mutation. They do not determine current eligibility, approve an action or verify source execution.
 
 ## Packet encoding
 
@@ -64,4 +76,4 @@ Private checks exercised compiled custody bytecode and native stores with synthe
 
 Private signed-message checks cover ownership, envelope tampering, quorum verification, fees, gas, rollback and disk replay. Seven initial reconciliation tests cover complete funding, real staking custody, plan binding, canonical ordering, atomic rejection and record integrity. None fetches an actual RH checkpoint or proves source backing.
 
-Authenticated node bridge transactions, production-backed validators/genesis, finalized-source observation, independent signer operations and recoverable relaying remain required. The checksum-bound shutdown repair passed local regression checks, not operator-grade reliability. Custody continuity and governance need additional design. Deployment, bridge funding and real-asset activation require separate explicit authorization.
+Successful delayed network bridge payments, production-backed validators/genesis, finalized-source observation, independent signer operations and recoverable relaying remain required. The checksum-bound shutdown repair and admission guard passed local regression checks, not operator-grade reliability or throughput certification. Custody continuity and governance need additional design. Deployment, bridge funding and real-asset activation require separate explicit authorization.

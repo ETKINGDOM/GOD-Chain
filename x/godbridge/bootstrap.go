@@ -236,6 +236,39 @@ func DepositAttestationDigest(config Config, deposit Deposit) ([32]byte, error) 
 	return k.DepositDigest(deposit)
 }
 
+// AuthorizationAttestationDigest builds the exact configured withdrawal
+// authorization packet without a ledger or state writes. It does not establish
+// delay eligibility, queue order, source truth or signature approval.
+func AuthorizationAttestationDigest(config Config, withdrawal Withdrawal) ([32]byte, error) {
+	k, err := bootstrapVerifier(config)
+	if err != nil {
+		return [32]byte{}, err
+	}
+	return k.AuthorizationDigest(withdrawal)
+}
+
+// ResolutionAttestationDigest builds a paid/cancelled receipt proposal, not
+// proof that such a receipt exists or is final. A cancellation request is a
+// different action and cannot authorize a refund through this helper.
+func ResolutionAttestationDigest(config Config, withdrawal Withdrawal, status Status, evidence Evidence) ([32]byte, error) {
+	k, err := bootstrapVerifier(config)
+	if err != nil {
+		return [32]byte{}, err
+	}
+	return k.ResolutionDigest(withdrawal, status, evidence)
+}
+
+// PauseAttestationDigest builds an unsigned monotonic control proposal. It
+// verifies configuration and packet structure, not caller authority or nonce
+// freshness, and never changes bridge state or returns a usable ledger keeper.
+func PauseAttestationDigest(config Config, nonce uint64, intake, outflow bool) ([32]byte, error) {
+	k, err := bootstrapVerifier(config)
+	if err != nil {
+		return [32]byte{}, err
+	}
+	return k.PauseDigest(nonce, intake, outflow)
+}
+
 // CanonicalBootstrap performs bounded structural reconciliation without a
 // ledger, account keeper or state writes. A digest is NOT signature approval
 // or proof of backing. Returned slices and amounts are detached from input.

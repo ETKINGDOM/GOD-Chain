@@ -162,21 +162,30 @@ func StartLocal(ctx context.Context, a *App, o LocalOptions) (*LocalNode, error)
 	return &LocalNode{a, n}, nil
 }
 
+// Submit performs one admission attempt. ErrCommitPending means no ante state
+// was touched and the caller may retry after commitment; it is not acceptance.
+// Other errors must not be indiscriminately retried or reported as success.
 func (n *LocalNode) Submit(ctx context.Context, wire []byte) error {
 	if n == nil || n.node == nil || !n.node.IsRunning() || len(wire) == 0 || len(wire) > n.app.config.Policy.MaxTxBytes {
 		return ErrLifecycle
 	}
-	result := make(chan uint32, 1)
-	err := n.node.Mempool().CheckTx(cmttypes.Tx(wire), func(res *abci.ResponseCheckTx) { result <- res.Code }, mempool.TxInfo{})
+	result := make(chan error, 1)
+	err := n.node.Mempool().CheckTx(cmttypes.Tx(wire), func(res *abci.ResponseCheckTx) {
+		switch {
+		case commitPendingCheck(res):
+			result <- ErrCommitPending
+		case res == nil || res.Code != 0:
+			result <- ErrBlock
+		default:
+			result <- nil
+		}
+	}, mempool.TxInfo{})
 	if err != nil {
 		return err
 	}
 	select {
-	case code := <-result:
-		if code != 0 {
-			return ErrBlock
-		}
-		return nil
+	case err := <-result:
+		return err
 	case <-ctx.Done():
 		return ctx.Err()
 	}

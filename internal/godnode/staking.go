@@ -6,6 +6,7 @@ import (
 	sdkmath "cosmossdk.io/math"
 	"github.com/ETKINGDOM/GOD-Chain/internal/godaddress"
 	"github.com/ETKINGDOM/GOD-Chain/internal/godtx"
+	bridgemsg "github.com/ETKINGDOM/GOD-Chain/x/godbridge/msg"
 	"github.com/ETKINGDOM/GOD-Chain/x/godrewards"
 	"github.com/ETKINGDOM/GOD-Chain/x/godrewards/msg"
 	addresscodec "github.com/cosmos/cosmos-sdk/codec/address"
@@ -33,6 +34,19 @@ func validatorAddress(text string) ([]byte, error) {
 
 func stakeCoin(coin sdk.Coin) bool {
 	return coin.IsValid() && coin.Denom == godrewards.GodDenom && coin.Amount.GTE(godrewards.Unit()) && coin.Amount.LTE(godrewards.FixedGodSupply())
+}
+
+func (a *App) validateNativeMessage(message sdk.Msg) error {
+	switch message.(type) {
+	case *bridgemsg.MsgAcceptDeposit, *bridgemsg.MsgRequestWithdrawal, *bridgemsg.MsgAuthorizeWithdrawal,
+		*bridgemsg.MsgResolvePayment, *bridgemsg.MsgCancelWithdrawal, *bridgemsg.MsgPauseBridge:
+		if a.config.BridgeApprovalGas == 0 || a.bridge == nil || !a.bridge.IsConfigured() {
+			return godtx.ErrPolicy
+		}
+		return bridgemsg.Validate(message)
+	default:
+		return validateNativeMessage(message)
+	}
 }
 
 func validateNativeMessage(message sdk.Msg) error {
