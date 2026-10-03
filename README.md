@@ -14,13 +14,17 @@ This repository contains planning documents only. No chain software, mainnet, li
 - GODCOIN: a planned fixed economic supply of 1,000,000,000 GOD, with one-for-one RH bridging and no additional economic issuance.
 - Native gas on GOD Chain: GOD.
 - Participation: GOD staking supports validators; valid contribution earns G under the proposed rules.
-- Reward cycle: GOD gas fees fund the reward pool; G redeems a floating proportional share of available GOD and is destroyed after successful redemption.
+- G ecosystem unit: no fixed lifetime supply cap at this stage; issuance follows auditable protocol rewards with a proposed network-wide ceiling of 10,000 G per UTC day, not discretionary unlimited minting.
+- Optional redemption: GOD gas fees fund the reward pool; holders may redeem G for a floating proportional share of settled GOD. Only successful redemption burns the offered G, with protocol-enforced minimum output and deadline protection.
+- Empty pool: G remains valid for holding, transfers and separately enabled ecosystem uses; only G-to-GOD redemption is unavailable. Future application rules do not automatically require a G burn.
 - Community objective: ordinary-computer participation and independently controlled network operators.
 - Application privacy: private faith text is encrypted on the user's device before onchain submission.
 
 ## Development sequence
 
 RH application integration, local chain prototype, independent computer testing, economic and bridge verification, explicitly authorized limited mainnet, then application migration and community continuity.
+
+Release gates still include sustainable operator incentives, adversarial economics, backed supply accounting, bridge cancellation and queue safety, independent operator control, halt recovery and measured storage requirements. Burning redeemed G prevents reuse of those G units; it does not alone prove that every form of fee recycling is economically harmless. Publishing these design protections is not implementation or validation.
 
 English is the default documentation language. The network and application are intended for participants worldwide.
 
