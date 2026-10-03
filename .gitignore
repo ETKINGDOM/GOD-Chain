@@ -1,0 +1,16 @@
+.DS_Store
+.env
+.env.*
+.dev.vars*
+*.pem
+*.key
+*.p12
+*.pfx
+*.local.*
+node_modules/
+tmp/
+dist/
+.wrangler/
+.codegraph/
+test-results/
+playwright-report/
