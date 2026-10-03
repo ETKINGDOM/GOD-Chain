@@ -43,11 +43,30 @@ func (p Policy) valid() bool {
 		p.SignatureGas > 0 && p.SignatureGas <= p.MaxGas && p.MessageGas > 0 && p.MessageGas <= p.MaxGas
 }
 
+// Validate lets the application reject an incomplete policy before opening its
+// state. It does not select a gas price or production limits for the caller.
+func (p Policy) Validate() error {
+	if !p.valid() {
+		return ErrPolicy
+	}
+	return nil
+}
+
 // NewAnte reuses the standard God SDK account number, chain ID, sequence,
 // SIGN_MODE_DIRECT verification, timeout, size gas and fee deduction. BaseApp
 // supplies the ante cache: callers must not run this against uncached state.
 // Its separate message cache preserves fees/sequence on business failure.
 func NewAnte(ak ante.AccountKeeper, bk authtypes.BankKeeper, config client.TxConfig, keeper godrewards.Keeper, policy Policy) (sdk.AnteHandler, error) {
+	return NewAnteWithMessages(ak, bk, config, keeper, policy, msg.Validate)
+}
+
+// NewAnteWithMessages retains the reviewed single-owner native authentication
+// and fee rules while letting the node add an explicit staking allowlist.
+// The validator is trusted application wiring, never transaction-provided code.
+func NewAnteWithMessages(ak ante.AccountKeeper, bk authtypes.BankKeeper, config client.TxConfig, keeper godrewards.Keeper, policy Policy, validateMessage func(sdk.Msg) error) (sdk.AnteHandler, error) {
+	if validateMessage == nil {
+		return nil, ErrPolicy
+	}
 	if !policy.valid() || config == nil {
 		return nil, ErrPolicy
 	}
@@ -80,7 +99,7 @@ func NewAnte(ak ante.AccountKeeper, bk authtypes.BankKeeper, config client.TxCon
 	// stays inside SetUpContext's gas recovery and the BaseApp ante cache.
 	chain := sdk.ChainAnteDecorators(
 		ante.NewSetUpContextDecorator(),
-		policyDecorator{policy},
+		policyDecorator{policy, validateMessage},
 		ante.NewExtensionOptionsDecorator(nil),
 		ante.NewValidateBasicDecorator(),
 		ante.NewTxTimeoutHeightDecorator(),
@@ -103,14 +122,17 @@ func NewAnte(ak ante.AccountKeeper, bk authtypes.BankKeeper, config client.TxCon
 	}, nil
 }
 
-type policyDecorator struct{ policy Policy }
+type policyDecorator struct {
+	policy          Policy
+	validateMessage func(sdk.Msg) error
+}
 
 func (d policyDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate bool, next sdk.AnteHandler) (sdk.Context, error) {
 	// Genesis bypasses standard signature/gas checks; never allow this path.
 	if simulate || ctx.BlockHeight() <= 0 || ctx.ChainID() == "" || len(ctx.TxBytes()) == 0 || len(ctx.TxBytes()) > d.policy.MaxTxBytes {
 		return ctx, ErrPolicy
 	}
-	if err := validate(tx, d.policy); err != nil {
+	if err := validateWithMessages(tx, d.policy, d.validateMessage); err != nil {
 		return ctx, err
 	}
 	return next(ctx, tx, false)
@@ -136,6 +158,10 @@ func (d feeRoutingDecorator) AnteHandle(ctx sdk.Context, tx sdk.Tx, simulate boo
 }
 
 func validate(tx sdk.Tx, p Policy) error {
+	return validateWithMessages(tx, p, msg.Validate)
+}
+
+func validateWithMessages(tx sdk.Tx, p Policy, validateMessage func(sdk.Msg) error) error {
 	if err := validateStructure(tx); err != nil {
 		return err
 	}
@@ -152,7 +178,7 @@ func validate(tx sdk.Tx, p Policy) error {
 		return ErrPolicy
 	}
 	for _, message := range messages {
-		if err := msg.Validate(message); err != nil {
+		if err := validateMessage(message); err != nil {
 			return err
 		}
 	}

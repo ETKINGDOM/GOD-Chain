@@ -25,7 +25,7 @@ func run(args []string, out io.Writer) error {
 		encoder.SetIndent("", "  ")
 		return encoder.Encode(stack.BuildStatus())
 	case "start", "init", "bridge", "mint":
-		return fmt.Errorf("not enabled: node authentication, protocol wiring and release gates must be verified first")
+		return fmt.Errorf("not enabled: only isolated synthetic node tests are available; public activation and real-asset release gates are not verified")
 	default:
 		return fmt.Errorf("unknown command; use help")
 	}

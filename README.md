@@ -1,62 +1,59 @@
 # GOD Chain
 
-GOD Chain is the independent blockchain project for ETERNAL KINGDOM, a global faith-centered world for prayer, confession, praise and fellowship. This repository contains the [Whitepaper Draft](WHITEPAPER.md) and an early core source prototype. It is not a running mainnet, EVM node, RH bridge or staking service.
+GOD Chain is the independent blockchain project for ETERNAL KINGDOM, a global faith-centered world for prayer, confession, praise and fellowship. This repository contains the [Whitepaper Draft](WHITEPAPER.md) and source candidates for an isolated, synthetic-asset prototype. God EVM execution, God SDK staking and GodCometBFT consensus have been connected in local tests. No public network, RH connection or real assets are enabled.
 
-God EVM + God SDK + GodCometBFT are the project component names. Necessary upstream import paths, licenses and attribution are retained; these names do not claim independent invention of imported infrastructure.
+God EVM + God SDK + GodCometBFT are the project component names. Necessary upstream import paths, licenses and attribution remain intact; these names do not claim independent invention of imported infrastructure. English is the default documentation language.
 
-## Implemented prototype
+## Execution and validators
 
-The G reward keeper uses God SDK account and bank storage. It implements pending and settled rewards, daily settlement, exact-once reward-height accounting, claiming, transfers, owner-scoped locks and voluntary G-to-GOD redemption. G has no fixed lifetime supply cap. The current network-wide ceiling of 10,000 G per UTC day is a proposed prototype setting, not a production guarantee.
+`internal/godnode` assembles accounts, bank storage, staking, execution and the local consensus adapter. It accepts bounded legacy, access-list and dynamic-fee Ethereum transactions, including contract deployment and storage. Native direct-signature transactions share account sequences with the Ethereum path. There is no Ethereum JSON-RPC server or wallet interface.
 
-Existing GOD gas fees and voluntary contributions enter pending funds. At the next UTC day boundary, previous earned G and pending GOD settle together. Skipped days create no catch-up issuance. Settled unclaimed and locked G remain in outstanding supply and in the redemption denominator.
+Signed validator creation requires 1,000 GOD self-stake and a fixed 10 percent commission. Delegation requires 1 GOD; unbonding takes 21 days. The prototype selects up to 32 active validators and bounds delegators per validator to 256 for local resource control, not as a finalized worldwide limit. G allocation uses the preceding verified commit and stake captured before that block's transactions. Missed signatures receive no allocation. The per-block budget must be explicitly configured; no mainnet emission rule is selected.
 
-Redemption pays `floor(P * g / T)` from the settled GOD pool. It requires at least 1 G, a positive minimum GOD output and a consensus-time deadline. Only successful redemption burns the offered G. Empty liquidity, an expired deadline, a stale minimum output or failed payment preserves G. An accepted signed transaction can still pay its normal GOD fee when its business operation fails.
+The balance adapter transfers existing GOD instead of granting mint or burn permission. Fees remaining after Ethereum gas refunds enter pending rewards. Native signed fees retain their full-requested-fee rule. Value otherwise discarded by self-destruction-to-self is quarantined, an intentional native-value difference. Default inflation and burning penalties are not imported as economic rules. Misconduct evidence and offline suspension remain unwired; evidence-bearing blocks fail closed, preventing production use. See [NODE_RUNTIME.md](NODE_RUNTIME.md).
 
-The keeper never mints or burns GOD. It requires an already initialized bank supply of 1,000,000,000 GOD and keeps bridge reserves separate from reward liquidity. Equal bank supply is not proof of RH backing. Bridge verification, issuance backing and reserve release are not implemented.
+## G rewards and fixed GOD supply
 
-## Addresses and native authentication
+G has no fixed lifetime cap. The prototype bounds issuance to 10,000 G per UTC day. Earned G and GOD fees settle at the next UTC-day boundary; skipped days create no catch-up issuance. Settled unclaimed and locked G count in outstanding supply exactly once. Participants cannot submit issuance allocations.
 
-Native accounts use canonical lowercase Bech32 with prefix `god`, shown schematically as `god1…`. The compatibility encoding remains complete EIP-55 EVM hex with a `0x` prefix. Both encodings map to the same 20-byte account identifier. Conversion creates no wallet, transfers no funds and performs no bridge operation. No populated wallet or contract address is included.
+Voluntary redemption pays `floor(P * g / T)` from the settled GOD pool, with at least 1 G, positive minimum output and a consensus-time deadline. Only a successful GOD payment burns the offered G. Empty liquidity, stale quotes and failed payments retain G, which can also be transferred or locked. An accepted transaction can still pay its normal fee on business failure.
 
-The address codec rejects wrong lengths, checksums, roles, mixed native case and surrounding whitespace. Presentation decoding also accepts all-uppercase Bech32 and canonicalizes it to lowercase; signed native messages require canonical lowercase text.
+GOD bank supply remains 1,000,000,000 with 18 decimal places. Synthetic genesis assigns local balances and holds the remainder in restricted reserve. Equal supply does not prove RH backing. Protected protocol funds cannot be treated as participant balances or redemption liquidity.
 
-The native protobuf transaction prototype supports six participant messages: claim G, transfer G, lock G, unlock G, redeem G and donate existing GOD. It reuses God SDK `SIGN_MODE_DIRECT`, EVM-compatible public-key derivation, stored account numbers and ordered sequences. One signer must own all messages in a batch. There is no public issuance, mint, reserve-release, bridge, governance or generic bank-transfer message.
+## Addresses and authentication
 
-The bounded decoder rejects incomplete fee and signature structures before SDK getters run. The ante chain checks ownership, chain ID, account number, sequence, fee denomination and explicit gas limits. Its fee policy uses integer smallest GOD units per requested gas unit; no mainnet gas price is finalized. Only `agod` fees are accepted. The signed fee is paid in full without an unused-gas refund in this prototype.
+Native accounts use canonical lowercase Bech32 with prefix `god`, shown schematically as `god1…`. EVM compatibility uses a complete EIP-55 address with a `0x` prefix. Both encode the same 20 bytes; conversion creates no wallet and moves no assets. No populated address or operational configuration is supplied.
 
-Rejected account validation or ante-stage gas exhaustion commits neither fee nor sequence. After ante acceptance, business failure or message-stage gas exhaustion retains the fee and sequence while reverting all business writes. This includes G burns and GOD donations. A batch succeeds or rolls back as a whole; accepted fees enter pending liquidity, not the same day's redemption pool.
+The native protobuf path supports claim, transfer, lock, unlock, redeem and donate, plus the node's restricted staking messages. It checks the single owner, chain ID, account number, ordered sequence, fee denomination and explicit gas bounds. Ante rejection commits neither fee nor sequence; accepted business failure retains both while reverting message writes. Keeper methods are internal protocol APIs, not unsigned public services.
 
-Fee grants, alternate fee payers, multisignatures, unordered transactions, transaction extension options, nonempty memos and simulation are disabled. Ethereum-format transactions, personal signing, EIP-712 and MetaMask submission are not enabled by this native protobuf path. Persistent wallets and HD key derivation are not provided.
+## Bridge scope
+
+`x/godbridge` and `contracts/GodBridgeEscrow.sol` implement isolated one-for-one ledger and custody state machines with five-of-seven approvals, replay protection, segregated withdrawals, FIFO order, a 24-hour delay, rolling limits and permanent cancellation records. Timeout alone cannot authorize a refund. Quorum attestations are a custody trust model, not cryptographic source-finality proofs.
+
+The bridge is not mounted in the node. Authenticated bridge messages, finalized-source observation, independent signers, backed genesis and a relayer remain absent. No deployment or funding command is provided. See [BRIDGE.md](BRIDGE.md).
 
 ## Build and inspect
 
-The compatible reference versions are recorded in [UPSTREAM.lock.json](UPSTREAM.lock.json); module checksums are in `go.sum`. Local verification used Go 1.26.8 with the documented JSON-library compatibility override.
+Versions and tool provenance are recorded in [UPSTREAM.lock.json](UPSTREAM.lock.json); module checksums are in `go.sum`. Local verification used Go 1.26.8 with the recorded JSON-library compatibility override.
 
 ```sh
 go mod download
-go vet -p 2 ./...
-go build -trimpath -o build/godd ./cmd/godd
-./build/godd status
+make check
+make status
 ```
 
-The diagnostic command reports `nodeReady: false` and `realAssets: false`. Startup and financial commands fail closed. Building it does not start a blockchain or demonstrate staking, rewards or live assets.
+The diagnostic reports `local-consensus-execution-prototype`, `localNodePrototype: true`, `nodeReady: false` and `realAssets: false`. Startup and financial commands fail closed. A build does not start a chain or verify backing. `make compile-targets` cross-compiles only this diagnostic; foreign-platform compilation is not runtime certification.
 
-`make compile-targets` compiles the diagnostic command for Linux amd64/arm64, macOS amd64/arm64 and Windows amd64. Only native macOS execution has been checked locally. Compilation for another platform does not establish runtime support or ordinary-computer minimum requirements.
+Generated protobuf messages are included, so ordinary builds need no protobuf compiler. `make generate-proto` uses protoc 33.0 and the locked generator. Solidity custody source requires the separately verified compiler described in the lock; no compiler, private fixture, bytecode or operational build script is distributed.
 
-The local verification record is in [VERIFICATION.md](VERIFICATION.md). This reviewed source snapshot intentionally omits private test suites, fixtures, generated account data, binaries and logs. A build or `go test` over the published packages is not a rerun of the private 55-test suite.
-
-The source schema is `proto/godchain/godrewards/v1/tx.proto`. Generated Go messages are included, so ordinary builds do not need a protobuf compiler. `make generate-proto` uses protoc 33.0 and the locked gocosmos generator; tool provenance is recorded in the dependency lock. Intermediate output remains ignored.
+Private test suites, fixtures, runtime data, keys, addresses, binaries and logs are intentionally excluded. Public build commands do not reproduce the private verification suite. See [VERIFICATION.md](VERIFICATION.md) for observed checks and their limits.
 
 ## Remaining release gates
 
-The next work is complete God EVM application assembly and GodCometBFT block-hook integration. Reward allocations must be derived from actual validator signatures and eligible stake; participants cannot supply allocation amounts through a transaction. The reference application's inflation, fee distribution and burning penalties must not become GOD Chain economic rules by default.
+Durable signing, combined-node restart and crash recovery, adversarial peer tests, misconduct handling, nonburning penalties, suspension and governance remain incomplete. Production emission and gas policy, authenticated bridge integration and backing, wallet support and ordinary-computer resource measurements need separate approval and verification. Daily settlement scans, delegation work and retained tombstones need growth bounds.
 
-EVM execution and authentication, consensus networking, independently verified RH bridging, fixed-supply governance and penalty behavior, sustainable operator incentives, recovery and adversarial economics remain unfinished. Daily account scans and retained lock identifiers need bounded storage and load tests before worldwide use. Ordinary-computer participation is a design objective, not a measured capacity claim.
-
-No independent audit, token price, guaranteed return, mainnet safety claim or launch date is promised. Publishing this source does not activate a chain, authorize real assets or prove backing. Application privacy is a separate integration requirement: private faith text must be encrypted on the user's device and must not enter public logs or telemetry.
+There is no independent audit, guaranteed return, mainnet safety claim or launch date. Publication does not authorize chain activation or real assets. Private faith text must be encrypted by the application on the user's device and must not enter public chat, telemetry or logs.
 
 ## Attribution
 
-See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md) for upstream dependency attribution. Source imports and version pins do not complete binary redistribution review. Future distributed binaries require the relevant licenses and notices, including applicable execution-library obligations.
-
-English is the default documentation language. GOD Chain is intended for participants worldwide.
+See [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md). Imported dependency names are technical and legal identifiers, not alternative project branding. Source publication does not complete license review for future binary redistribution.

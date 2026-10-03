@@ -26,7 +26,10 @@ type Bank interface {
 	SendCoinsFromModuleToModule(context.Context, string, string, sdk.Coins) error
 }
 
-type ModuleAccounts interface{ GetModuleAddress(string) sdk.AccAddress }
+type ModuleAccounts interface {
+	GetModuleAddress(string) sdk.AccAddress
+	GetAccount(context.Context, sdk.AccAddress) sdk.AccountI
+}
 
 type Keeper struct {
 	key      *storetypes.KVStoreKey
@@ -126,13 +129,14 @@ func (k Keeper) checkSupply(ctx sdk.Context) error {
 	return nil
 }
 
-func (k Keeper) protected(addr sdk.AccAddress) bool {
+func (k Keeper) protected(ctx sdk.Context, addr sdk.AccAddress) bool {
 	for _, name := range []string{PendingModule, PoolModule, ReserveModule, authtypes.FeeCollectorName} {
 		if addr.Equals(k.accounts.GetModuleAddress(name)) {
 			return true
 		}
 	}
-	return false
+	_, module := k.accounts.GetAccount(ctx, addr).(sdk.ModuleAccountI)
+	return module
 }
 
 func previousTime(store storetypes.KVStore) time.Time {
@@ -282,7 +286,7 @@ func (k Keeper) AccrueBlock(ctx sdk.Context, allocations []Allocation) error {
 		if !validAccount(allocation.Recipient) {
 			return ErrInvalidAccount
 		}
-		if k.protected(allocation.Recipient) {
+		if k.protected(ctx, allocation.Recipient) {
 			return ErrProtectedAccount
 		}
 		if !positive(allocation.Amount) {
@@ -346,7 +350,7 @@ func (k Keeper) Donate(ctx sdk.Context, sender sdk.AccAddress, amount sdkmath.In
 	if !validAccount(sender) {
 		return ErrInvalidAccount
 	}
-	if k.protected(sender) {
+	if k.protected(ctx, sender) {
 		return ErrProtectedAccount
 	}
 	if !positive(amount) {
@@ -373,6 +377,12 @@ func (k Keeper) UnclaimedG(ctx sdk.Context, owner sdk.AccAddress) sdkmath.Int {
 	return getInt(k.sub(ctx, unclaimedPrefix), owner)
 }
 
+// PendingEarnedG is a read-only view of the current period's contribution
+// allocation. It is not settled, claimable or redeemable G.
+func (k Keeper) PendingEarnedG(ctx sdk.Context, owner sdk.AccAddress) sdkmath.Int {
+	return getInt(k.sub(ctx, earnedPrefix), owner)
+}
+
 // Claim changes the location of settled G, not its total supply.
 func (k Keeper) Claim(ctx sdk.Context, owner sdk.AccAddress) error {
 	if err := k.ready(ctx); err != nil {
@@ -381,7 +391,7 @@ func (k Keeper) Claim(ctx sdk.Context, owner sdk.AccAddress) error {
 	if !validAccount(owner) {
 		return ErrInvalidAccount
 	}
-	if k.protected(owner) {
+	if k.protected(ctx, owner) {
 		return ErrProtectedAccount
 	}
 	cache, write := ctx.CacheContext()
@@ -410,7 +420,7 @@ func (k Keeper) TransferG(ctx sdk.Context, from, to sdk.AccAddress, amount sdkma
 	if !validAccount(from) || !validAccount(to) {
 		return ErrInvalidAccount
 	}
-	if k.protected(from) || k.protected(to) {
+	if k.protected(ctx, from) || k.protected(ctx, to) {
 		return ErrProtectedAccount
 	}
 	if !positive(amount) {
@@ -470,7 +480,7 @@ func (k Keeper) LockG(ctx sdk.Context, owner sdk.AccAddress, id string, amount s
 	if !validAccount(owner) {
 		return ErrInvalidAccount
 	}
-	if k.protected(owner) {
+	if k.protected(ctx, owner) {
 		return ErrProtectedAccount
 	}
 	if !validLockID(id) {
@@ -509,7 +519,7 @@ func (k Keeper) UnlockG(ctx sdk.Context, owner sdk.AccAddress, id string) error 
 	if !validAccount(owner) {
 		return ErrInvalidAccount
 	}
-	if k.protected(owner) {
+	if k.protected(ctx, owner) {
 		return ErrProtectedAccount
 	}
 	if !validLockID(id) {
@@ -556,7 +566,7 @@ func (k Keeper) Redeem(ctx sdk.Context, request Redemption) (sdkmath.Int, error)
 	if !validAccount(request.Sender) || !validAccount(request.Beneficiary) {
 		return zero, ErrInvalidAccount
 	}
-	if k.protected(request.Sender) || k.protected(request.Beneficiary) {
+	if k.protected(ctx, request.Sender) || k.protected(ctx, request.Beneficiary) {
 		return zero, ErrProtectedAccount
 	}
 	if k.store(ctx).Has(redeemingKey) {
@@ -629,7 +639,7 @@ func (k Keeper) CheckInvariants(ctx sdk.Context) error {
 		iterator := store.Iterator(nil, nil)
 		for ; iterator.Valid(); iterator.Next() {
 			owner := sdk.AccAddress(iterator.Key())
-			if !validAccount(owner) || k.protected(owner) || !positive(getInt(store, owner)) {
+			if !validAccount(owner) || k.protected(ctx, owner) || !positive(getInt(store, owner)) {
 				iterator.Close()
 				return ErrGInvariant
 			}
@@ -645,7 +655,7 @@ func (k Keeper) CheckInvariants(ctx sdk.Context) error {
 	iterator := k.sub(ctx, lockPrefix).Iterator(nil, nil)
 	for ; iterator.Valid(); iterator.Next() {
 		var lock gLock
-		if err := json.Unmarshal(iterator.Value(), &lock); err != nil || !validAccount(sdk.AccAddress(lock.Owner)) || k.protected(sdk.AccAddress(lock.Owner)) || !positive(lock.Amount) || len(iterator.Key()) <= 20 || !validLockID(string(iterator.Key()[20:])) || !sdk.AccAddress(iterator.Key()[:20]).Equals(sdk.AccAddress(lock.Owner)) || !k.sub(ctx, usedLockPrefix).Has(iterator.Key()) {
+		if err := json.Unmarshal(iterator.Value(), &lock); err != nil || !validAccount(sdk.AccAddress(lock.Owner)) || k.protected(ctx, sdk.AccAddress(lock.Owner)) || !positive(lock.Amount) || len(iterator.Key()) <= 20 || !validLockID(string(iterator.Key()[20:])) || !sdk.AccAddress(iterator.Key()[:20]).Equals(sdk.AccAddress(lock.Owner)) || !k.sub(ctx, usedLockPrefix).Has(iterator.Key()) {
 			iterator.Close()
 			return ErrGInvariant
 		}
@@ -665,7 +675,7 @@ func (k Keeper) CheckInvariants(ctx sdk.Context) error {
 	pending := sdkmath.ZeroInt()
 	for ; iterator.Valid(); iterator.Next() {
 		owner := sdk.AccAddress(iterator.Key())
-		if !validAccount(owner) || k.protected(owner) || !positive(getInt(earned, owner)) {
+		if !validAccount(owner) || k.protected(ctx, owner) || !positive(getInt(earned, owner)) {
 			iterator.Close()
 			return ErrGInvariant
 		}

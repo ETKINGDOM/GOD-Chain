@@ -17,23 +17,39 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/evm/crypto/ethsecp256k1"
+	evmtypes "github.com/cosmos/evm/x/vm/types"
 	"github.com/cosmos/gogoproto/proto"
 )
 
 type Encoding struct {
-	Registry codectypes.InterfaceRegistry
-	Codec    *codec.ProtoCodec
-	TxConfig client.TxConfig
+	Registry  codectypes.InterfaceRegistry
+	Codec     *codec.ProtoCodec
+	TxConfig  client.TxConfig
+	execution bool
 }
 
 func NewEncoding() (Encoding, error) {
+	return newEncoding(false)
+}
+
+// NewExecutionEncoding adds the signed Ethereum envelope and staking messages.
+// Registration is not authorization: the node ante allowlist must still reject
+// parameter updates, generic bank transfers and unrelated module messages.
+func NewExecutionEncoding() (Encoding, error) { return newEncoding(true) }
+
+func newEncoding(execution bool) (Encoding, error) {
+	options := txsigning.Options{
+		AddressCodec:          godaddress.Codec{},
+		ValidatorAddressCodec: addresscodec.NewBech32Codec(godaddress.ValidatorOperatorPrefix),
+	}
+	if execution {
+		options.DefineCustomGetSigners(evmtypes.MsgEthereumTxCustomGetSigner.MsgType, evmtypes.MsgEthereumTxCustomGetSigner.Fn)
+	}
 	registry, err := codectypes.NewInterfaceRegistryWithOptions(codectypes.InterfaceRegistryOptions{
-		ProtoFiles: proto.HybridResolver,
-		SigningOptions: txsigning.Options{
-			AddressCodec:          godaddress.Codec{},
-			ValidatorAddressCodec: addresscodec.NewBech32Codec(godaddress.ValidatorOperatorPrefix),
-		},
+		ProtoFiles:     proto.HybridResolver,
+		SigningOptions: options,
 	})
 	if err != nil {
 		return Encoding{}, err
@@ -43,6 +59,10 @@ func NewEncoding() (Encoding, error) {
 	// Never register an Ethereum private-key type in the transaction codec.
 	registry.RegisterImplementations((*cryptotypes.PubKey)(nil), &ethsecp256k1.PubKey{})
 	msg.RegisterInterfaces(registry)
+	if execution {
+		stakingtypes.RegisterInterfaces(registry)
+		evmtypes.RegisterInterfaces(registry)
+	}
 	cdc := codec.NewProtoCodec(registry)
 	config, err := authtx.NewTxConfigWithOptions(cdc, authtx.ConfigOptions{
 		EnabledSignModes: []signing.SignMode{signing.SignMode_SIGN_MODE_DIRECT},
@@ -51,7 +71,7 @@ func NewEncoding() (Encoding, error) {
 	if err != nil {
 		return Encoding{}, err
 	}
-	return Encoding{Registry: registry, Codec: cdc, TxConfig: config}, nil
+	return Encoding{Registry: registry, Codec: cdc, TxConfig: config, execution: execution}, nil
 }
 
 // Decoder bounds wire input before protobuf/Any decoding. BaseApp must use
@@ -64,6 +84,12 @@ func (e Encoding) Decoder(maxBytes int) sdk.TxDecoder {
 		decoded, err := e.TxConfig.TxDecoder()(wire)
 		if err != nil {
 			return nil, err
+		}
+		if e.execution && IsEthereum(decoded) {
+			if err := ValidateEthereumStructure(decoded); err != nil {
+				return nil, err
+			}
+			return decoded, nil
 		}
 		if err := validateStructure(decoded); err != nil {
 			return nil, err

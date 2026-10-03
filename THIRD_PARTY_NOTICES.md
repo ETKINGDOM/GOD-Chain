@@ -1,5 +1,7 @@
 # GOD Chain dependency attribution
 
+The isolated bridge tests also use the pinned execution library's in-memory EVM and cryptography. Solidity compilation uses the official [0.8.37 compiler release](https://github.com/argotorg/solidity/releases/tag/v0.8.37) through the local solc-js 0.8.30 wrapper. Its bundled compiler is not used. Compiler provenance and settings are in `UPSTREAM.lock.json`; compiler tools and artifacts are not vendored or redistributed. Their upstream licenses and applicable notices must be reviewed before any future tool or binary redistribution.
+
 God EVM, God SDK and GodCometBFT are project integration names. They do not replace the origin, licenses, package identities or copyright notices of the open-source infrastructure imported by this prototype.
 
 | Component | Upstream technical dependency | Pinned version | License |

@@ -1,10 +1,11 @@
-// Package stack records the imported infrastructure, not a running node.
+// Package stack reports local implementation scope, not a live network.
 package stack
 
 import (
 	"runtime/debug"
 
 	"github.com/ETKINGDOM/GOD-Chain/internal/godaddress"
+	"github.com/ETKINGDOM/GOD-Chain/internal/godnode"
 	cmtversion "github.com/cometbft/cometbft/version"
 	sdkversion "github.com/cosmos/cosmos-sdk/version"
 	evmversion "github.com/cosmos/evm/version"
@@ -22,6 +23,7 @@ type Status struct {
 	EVMAddressFormat    string            `json:"evmAddressFormat"`
 	RealAssets          bool              `json:"realAssets"`
 	NodeReady           bool              `json:"nodeReady"`
+	LocalPrototype      bool              `json:"localNodePrototype"`
 	Dependencies        map[string]string `json:"dependencies"`
 }
 
@@ -29,9 +31,9 @@ func BuildStatus() Status {
 	_ = sdkversion.Name
 	_ = evmversion.Version
 	status := Status{
-		Project: "GOD Chain", Stage: "native-transactions-prototype",
+		Project: "GOD Chain", Stage: godnode.ImplementationStage,
 		SDK: "God SDK", Consensus: "GodCometBFT", Execution: "God EVM",
-		NativeDenom: "agod", RealAssets: false, NodeReady: false,
+		NativeDenom: "agod", RealAssets: false, NodeReady: false, LocalPrototype: true,
 		AccountPrefix: godaddress.AccountPrefix, NativeAddressFormat: "Bech32 lowercase", EVMAddressFormat: "0x EIP-55 hex",
 		Dependencies: map[string]string{},
 	}
