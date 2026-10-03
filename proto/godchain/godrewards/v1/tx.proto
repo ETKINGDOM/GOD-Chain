@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package godchain.godrewards.v1;
+
+import "cosmos/msg/v1/msg.proto";
+
+option go_package = "github.com/ETKINGDOM/GOD-Chain/x/godrewards/msg";
+
+// Msg is registered only on the God SDK transaction router, never as a public
+// unsigned gRPC service. Issuance and reserve operations are not user messages.
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+  rpc ClaimG(MsgClaimG) returns (MsgClaimGResponse);
+  rpc TransferG(MsgTransferG) returns (MsgTransferGResponse);
+  rpc LockG(MsgLockG) returns (MsgLockGResponse);
+  rpc UnlockG(MsgUnlockG) returns (MsgUnlockGResponse);
+  rpc RedeemG(MsgRedeemG) returns (MsgRedeemGResponse);
+  rpc DonateGod(MsgDonateGod) returns (MsgDonateGodResponse);
+}
+
+message MsgClaimG {
+  option (cosmos.msg.v1.signer) = "sender";
+  string sender = 1;
+}
+message MsgClaimGResponse {}
+
+message MsgTransferG {
+  option (cosmos.msg.v1.signer) = "sender";
+  string sender = 1;
+  string recipient = 2;
+  // Canonical positive decimal integer in smallest units, not floating point.
+  string amount = 3;
+}
+message MsgTransferGResponse {}
+
+message MsgLockG {
+  option (cosmos.msg.v1.signer) = "sender";
+  string sender = 1;
+  string lock_id = 2;
+  string amount = 3;
+}
+message MsgLockGResponse {}
+
+message MsgUnlockG {
+  option (cosmos.msg.v1.signer) = "sender";
+  string sender = 1;
+  string lock_id = 2;
+}
+message MsgUnlockGResponse {}
+
+message MsgRedeemG {
+  option (cosmos.msg.v1.signer) = "sender";
+  string sender = 1;
+  string beneficiary = 2;
+  string amount = 3;
+  string min_god_out = 4;
+  // Checked against consensus block time, not a participant's local clock.
+  int64 deadline_unix_nanos = 5;
+}
+message MsgRedeemGResponse { string god_out = 1; }
+
+message MsgDonateGod {
+  option (cosmos.msg.v1.signer) = "sender";
+  string sender = 1;
+  string amount = 2;
+}
+message MsgDonateGodResponse {}

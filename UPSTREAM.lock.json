@@ -1,0 +1,63 @@
+{
+  "status": "local-prototype-only",
+  "referenceRepository": "https://github.com/cosmos/evm",
+  "referenceTag": "v0.6.3",
+  "referenceCommit": "71c78b5072a248bae5273c34ad2f53d349799ccd",
+  "components": {
+    "God EVM": { "module": "github.com/cosmos/evm", "version": "v0.6.3" },
+    "God SDK": { "module": "github.com/cosmos/cosmos-sdk", "version": "v0.53.6" },
+    "GodCometBFT": { "module": "github.com/cometbft/cometbft", "version": "v0.38.21" }
+  },
+  "nativeDenom": "agod",
+  "nativeDecimals": 18,
+  "ecosystemDecimals": 18,
+  "accountAddresses": {
+    "nativePrefix": "god",
+    "nativeEncoding": "canonical lowercase Bech32",
+    "accountBytes": 20,
+    "evmEncoding": "0x-prefixed EIP-55 hex",
+    "validatorOperatorPrefix": "godvaloper",
+    "consensusPrefix": "godvalcons",
+    "walletKeyDerivationImplemented": false
+  },
+  "addressLibrary": {
+    "import": "github.com/ethereum/go-ethereum/common",
+    "replacementModule": "github.com/cosmos/go-ethereum",
+    "replacementVersion": "v1.16.2-cosmos-1"
+  },
+  "nativeTransactions": {
+    "status": "local-signed-prototype",
+    "signMode": "SIGN_MODE_DIRECT",
+    "publicKeyImport": "github.com/cosmos/evm/crypto/ethsecp256k1",
+    "replayState": "God SDK account number and ordered sequence",
+    "evmPublicKeyAddressDerivationTested": true,
+    "networkEndpointEnabled": false,
+    "evmTransactionsEnabled": false,
+    "mainnetGasPolicyFinalized": false
+  },
+  "protobufGeneration": {
+    "schema": "proto/godchain/godrewards/v1/tx.proto",
+    "compilerVersion": "33.0",
+    "compilerRelease": "https://github.com/protocolbuffers/protobuf/releases/tag/v33.0",
+    "verifiedCompilerAsset": "protoc-33.0-osx-aarch_64.zip",
+    "verifiedCompilerSHA256": "3cf55dd47118bd2efda9cd26b74f8bbbfcf5beb1bf606bc56ad4c001b543f6d3",
+    "checksumSource": "https://api.github.com/repos/protocolbuffers/protobuf/releases/tags/v33.0",
+    "generatorModule": "github.com/cosmos/gogoproto",
+    "generatorVersion": "v1.7.2",
+    "generator": "protoc-gen-gocosmos",
+    "options": "plugins=grpc,paths=source_relative"
+  },
+  "realAssetActivation": false,
+  "compatibilityOverrides": {
+    "github.com/bytedance/sonic": {
+      "version": "v1.15.4",
+      "reason": "The reference v1.14.2 does not compile with Go 1.26 map runtime changes; test the published compatibility fix locally."
+    }
+  },
+  "notes": [
+    "Use compatible reference versions rather than copying a moving development branch.",
+    "God branding does not claim independent invention of upstream technology.",
+    "The EVM reference remains a 0.x release; these pins are not a mainnet security endorsement.",
+    "Native 18-decimal accounting is required by the selected EVM reference; G precision is an explicit prototype convention."
+  ]
+}
