@@ -5,6 +5,7 @@ package godtx
 import (
 	txsigning "cosmossdk.io/x/tx/signing"
 	"github.com/ETKINGDOM/GOD-Chain/internal/godaddress"
+	bridgemsg "github.com/ETKINGDOM/GOD-Chain/x/godbridge/msg"
 	"github.com/ETKINGDOM/GOD-Chain/x/godrewards/msg"
 	"github.com/cosmos/cosmos-sdk/client"
 	"github.com/cosmos/cosmos-sdk/codec"
@@ -17,6 +18,7 @@ import (
 	"github.com/cosmos/cosmos-sdk/types/tx/signing"
 	authtx "github.com/cosmos/cosmos-sdk/x/auth/tx"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/cosmos/evm/crypto/ethsecp256k1"
 	evmtypes "github.com/cosmos/evm/x/vm/types"
@@ -31,15 +33,20 @@ type Encoding struct {
 }
 
 func NewEncoding() (Encoding, error) {
-	return newEncoding(false)
+	return newEncoding(false, false)
 }
 
 // NewExecutionEncoding adds the signed Ethereum envelope and staking messages.
 // Registration is not authorization: the node ante allowlist must still reject
 // parameter updates, generic bank transfers and unrelated module messages.
-func NewExecutionEncoding() (Encoding, error) { return newEncoding(true) }
+func NewExecutionEncoding() (Encoding, error) { return newEncoding(true, false) }
 
-func newEncoding(execution bool) (Encoding, error) {
+// NewBridgeEncoding is an opt-in native transaction codec for isolated bridge
+// integration. Default native/node codecs do not authorize or mount a bridge.
+// Registration alone does not supply backed genesis or verify source finality.
+func NewBridgeEncoding() (Encoding, error) { return newEncoding(false, true) }
+
+func newEncoding(execution, bridge bool) (Encoding, error) {
 	options := txsigning.Options{
 		AddressCodec:          godaddress.Codec{},
 		ValidatorAddressCodec: addresscodec.NewBech32Codec(godaddress.ValidatorOperatorPrefix),
@@ -59,8 +66,12 @@ func newEncoding(execution bool) (Encoding, error) {
 	// Never register an Ethereum private-key type in the transaction codec.
 	registry.RegisterImplementations((*cryptotypes.PubKey)(nil), &ethsecp256k1.PubKey{})
 	msg.RegisterInterfaces(registry)
+	if bridge {
+		bridgemsg.RegisterInterfaces(registry)
+	}
 	if execution {
 		stakingtypes.RegisterInterfaces(registry)
+		slashingtypes.RegisterInterfaces(registry)
 		evmtypes.RegisterInterfaces(registry)
 	}
 	cdc := codec.NewProtoCodec(registry)

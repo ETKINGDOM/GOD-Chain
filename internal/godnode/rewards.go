@@ -314,6 +314,9 @@ func (a *App) preBlock(ctx sdk.Context, req *abci.RequestFinalizeBlock) (*sdk.Re
 	if err := a.rewardCommit(cache, req); err != nil {
 		return nil, err
 	}
+	if err := a.applyPenalties(cache, req); err != nil {
+		return nil, err
+	}
 	if err := a.captureStake(cache, req.Height); err != nil {
 		return nil, err
 	}

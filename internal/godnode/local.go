@@ -30,6 +30,8 @@ type LocalOptions struct {
 	Genesis       *cmttypes.GenesisDoc
 	Signer        cmttypes.PrivValidator
 	NodeKey       *p2p.NodeKey
+	// Persistence is opt-in and still synthetic, private and loopback-only.
+	Persistent bool
 }
 
 func loopbackEndpoint(endpoint string) bool {
@@ -65,6 +67,29 @@ func StartLocal(ctx context.Context, a *App, o LocalOptions) (*LocalNode, error)
 	if o.Genesis.ChainID != a.config.ChainID || o.Genesis.ValidateAndComplete() != nil {
 		return nil, ErrGenesis
 	}
+	a.mu.Lock()
+	if !a.usable() || a.finalized || a.engineAssigned {
+		a.mu.Unlock()
+		return nil, ErrLifecycle
+	}
+	if o.Persistent {
+		if err := bindLocalStorage(a, o); err != nil {
+			a.mu.Unlock()
+			return nil, err
+		}
+	}
+	// Never attach two consensus engines to the same execution state, even
+	// after Stop. A restart must use a fresh process and committed database.
+	a.engineAssigned, a.engineRunning = true, true
+	a.mu.Unlock()
+	success := false
+	defer func() {
+		if !success {
+			a.mu.Lock()
+			a.engineRunning, a.failed = false, true
+			a.mu.Unlock()
+		}
+	}()
 	config := cmtconfig.DefaultConfig().SetRoot(o.Directory)
 	config.Moniker = "GodCometBFT local prototype"
 	config.RPC.ListenAddress = ""
@@ -91,9 +116,14 @@ func StartLocal(ctx context.Context, a *App, o LocalOptions) (*LocalNode, error)
 	if config.ValidateBasic() != nil {
 		return nil, ErrConfig
 	}
+	provider := func(*cmtconfig.DBContext) (cmtdb.DB, error) { return cmtdb.NewMemDB(), nil }
+	if o.Persistent {
+		config.DBBackend = string(cmtdb.GoLevelDBBackend)
+		provider = cmtconfig.DefaultDBProvider
+	}
 	n, err := cmtNode.NewNodeWithContext(ctx, config, o.Signer, o.NodeKey, proxy.NewLocalClientCreator(application{a}),
 		func() (*cmttypes.GenesisDoc, error) { return o.Genesis, nil },
-		func(*cmtconfig.DBContext) (cmtdb.DB, error) { return cmtdb.NewMemDB(), nil }, cmtNode.DefaultMetricsProvider(config.Instrumentation), cmtlog.NewNopLogger())
+		provider, cmtNode.DefaultMetricsProvider(config.Instrumentation), cmtlog.NewNopLogger())
 	if err != nil {
 		return nil, err
 	}
@@ -101,6 +131,7 @@ func StartLocal(ctx context.Context, a *App, o LocalOptions) (*LocalNode, error)
 		n.Stop()
 		return nil, err
 	}
+	success = true
 	return &LocalNode{a, n}, nil
 }
 
@@ -130,5 +161,10 @@ func (n *LocalNode) Stop() error {
 	}
 	err := n.node.Stop()
 	n.node.Wait()
+	if err == nil {
+		n.app.mu.Lock()
+		n.app.engineRunning = false
+		n.app.mu.Unlock()
+	}
 	return err
 }

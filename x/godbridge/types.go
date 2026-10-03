@@ -1,5 +1,6 @@
 // Package godbridge implements an isolated native bridge ledger prototype.
-// It is not wired to a transaction router, node or RH contract. Attestations
+// Its transaction adapter is tested in isolation, not mounted in a node or RH
+// connection. Initialization APIs remain trusted internal calls. Attestations
 // establish a 5-of-7 federated trust boundary, not cryptographic RH finality.
 package godbridge
 

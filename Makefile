@@ -28,4 +28,6 @@ generate-proto:
 	$(GO) build -o build/.proto/bin/protoc-gen-gocosmos github.com/cosmos/gogoproto/protoc-gen-gocosmos
 	PATH="$(CURDIR)/build/.proto/bin:$$PATH" $(PROTOC) -I proto -I "$$($(GO) list -f '{{.Module.Dir}}' github.com/cosmos/cosmos-sdk/types/msgservice)/proto" -I "$$($(GO) list -f '{{.Module.Dir}}' github.com/cosmos/gogoproto/proto)" --gocosmos_out=plugins=grpc,paths=source_relative:build/.proto proto/godchain/godrewards/v1/tx.proto
 	cp build/.proto/godchain/godrewards/v1/tx.pb.go x/godrewards/msg/tx.pb.go
-	$(GO) fmt ./x/godrewards/msg
+	PATH="$(CURDIR)/build/.proto/bin:$$PATH" $(PROTOC) -I proto -I "$$($(GO) list -f '{{.Module.Dir}}' github.com/cosmos/cosmos-sdk/types/msgservice)/proto" -I "$$($(GO) list -f '{{.Module.Dir}}' github.com/cosmos/gogoproto/proto)" --gocosmos_out=plugins=grpc,paths=source_relative:build/.proto proto/godchain/godbridge/v1/tx.proto
+	cp build/.proto/godchain/godbridge/v1/tx.pb.go x/godbridge/msg/tx.pb.go
+	$(GO) fmt ./x/godrewards/msg ./x/godbridge/msg

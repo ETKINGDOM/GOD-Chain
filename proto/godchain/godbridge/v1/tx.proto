@@ -1,0 +1,90 @@
+syntax = "proto3";
+
+package godchain.godbridge.v1;
+
+import "cosmos/msg/v1/msg.proto";
+
+option go_package = "github.com/ETKINGDOM/GOD-Chain/x/godbridge/msg";
+
+// Only for a transaction router protected by the native signature ante chain.
+// Never register as an unsigned public gRPC service. Quorum attestations are
+// federated statements, not cryptographic source-chain finality proofs.
+service Msg {
+  option (cosmos.msg.v1.service) = true;
+  rpc AcceptDeposit(MsgAcceptDeposit) returns (MsgAcceptDepositResponse);
+  rpc RequestWithdrawal(MsgRequestWithdrawal) returns (MsgRequestWithdrawalResponse);
+  rpc AuthorizeWithdrawal(MsgAuthorizeWithdrawal) returns (MsgAuthorizeWithdrawalResponse);
+  rpc ResolvePayment(MsgResolvePayment) returns (MsgResolvePaymentResponse);
+  rpc CancelWithdrawal(MsgCancelWithdrawal) returns (MsgCancelWithdrawalResponse);
+  rpc PauseBridge(MsgPauseBridge) returns (MsgPauseBridgeResponse);
+}
+
+message SourceEvidence {
+  uint64 height = 1;
+  bytes block_hash = 2;
+  bytes transaction_hash = 3;
+  uint32 log_index = 4;
+}
+
+message MsgAcceptDeposit {
+  option (cosmos.msg.v1.signer) = "sender";
+  // The outer signer pays GOD fees. The quorum separately authorizes release.
+  string sender = 1;
+  uint64 deposit_sequence = 2;
+  string recipient = 3;
+  string amount = 4;
+  SourceEvidence evidence = 5;
+  repeated bytes approvals = 6;
+}
+message MsgAcceptDepositResponse {}
+
+message MsgRequestWithdrawal {
+  option (cosmos.msg.v1.signer) = "sender";
+  string sender = 1;
+  // Raw 20-byte source-chain recipient; no populated address is supplied.
+  bytes source_recipient = 2;
+  string amount = 3;
+}
+message MsgRequestWithdrawalResponse {
+  uint64 withdrawal_sequence = 1;
+  bytes withdrawal_id = 2;
+}
+
+message MsgAuthorizeWithdrawal {
+  option (cosmos.msg.v1.signer) = "sender";
+  string sender = 1;
+  uint64 withdrawal_sequence = 2;
+  bytes withdrawal_id = 3;
+  repeated bytes approvals = 4;
+}
+message MsgAuthorizeWithdrawalResponse {}
+
+message MsgResolvePayment {
+  option (cosmos.msg.v1.signer) = "sender";
+  string sender = 1;
+  uint64 withdrawal_sequence = 2;
+  bytes withdrawal_id = 3;
+  SourceEvidence evidence = 4;
+  repeated bytes approvals = 5;
+}
+message MsgResolvePaymentResponse {}
+
+message MsgCancelWithdrawal {
+  option (cosmos.msg.v1.signer) = "sender";
+  string sender = 1;
+  uint64 withdrawal_sequence = 2;
+  bytes withdrawal_id = 3;
+  SourceEvidence evidence = 4;
+  repeated bytes approvals = 5;
+}
+message MsgCancelWithdrawalResponse {}
+
+message MsgPauseBridge {
+  option (cosmos.msg.v1.signer) = "sender";
+  string sender = 1;
+  uint64 control_nonce = 2;
+  bool intake = 3;
+  bool outflow = 4;
+  repeated bytes approvals = 5;
+}
+message MsgPauseBridgeResponse {}

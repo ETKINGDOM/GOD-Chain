@@ -42,20 +42,21 @@ type windowEntry struct {
 	Amount sdkmath.Int
 }
 type state struct {
-	Binding       []byte
-	Released      sdkmath.Int
-	Pending       sdkmath.Int
-	Deposited     sdkmath.Int
-	Paid          sdkmath.Int
-	Next          uint64
-	Head          uint64
-	Open          uint32
-	LastHeight    int64
-	LastTime      time.Time
-	ControlNonce  uint64
-	IntakePaused  bool
-	OutflowPaused bool
-	Window        []windowEntry
+	Binding             []byte
+	BootstrapRecordHash [32]byte
+	Released            sdkmath.Int
+	Pending             sdkmath.Int
+	Deposited           sdkmath.Int
+	Paid                sdkmath.Int
+	Next                uint64
+	Head                uint64
+	Open                uint32
+	LastHeight          int64
+	LastTime            time.Time
+	ControlNonce        uint64
+	IntakePaused        bool
+	OutflowPaused       bool
+	Window              []windowEntry
 }
 
 type Snapshot struct {
@@ -93,6 +94,12 @@ func NewKeeper(key *storetypes.KVStoreKey, bank godrewards.Bank, accounts Accoun
 		return Keeper{}, ErrConfig
 	}
 	return Keeper{key, bank, accounts, config, binding}, nil
+}
+
+// IsConfigured detects an empty keeper before mounting a transaction adapter.
+// It does not establish ledger initialization, backing or caller authority.
+func (k Keeper) IsConfigured() bool {
+	return k.key != nil && k.bank != nil && k.accounts != nil && len(k.binding) != 0
 }
 
 func (k Keeper) store(ctx sdk.Context) storetypes.KVStore { return ctx.KVStore(k.key) }
@@ -136,6 +143,14 @@ func (k Keeper) getState(ctx sdk.Context) (state, error) {
 		s.Open > MaxOpenWithdrawals || len(s.Window) > MaxWindowEntries || s.LastHeight < 0 || !validTime(s.LastTime) {
 		return state{}, ErrState
 	}
+	if s.BootstrapRecordHash != [32]byte{} {
+		r, err := k.bootstrapRecord(ctx)
+		if err != nil || sha256.Sum256(k.store(ctx).Get(bootstrapKey)) != s.BootstrapRecordHash || r.GenesisTime.After(s.LastTime) || r.ReleasedGod.GT(s.Deposited) {
+			return state{}, ErrState
+		}
+	} else if k.store(ctx).Has(bootstrapKey) {
+		return state{}, ErrState
+	}
 	previous := time.Time{}
 	total := sdkmath.ZeroInt()
 	for _, entry := range s.Window {
@@ -174,8 +189,9 @@ func (k Keeper) participant(ctx sdk.Context, address sdk.AccAddress) bool {
 }
 
 // Init permits no synthetic participant allocation or assumed backing. The
-// entire fixed native supply must still be restricted. Backed genesis needs a
-// separately reviewed reconciliation format; this method does not invent one.
+// entire fixed native supply must still be restricted. InitBootstrap separately
+// checks a quorum-attested initial reconciliation, not independently proven RH
+// backing or a production node genesis. This method releases nothing.
 func (k Keeper) Init(ctx sdk.Context) error {
 	if k.store(ctx).Has(stateKey) {
 		return ErrInitialized
@@ -277,7 +293,7 @@ func (k Keeper) AcceptDeposit(ctx sdk.Context, d Deposit, signatures [][]byte) e
 	})
 }
 
-// RequestWithdrawal is a trusted internal API. A future transaction router
+// RequestWithdrawal is a trusted internal API. The signed transaction adapter
 // MUST authenticate sender; supplying an address here is not authorization.
 func (k Keeper) RequestWithdrawal(ctx sdk.Context, sender sdk.AccAddress, recipient [20]byte, amount sdkmath.Int) (Withdrawal, error) {
 	if !amountValid(amount) || recipient == [20]byte{} {

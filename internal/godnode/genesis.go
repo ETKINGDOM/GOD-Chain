@@ -19,6 +19,7 @@ import (
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	authtypes "github.com/cosmos/cosmos-sdk/x/auth/types"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	feemarket "github.com/cosmos/evm/x/feemarket"
@@ -204,6 +205,12 @@ func (a *App) initChain(ctx sdk.Context, req *abci.RequestInitChain) (*abci.Resp
 	sg.Params.BondDenom, sg.Params.MaxValidators, sg.Params.UnbondingTime = godrewards.GodDenom, 32, 21*24*time.Hour
 	sg.Params.MinCommissionRate = commission()
 	a.staking.InitGenesis(ctx, sg)
+	pg := slashingtypes.DefaultGenesisState()
+	pg.Params = penaltyParams()
+	if err := pg.Params.Validate(); err != nil {
+		return nil, err
+	}
+	a.slashing.InitGenesis(ctx, a.staking, pg)
 	server := stakingkeeperServer(a)
 	for _, v := range g.Validators {
 		owner, _ := msg.Account(v.Owner)

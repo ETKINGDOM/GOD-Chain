@@ -11,6 +11,7 @@ import (
 	addresscodec "github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
@@ -68,6 +69,12 @@ func validateNativeMessage(message sdk.Msg) error {
 		}
 		_, err := validatorAddress(m.ValidatorAddress)
 		return err
+	case *slashingtypes.MsgUnjail:
+		if m == nil {
+			return godtx.ErrPolicy
+		}
+		_, err := validatorAddress(m.ValidatorAddr)
+		return err
 	default:
 		// Redelegation, commission edits, pool spending, governance and parameter
 		// updates are intentionally not authenticated routes in this milestone.
@@ -78,6 +85,19 @@ func validateNativeMessage(message sdk.Msg) error {
 type stakingServer struct {
 	stakingtypes.MsgServer
 	app *App
+}
+
+func (s stakingServer) CreateValidator(ctx context.Context, m *stakingtypes.MsgCreateValidator) (*stakingtypes.MsgCreateValidatorResponse, error) {
+	if err := validateNativeMessage(m); err != nil {
+		return nil, err
+	}
+	val, _ := validatorAddress(m.ValidatorAddress)
+	pub := m.Pubkey.GetCachedValue().(*ed25519.PubKey)
+	c := sdk.UnwrapSDKContext(ctx)
+	if c.KVStore(s.app.key).Has(penaltyKey(6, val)) || s.app.slashing.IsTombstoned(c, sdk.ConsAddress(pub.Address())) {
+		return nil, godtx.ErrPolicy
+	}
+	return s.MsgServer.CreateValidator(ctx, m)
 }
 
 func (s stakingServer) Delegate(ctx context.Context, m *stakingtypes.MsgDelegate) (*stakingtypes.MsgDelegateResponse, error) {

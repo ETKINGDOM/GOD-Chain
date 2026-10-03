@@ -146,7 +146,7 @@ func (x application) ProcessProposal(_ context.Context, req *abci.RequestProcess
 	if !a.usable() || a.finalized {
 		return nil, ErrLifecycle
 	}
-	if req == nil || !a.nextBlock(req.Height, req.Time) || !a.boundedBlock(req.Txs) || len(req.Misbehavior) != 0 {
+	if req == nil || !a.nextBlock(req.Height, req.Time) || !a.boundedBlock(req.Txs) || !validMisbehavior(req.Height, req.Time, req.Misbehavior) {
 		return &abci.ResponseProcessProposal{Status: abci.ResponseProcessProposal_REJECT}, nil
 	}
 	return a.base.ProcessProposal(req)
@@ -158,7 +158,7 @@ func (x application) FinalizeBlock(_ context.Context, req *abci.RequestFinalizeB
 	if !a.usable() || a.finalized {
 		return nil, ErrLifecycle
 	}
-	if req == nil || !a.nextBlock(req.Height, req.Time) || !a.boundedBlock(req.Txs) || len(req.Misbehavior) != 0 {
+	if req == nil || !a.nextBlock(req.Height, req.Time) || !a.boundedBlock(req.Txs) || !validMisbehavior(req.Height, req.Time, req.Misbehavior) {
 		return nil, ErrBlock
 	}
 	a.failed = true

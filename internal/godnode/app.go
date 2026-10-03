@@ -22,6 +22,7 @@ import (
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	dbm "github.com/cosmos/cosmos-db"
 	"github.com/cosmos/cosmos-sdk/baseapp"
+	"github.com/cosmos/cosmos-sdk/codec"
 	addresscodec "github.com/cosmos/cosmos-sdk/codec/address"
 	"github.com/cosmos/cosmos-sdk/runtime"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -30,11 +31,14 @@ import (
 	bankkeeper "github.com/cosmos/cosmos-sdk/x/bank/keeper"
 	banktypes "github.com/cosmos/cosmos-sdk/x/bank/types"
 	consensuskeeper "github.com/cosmos/cosmos-sdk/x/consensus/keeper"
+	slashingkeeper "github.com/cosmos/cosmos-sdk/x/slashing/keeper"
+	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingkeeper "github.com/cosmos/cosmos-sdk/x/staking/keeper"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	evmante "github.com/cosmos/evm/ante/evm"
 	feekeeper "github.com/cosmos/evm/x/feemarket/keeper"
 	feetypes "github.com/cosmos/evm/x/feemarket/types"
+	evmmodule "github.com/cosmos/evm/x/vm"
 	evmkeeper "github.com/cosmos/evm/x/vm/keeper"
 	evmtypes "github.com/cosmos/evm/x/vm/types"
 	"github.com/ethereum/go-ethereum/common"
@@ -96,6 +100,7 @@ type App struct {
 	accounts                               authkeeper.AccountKeeper
 	bank                                   bankkeeper.BaseKeeper
 	staking                                *stakingkeeper.Keeper
+	slashing                               slashingkeeper.Keeper
 	fees                                   feekeeper.Keeper
 	evm                                    *evmkeeper.Keeper
 	evmBank                                evmBank
@@ -105,6 +110,7 @@ type App struct {
 	binding                                []byte
 	clock, pendingTime                     time.Time
 	initialized, finalized, failed, closed bool
+	engineAssigned, engineRunning          bool
 }
 
 var processRuntime struct {
@@ -132,7 +138,7 @@ func New(db dbm.DB, c Config) (*App, error) {
 	binding, err := json.Marshal(struct {
 		Version uint32
 		Config  Config
-	}{1, c})
+	}{2, c})
 	if err != nil {
 		return nil, ErrConfig
 	}
@@ -145,7 +151,7 @@ func New(db dbm.DB, c Config) (*App, error) {
 	base.SetInterfaceRegistry(enc.Registry)
 	base.SetTxEncoder(enc.TxConfig.TxEncoder())
 	keys := storetypes.NewKVStoreKeys(authtypes.StoreKey, banktypes.StoreKey, consensuskeeper.StoreKey,
-		stakingtypes.StoreKey, godrewards.StoreKey, feetypes.StoreKey, evmtypes.StoreKey, nodeStore)
+		stakingtypes.StoreKey, slashingtypes.StoreKey, godrewards.StoreKey, feetypes.StoreKey, evmtypes.StoreKey, nodeStore)
 	transients := storetypes.NewTransientStoreKeys(feetypes.TransientKey, evmtypes.TransientKey, settlementStore)
 	base.MountKVStores(keys)
 	base.MountTransientStores(transients)
@@ -165,6 +171,8 @@ func New(db dbm.DB, c Config) (*App, error) {
 	bk := bankkeeper.NewBaseKeeper(enc.Codec, runtime.NewKVStoreService(keys[banktypes.StoreKey]), ak, blocked, authority.String(), logger)
 	sk := stakingkeeper.NewKeeper(enc.Codec, runtime.NewKVStoreService(keys[stakingtypes.StoreKey]), ak, stakingBank{bk}, authority.String(),
 		addresscodec.NewBech32Codec(godaddress.ValidatorOperatorPrefix), addresscodec.NewBech32Codec(godaddress.ConsensusPrefix))
+	slk := slashingkeeper.NewKeeper(enc.Codec, codec.NewLegacyAmino(), runtime.NewKVStoreService(keys[slashingtypes.StoreKey]), sk, authority.String())
+	sk.SetHooks(slk.Hooks())
 	// One unit of consensus voting power is one GOD, not one six-decimal coin.
 	sdk.DefaultPowerReduction = godrewards.Unit()
 	rewards, err := godrewards.NewKeeper(keys[godrewards.StoreKey], bk, ak)
@@ -177,7 +185,7 @@ func New(db dbm.DB, c Config) (*App, error) {
 	eb := evmBank{bk, transients[settlementStore]}
 	ek := evmkeeper.NewKeeper(enc.Codec, keys[evmtypes.StoreKey], transients[evmtypes.TransientKey], keys, authority, ak, eb, sk, fk, &cp,
 		disabledERC20{}, c.EVMChainID, "").WithDefaultEvmCoinInfo(evmtypes.EvmCoinInfo{Denom: godrewards.GodDenom, ExtendedDenom: godrewards.GodDenom, DisplayDenom: "god", Decimals: 18})
-	a := &App{base: base, encoding: enc, accounts: ak, bank: bk, staking: sk, fees: fk, evm: ek, evmBank: eb, rewards: rewards,
+	a := &App{base: base, encoding: enc, accounts: ak, bank: bk, staking: sk, slashing: slk, fees: fk, evm: ek, evmBank: eb, rewards: rewards,
 		key: keys[nodeStore], config: c, binding: binding}
 	native, err := godtx.NewAnteWithMessages(ak, bk, enc.TxConfig, rewards, c.Policy, validateNativeMessage)
 	if err != nil {
@@ -200,6 +208,7 @@ func New(db dbm.DB, c Config) (*App, error) {
 	})
 	msg.RegisterMsgServer(base.MsgServiceRouter(), msg.NewServer(rewards))
 	stakingtypes.RegisterMsgServer(base.MsgServiceRouter(), stakingServer{stakingkeeper.NewMsgServerImpl(sk), a})
+	slashingtypes.RegisterMsgServer(base.MsgServiceRouter(), &penaltyServer{app: a})
 	evmtypes.RegisterMsgServer(base.MsgServiceRouter(), ethereumServer{Keeper: ek, bank: eb})
 	base.SetInitChainer(a.initChain)
 	base.SetPreBlocker(a.preBlock)
@@ -217,10 +226,20 @@ func New(db dbm.DB, c Config) (*App, error) {
 		return nil, err
 	}
 	if base.LastBlockHeight() > 0 {
-		stored, err := a.metadata(a.base.NewUncachedContext(false, cmtproto.Header{ChainID: c.ChainID}))
+		ctx := a.base.NewUncachedContext(false, cmtproto.Header{ChainID: c.ChainID})
+		stored, err := a.metadata(ctx)
 		if err != nil || stored.Height != base.LastBlockHeight() {
 			return nil, ErrConfig
 		}
+		// Genesis does not run again on process restart. Restore the sealed
+		// execution globals from verified committed state, without rewriting
+		// genesis, bank balances, staking or reward progress.
+		coin := ek.GetEvmCoinInfo(ctx)
+		if coin.Denom != godrewards.GodDenom || coin.ExtendedDenom != godrewards.GodDenom || coin.DisplayDenom != "god" || coin.Decimals != 18 ||
+			!bk.GetSupply(ctx, godrewards.GodDenom).Amount.Equal(godrewards.FixedGodSupply()) {
+			return nil, ErrConfig
+		}
+		evmmodule.SetGlobalConfigVariables(coin)
 		a.clock, a.initialized = stored.Time, true
 	}
 	return a, nil
@@ -277,7 +296,7 @@ func (a *App) usable() bool      { return !a.closed && !a.failed }
 func (a *App) Close() error {
 	a.mu.Lock()
 	defer a.mu.Unlock()
-	if a.closed {
+	if a.closed || a.engineRunning {
 		return ErrLifecycle
 	}
 	a.closed = true
