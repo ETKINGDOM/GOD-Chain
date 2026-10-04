@@ -12,23 +12,27 @@ import (
 )
 
 type Status struct {
-	Project             string            `json:"project"`
-	Stage               string            `json:"stage"`
-	SDK                 string            `json:"sdk"`
-	Consensus           string            `json:"consensus"`
-	Execution           string            `json:"execution"`
-	NativeDenom         string            `json:"nativeDenom"`
-	AccountPrefix       string            `json:"accountAddressPrefix"`
-	NativeAddressFormat string            `json:"nativeAddressFormat"`
-	EVMAddressFormat    string            `json:"evmAddressFormat"`
-	RealAssets          bool              `json:"realAssets"`
-	NodeReady           bool              `json:"nodeReady"`
-	LocalPrototype      bool              `json:"localNodePrototype"`
-	RHPrivateConfig     bool              `json:"rhPrivateConfigurationImplemented"`
-	RHReadOnlyProbe     bool              `json:"rhReadOnlyProbeImplemented"`
-	RHDepositObserver   bool              `json:"rhDepositObservationImplemented"`
-	RHSourceFinality    bool              `json:"rhSourceFinalityImplemented"`
-	Dependencies        map[string]string `json:"dependencies"`
+	Project              string            `json:"project"`
+	Stage                string            `json:"stage"`
+	SDK                  string            `json:"sdk"`
+	Consensus            string            `json:"consensus"`
+	Execution            string            `json:"execution"`
+	NativeDenom          string            `json:"nativeDenom"`
+	AccountPrefix        string            `json:"accountAddressPrefix"`
+	NativeAddressFormat  string            `json:"nativeAddressFormat"`
+	EVMAddressFormat     string            `json:"evmAddressFormat"`
+	RealAssets           bool              `json:"realAssets"`
+	NodeReady            bool              `json:"nodeReady"`
+	LocalPrototype       bool              `json:"localNodePrototype"`
+	RHPrivateConfig      bool              `json:"rhPrivateConfigurationImplemented"`
+	RHReadOnlyProbe      bool              `json:"rhReadOnlyProbeImplemented"`
+	RHDepositObserver    bool              `json:"rhDepositObservationImplemented"`
+	RHResolutionObserver bool              `json:"rhResolutionObservationImplemented"`
+	RHReadOnlyJournal    bool              `json:"rhReadOnlyJournalImplemented"`
+	RHEventDiscovery     bool              `json:"rhEventDiscoveryImplemented"`
+	RHReceiptSets        bool              `json:"rhSimulationReceiptSetsImplemented"`
+	RHSourceFinality     bool              `json:"rhSourceFinalityImplemented"`
+	Dependencies         map[string]string `json:"dependencies"`
 }
 
 func BuildStatus() Status {
@@ -38,7 +42,7 @@ func BuildStatus() Status {
 		Project: "GOD Chain", Stage: godnode.ImplementationStage,
 		SDK: "God SDK", Consensus: "GodCometBFT", Execution: "God EVM",
 		NativeDenom: "agod", RealAssets: false, NodeReady: false, LocalPrototype: true,
-		RHPrivateConfig: true, RHReadOnlyProbe: true, RHDepositObserver: true, RHSourceFinality: false,
+		RHPrivateConfig: true, RHReadOnlyProbe: true, RHDepositObserver: true, RHResolutionObserver: true, RHReadOnlyJournal: true, RHEventDiscovery: true, RHReceiptSets: true, RHSourceFinality: false,
 		AccountPrefix: godaddress.AccountPrefix, NativeAddressFormat: "Bech32 lowercase", EVMAddressFormat: "0x EIP-55 hex",
 		Dependencies: map[string]string{},
 	}

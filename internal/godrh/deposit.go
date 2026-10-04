@@ -17,10 +17,7 @@ var ErrDepositObservation = errors.New("RH deposit evidence rejected; source fin
 
 // DepositSource extends the replaceable read-only connection with bounded
 // receipts. No signer, native keeper or transaction-submission API is supplied.
-type DepositSource interface {
-	Source
-	Receipt(context.Context, [32]byte) (Receipt, error)
-}
+type DepositSource = ReceiptSource
 
 // DepositRequest selects an exact source log and the expected native recipient
 // and amount. LogIndex is the block-wide RPC log index, not a slice offset.
@@ -82,59 +79,13 @@ func ObserveDeposit(ctx context.Context, c Config, source DepositSource, request
 		return fail()
 	}
 	request.Amount = sdkmath.NewIntFromBigInt(request.Amount.BigInt())
-	if !Probe(ctx, c, source).ReadOnlyProbePassed {
+	observed, err := observeReceipt(ctx, c, source, request.TransactionHash, request.LogIndex)
+	if err != nil {
 		return fail()
 	}
-	expectedChain, _ := chainID(c.private.SourceChainID)
-	chain, err := source.ChainID(ctx)
-	if err != nil || chain == nil || chain.Cmp(expectedChain) != 0 {
-		return fail()
-	}
-	checkpoint, err := source.FinalizedBlock(ctx)
-	if err != nil || checkpoint.Height == 0 || checkpoint.Hash == [32]byte{} {
-		return fail()
-	}
-	receipt, err := source.Receipt(ctx, request.TransactionHash)
-	if err != nil || !receipt.Success || receipt.TransactionHash != request.TransactionHash ||
-		receipt.Block.Height == 0 || receipt.Block.Height > checkpoint.Height || receipt.Block.Hash == [32]byte{} ||
-		len(receipt.Logs) == 0 || len(receipt.Logs) > MaxReceiptLogs {
-		return fail()
-	}
-	canonical, err := source.Block(ctx, receipt.Block.Height)
-	if err != nil || canonical != receipt.Block {
-		return fail()
-	}
-	token, _ := address(c.private.TokenContract)
 	custody, _ := address(c.private.CustodyContract)
-	for _, target := range []struct {
-		address [20]byte
-		pin     string
-	}{
-		{token, c.private.ExpectedTokenCodeHash}, {custody, c.private.ExpectedCustodyCodeHash},
-	} {
-		code, err := source.Code(ctx, target.address, receipt.Block.Hash)
-		pin, _ := hash(target.pin)
-		if err != nil || len(code) == 0 || len(code) > maxCodeBytes || ethcrypto.Keccak256Hash(code) != pin {
-			return fail()
-		}
-	}
-	var deposit godbridge.Deposit
-	found := false
-	for i, log := range receipt.Logs {
-		if log.Removed || log.Emitter == [20]byte{} || len(log.Topics) > 4 || len(log.Data) > MaxLogDataBytes ||
-			i > 0 && log.Index <= receipt.Logs[i-1].Index {
-			return fail()
-		}
-		if log.Index != request.LogIndex {
-			continue
-		}
-		deposit, err = decodeDeposit(log, custody, receipt)
-		if err != nil || deposit.Recipient != request.Recipient || !deposit.Amount.Equal(request.Amount) {
-			return fail()
-		}
-		found = true
-	}
-	if !found {
+	deposit, err := decodeDeposit(observed.log, custody, observed.receipt)
+	if err != nil || deposit.Recipient != request.Recipient || !deposit.Amount.Equal(request.Amount) {
 		return fail()
 	}
 	binding, err := c.Binding()
@@ -145,19 +96,10 @@ func ObserveDeposit(ctx context.Context, c Config, source DepositSource, request
 	if err != nil {
 		return fail()
 	}
-	canonical, err = source.Block(ctx, receipt.Block.Height)
-	if err != nil || canonical != receipt.Block {
+	if observed.recheck(ctx, c, source) != nil {
 		return fail()
 	}
-	canonical, err = source.Block(ctx, checkpoint.Height)
-	if err != nil || canonical != checkpoint {
-		return fail()
-	}
-	chain, err = source.ChainID(ctx)
-	if err != nil || chain == nil || chain.Cmp(expectedChain) != 0 || ctx.Err() != nil {
-		return fail()
-	}
-	return DepositObservation{deposit, digest, checkpoint, true}, nil
+	return DepositObservation{deposit, digest, observed.checkpoint, true}, nil
 }
 
 func decodeDeposit(log ReceiptLog, custody [20]byte, receipt Receipt) (godbridge.Deposit, error) {

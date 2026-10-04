@@ -65,7 +65,7 @@ func (s *HTTPSource) rpc(ctx context.Context, method string, params any) (json.R
 		return nil, ErrSource
 	}
 	switch method {
-	case "eth_chainId", "eth_getBlockByNumber", "eth_getCode", "eth_call", "eth_getTransactionReceipt":
+	case "eth_chainId", "eth_getBlockByNumber", "eth_getCode", "eth_call", "eth_getTransactionReceipt", "eth_getLogs":
 	default:
 		return nil, ErrSource
 	}
