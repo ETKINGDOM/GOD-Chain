@@ -42,6 +42,14 @@ Four persistent loopback validators processed signed deposits, withdrawal locks,
 
 Read-only authorization, resolution and pause digest helpers build unsigned review proposals from explicit configuration. They do not read ledger state, establish eligibility, grant approval or prove source execution. Finalized-source observation, independent signers, production-backed node genesis and a relayer remain absent. The 10,000 GOD exposure limit cannot fund ten minimum-self-stake validators plus positive fees; a 32-validator launch is not established. No deployment, public RPC or funding command is provided. See [BRIDGE.md](BRIDGE.md).
 
+## Private RH connection and receipt checks
+
+`internal/godrh` provides replaceable, read-only source interfaces and a private configuration loader. Operational fields remain blank until configured privately: source/native names, source network ID, RPC endpoint, token/custody contracts, reviewed runtime-code pins and seven distinct public signer identities. No address, endpoint or credential value is supplied. The loader rejects ambiguous fields, signing-key fields, symlinks, shared permissions and oversized input. Populated files stay ignored and owner-readable; Windows ACL behavior still needs native verification.
+
+`godd rh-template` emits a blank simulation-mode template. `godd check-rh <private-file>` checks configuration offline; `godd probe-rh <private-file>` explicitly performs bounded source reads. Code and contract view calls are pinned to one provider-reported finalized block hash with canonical-block requirements. Checks cover network identity, code pins, 18 decimals, fixed supply, custody asset/domain/signers and bridge limits, then recheck the original block. Reports, formatting and errors redact operational values. No command deploys, signs, funds a bridge or initializes a node.
+
+`ObserveDeposit` checks a successful source receipt, exact transaction and block-wide log index, the configured custody event, expected recipient/amount, reviewed code at the receipt block and stable canonical block/checkpoint lookups. Its detached result is an unsigned deposit proposal using the existing protocol digest. It has no ledger, signer or broadcast access. A provider can fabricate mutually consistent receipts and finalized tags; independent source finality, approval and real-asset readiness remain false even in production configuration mode. Supplying only a token CA cannot activate a bridge. These interfaces are exercised with synthetic sources and compiled private custody events, not actual RH backing.
+
 ## Build and inspect
 
 Versions and tool provenance are recorded in [UPSTREAM.lock.json](UPSTREAM.lock.json); module checksums are in `go.sum`. Local verification used Go 1.26.8 with the recorded JSON-library compatibility override.

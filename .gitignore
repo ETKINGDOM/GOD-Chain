@@ -1,6 +1,8 @@
 .DS_Store
 .cache/
 .local/
+rh-connection.json
+rh-connection.*.json
 build/
 coverage/
 **/testdata/fuzz/
