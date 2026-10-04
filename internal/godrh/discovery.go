@@ -6,7 +6,6 @@ import (
 	"encoding/binary"
 	"errors"
 	"math"
-	"math/big"
 	"time"
 
 	"github.com/ETKINGDOM/GOD-Chain/x/godbridge"
@@ -68,6 +67,11 @@ type relayCursor struct {
 	Checkpoint Block
 }
 
+type relayCandidate struct {
+	Request    relayRequest
+	ReceiptSet *relayReceiptBinding
+}
+
 func validDiscoveryBlock(b Block) bool { return b.Height > 0 && b.Hash != [32]byte{} }
 func validRelayCursor(c *relayCursor) bool {
 	if c == nil {
@@ -115,9 +119,10 @@ func (j *RelayJournal) ScanNext(ctx context.Context, source DiscoverySource, nat
 }
 
 // ScanReceiptSets extracts candidates from full, root-matched block material
-// instead of getLogs hints. Assurance applies ONLY to this successful batch,
+// instead of getLogs hints. Its batch count covers ONLY newly scanned blocks,
 // relative to the supplied header hashes. It neither upgrades retained cursor
-// history nor authenticates headers/finality. ObserveNext remains mandatory.
+// history nor authenticates headers/finality. New tasks retain an immutable
+// event binding; it is not an inclusion certificate. ObserveNext is mandatory.
 func (j *RelayJournal) ScanReceiptSets(ctx context.Context, source ReceiptSetSource, native NativeWithdrawalSource, at time.Time) (DiscoveryReport, error) {
 	if source == nil {
 		return DiscoveryReport{SimulationOnly: true}, ErrRelayState
@@ -139,7 +144,7 @@ func (j *RelayJournal) scanNext(ctx context.Context, source DiscoverySource, nat
 	}
 	readCtx, cancel := context.WithTimeout(ctx, RelayReadTimeout)
 	defer cancel()
-	requests, cursor, blocks, err := j.discover(readCtx, source, native, *j.state.Discovery)
+	requests, cursor, blocks, err := j.discover(readCtx, source, native, *j.state.Discovery, receiptSets)
 	if err != nil || readCtx.Err() != nil {
 		if err == ErrRelayNoWork && readCtx.Err() == nil {
 			return fail, err
@@ -149,7 +154,7 @@ func (j *RelayJournal) scanNext(ctx context.Context, source DiscoverySource, nat
 	next := j.copyState()
 	added := 0
 	for _, request := range requests {
-		_, newTask, err := appendRelayRequest(&next, request, at)
+		_, newTask, err := appendRelayBoundRequest(&next, request.Request, request.ReceiptSet, at)
 		if err != nil {
 			return fail, err
 		}
@@ -169,14 +174,14 @@ func (j *RelayJournal) scanNext(ctx context.Context, source DiscoverySource, nat
 		AddedTasks: added, RetainedTasks: len(requests) - added, ScannedThroughHeight: cursor.Through.Height}, nil
 }
 
-func (j *RelayJournal) discover(ctx context.Context, source DiscoverySource, native NativeWithdrawalSource, cursor relayCursor) (requests []relayRequest, result relayCursor, scanned int, err error) {
+func (j *RelayJournal) discover(ctx context.Context, source DiscoverySource, native NativeWithdrawalSource, cursor relayCursor, receiptSets bool) (requests []relayCandidate, result relayCursor, scanned int, err error) {
 	// All provider/lookup panics remain redacted; no candidate state is saved.
 	defer func() {
 		if recover() != nil {
 			requests, result, scanned, err = nil, relayCursor{}, 0, ErrDiscovery
 		}
 	}()
-	bad := func() ([]relayRequest, relayCursor, int, error) { return nil, relayCursor{}, 0, ErrDiscovery }
+	bad := func() ([]relayCandidate, relayCursor, int, error) { return nil, relayCursor{}, 0, ErrDiscovery }
 	if !Probe(ctx, j.config, source).ReadOnlyProbePassed {
 		return bad()
 	}
@@ -239,7 +244,12 @@ func (j *RelayJournal) discover(ctx context.Context, source DiscoverySource, nat
 			if err != nil || j.validRequest(request) != nil {
 				return bad()
 			}
-			requests = append(requests, request)
+			candidate := relayCandidate{Request: request}
+			if receiptSets {
+				candidate.ReceiptSet = &relayReceiptBinding{Block: event.Block, TransactionIndex: event.TransactionIndex,
+					Sequence: binary.BigEndian.Uint64(event.Log.Topics[1][24:]), EventDigest: receiptEventDigest(event)}
+			}
+			requests = append(requests, candidate)
 		}
 		anchors = append(anchors, block)
 		cursor.Through = block
@@ -327,12 +337,7 @@ func (j *RelayJournal) discoveredRequest(ctx context.Context, native NativeWithd
 	if err != nil {
 		return relayRequest{}, ErrDiscovery
 	}
-	if outcome == godbridge.Paid {
-		if len(log.Data) != 64 || !bytes.Equal(log.Data[:20], w.Recipient[:]) || !bytes.Equal(log.Data[20:32], make([]byte, 12)) ||
-			new(big.Int).SetBytes(log.Data[32:]).Cmp(w.Amount.BigInt()) != 0 {
-			return relayRequest{}, ErrDiscovery
-		}
-	} else if len(log.Data) != 0 {
+	if decodeResolutionEvent(log, custody, w, outcome) != nil {
 		return relayRequest{}, ErrDiscovery
 	}
 	return relayRequest{Kind: string(outcome), Transaction: event.TransactionHash, LogIndex: log.Index, Withdrawal: &w}, nil

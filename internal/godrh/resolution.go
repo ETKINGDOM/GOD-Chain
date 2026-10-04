@@ -68,6 +68,10 @@ func (o ResolutionObservation) Proposal() (godbridge.Withdrawal, godbridge.Statu
 // terminal view at the receipt block. Provider agreement is not a receipt proof,
 // independent finality or proof of native withdrawal state.
 func ObserveResolution(ctx context.Context, c Config, source ReceiptSource, request ResolutionRequest) (ResolutionObservation, error) {
+	return observeResolution(ctx, c, source, request, nil)
+}
+
+func observeResolution(ctx context.Context, c Config, source ReceiptSource, request ResolutionRequest, receiptSet *relayReceiptBinding) (ResolutionObservation, error) {
 	fail := func() (ResolutionObservation, error) { return ResolutionObservation{}, ErrResolutionObservation }
 	if ctx == nil || ctx.Err() != nil || source == nil {
 		return fail()
@@ -76,28 +80,17 @@ func ObserveResolution(ctx context.Context, c Config, source ReceiptSource, requ
 	if err != nil {
 		return fail()
 	}
-	observed, err := observeReceipt(ctx, c, source, request.TransactionHash, request.LogIndex)
+	observed, err := observeReceipt(ctx, c, source, request.TransactionHash, request.LogIndex, receiptSet)
 	if err != nil {
 		return fail()
 	}
 	custody, _ := address(c.private.CustodyContract)
 	log := observed.log
-	event := "Cancelled(uint64,bytes32)"
 	terminal := byte(2)
 	if request.Outcome == godbridge.Paid {
-		event, terminal = "Paid(uint64,bytes32,bytes20,uint256)", 1
+		terminal = 1
 	}
-	if log.Emitter != custody || len(log.Topics) != 3 || log.Topics[0] != [32]byte(ethcrypto.Keccak256Hash([]byte(event))) ||
-		!bytes.Equal(log.Topics[1][:24], make([]byte, 24)) || binary.BigEndian.Uint64(log.Topics[1][24:]) != w.Sequence ||
-		log.Topics[2] != w.ID {
-		return fail()
-	}
-	if request.Outcome == godbridge.Paid {
-		if len(log.Data) != 64 || !bytes.Equal(log.Data[:20], w.Recipient[:]) ||
-			!bytes.Equal(log.Data[20:32], make([]byte, 12)) || new(big.Int).SetBytes(log.Data[32:]).Cmp(w.Amount.BigInt()) != 0 {
-			return fail()
-		}
-	} else if len(log.Data) != 0 {
+	if decodeResolutionEvent(log, custody, w, request.Outcome) != nil {
 		return fail()
 	}
 	input := make([]byte, 36)
@@ -115,6 +108,32 @@ func ObserveResolution(ctx context.Context, c Config, source ReceiptSource, requ
 		return fail()
 	}
 	return ResolutionObservation{w, request.Outcome, evidence, digest, observed.checkpoint, true}, nil
+}
+
+// Shared event ABI check only. This does not query terminal/native state or
+// establish execution, code identity, canonical headers, finality or approval.
+// Callers must separately validate the complete withdrawal request.
+func decodeResolutionEvent(log ReceiptLog, custody [20]byte, w godbridge.Withdrawal, outcome godbridge.Status) error {
+	event := "Cancelled(uint64,bytes32)"
+	if outcome == godbridge.Paid {
+		event = "Paid(uint64,bytes32,bytes20,uint256)"
+	} else if outcome != godbridge.Cancelled {
+		return ErrResolutionObservation
+	}
+	if custody == [20]byte{} || w.Sequence == 0 || w.ID == [32]byte{} || log.Removed || log.Emitter != custody ||
+		len(log.Topics) != 3 || log.Topics[0] != [32]byte(ethcrypto.Keccak256Hash([]byte(event))) ||
+		!bytes.Equal(log.Topics[1][:24], make([]byte, 24)) || binary.BigEndian.Uint64(log.Topics[1][24:]) != w.Sequence || log.Topics[2] != w.ID {
+		return ErrResolutionObservation
+	}
+	if outcome == godbridge.Paid {
+		if w.Amount.IsNil() || len(log.Data) != 64 || !bytes.Equal(log.Data[:20], w.Recipient[:]) ||
+			!bytes.Equal(log.Data[20:32], make([]byte, 12)) || new(big.Int).SetBytes(log.Data[32:]).Cmp(w.Amount.BigInt()) != 0 {
+			return ErrResolutionObservation
+		}
+	} else if len(log.Data) != 0 {
+		return ErrResolutionObservation
+	}
+	return nil
 }
 
 // resolutionRequest is shared by live observation and the simulation journal.

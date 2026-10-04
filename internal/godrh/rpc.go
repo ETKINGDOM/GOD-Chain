@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync/atomic"
 	"time"
+	"unicode/utf8"
 )
 
 const (
@@ -28,6 +29,7 @@ type HTTPSource struct {
 	endpoint string
 	client   *http.Client
 	nextID   atomic.Uint64
+	rawReads bool // enabled only by the explicit complete-material constructor
 }
 
 func (*HTTPSource) String() string     { return "GOD Chain RH read-only source (redacted)" }
@@ -64,8 +66,14 @@ func (s *HTTPSource) rpc(ctx context.Context, method string, params any) (json.R
 	if s == nil || s.client == nil || ctx == nil || ctx.Err() != nil {
 		return nil, ErrSource
 	}
+	limit := maxRPCBytes
 	switch method {
 	case "eth_chainId", "eth_getBlockByNumber", "eth_getCode", "eth_call", "eth_getTransactionReceipt", "eth_getLogs":
+	case "debug_getRawBlock", "debug_getRawReceipts":
+		if !s.rawReads {
+			return nil, ErrSource
+		}
+		limit = maxMaterialRPCBytes
 	default:
 		return nil, ErrSource
 	}
@@ -92,11 +100,11 @@ func (s *HTTPSource) rpc(ctx context.Context, method string, params any) (json.R
 		return nil, ErrSource
 	}
 	defer response.Body.Close()
-	if response.StatusCode != http.StatusOK || response.ContentLength > maxRPCBytes {
+	if response.StatusCode != http.StatusOK || response.ContentLength > int64(limit) {
 		return nil, ErrSource
 	}
-	raw, err := io.ReadAll(io.LimitReader(response.Body, maxRPCBytes+1))
-	if err != nil || len(raw) > maxRPCBytes {
+	raw, err := io.ReadAll(io.LimitReader(response.Body, int64(limit)+1))
+	if err != nil || len(raw) > limit || !utf8.Valid(raw) {
 		return nil, ErrSource
 	}
 	// Reject ambiguous JSON-RPC envelopes rather than last-key-wins results.

@@ -21,7 +21,7 @@ type receiptObservation struct {
 
 // observeReceipt centralizes bounded receipt and code-pin checks. The selected
 // log is detached before decoding; these checks are not independent finality.
-func observeReceipt(ctx context.Context, c Config, source ReceiptSource, transaction [32]byte, index uint32) (receiptObservation, error) {
+func observeReceipt(ctx context.Context, c Config, source ReceiptSource, transaction [32]byte, index uint32, binding *relayReceiptBinding) (receiptObservation, error) {
 	fail := func() (receiptObservation, error) { return receiptObservation{}, ErrSource }
 	if ctx == nil || ctx.Err() != nil || source == nil || transaction == [32]byte{} ||
 		!c.Report().ConfigurationReady || !Probe(ctx, c, source).ReadOnlyProbePassed {
@@ -75,6 +75,11 @@ func observeReceipt(ctx context.Context, c Config, source ReceiptSource, transac
 		}
 	}
 	if !found || ctx.Err() != nil {
+		return fail()
+	}
+	if binding != nil && (receipt.Block != binding.Block || receipt.TransactionIndex != binding.TransactionIndex ||
+		receiptEventDigest(SourceLog{Block: receipt.Block, TransactionHash: receipt.TransactionHash,
+			TransactionIndex: receipt.TransactionIndex, Log: selected}) != binding.EventDigest) {
 		return fail()
 	}
 	// Retain only receipt identity, not provider-owned log slices.

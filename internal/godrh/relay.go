@@ -57,6 +57,8 @@ type RelayTaskReport struct {
 	Attempts                    uint32     `json:"attempts"`
 	NextAttemptAt               time.Time  `json:"nextAttemptAt"`
 	CachedUnsignedObservation   bool       `json:"cachedUnsignedObservation"`
+	ReceiptSetBindingRetained   bool       `json:"receiptSetBindingRetained"`
+	CachedReceiptSetMatched     bool       `json:"cachedReceiptSetMatched"`
 	IndependentFinalityVerified bool       `json:"independentFinalityVerified"`
 	ApprovalReady               bool       `json:"approvalReady"`
 	RealAssetsReady             bool       `json:"realAssetsReady"`
@@ -69,6 +71,8 @@ type RelayReport struct {
 	Pending                     int    `json:"pending"`
 	Observing                   int    `json:"observing"`
 	CachedUnsignedObservations  int    `json:"cachedUnsignedObservations"`
+	ReceiptSetBindings          int    `json:"receiptSetBindings"`
+	CachedReceiptSetMatches     int    `json:"cachedReceiptSetMatches"`
 	Exhausted                   int    `json:"exhausted"`
 	DiscoveryEnabled            bool   `json:"discoveryEnabled"`
 	ScannedThroughHeight        uint64 `json:"scannedThroughHeight"`
@@ -104,20 +108,22 @@ type relayRequest struct {
 }
 
 type relayCache struct {
-	Sequence   uint64
-	Evidence   godbridge.Evidence
-	Digest     [32]byte
-	Checkpoint Block
+	Sequence          uint64
+	Evidence          godbridge.Evidence
+	Digest            [32]byte
+	Checkpoint        Block
+	ReceiptSetMatched bool `json:",omitempty"`
 }
 
 type relayTask struct {
-	Ticket    uint64
-	Request   relayRequest
-	CreatedAt time.Time
-	NextAt    time.Time
-	Attempts  uint32
-	Stage     RelayStage
-	Cache     *relayCache
+	Ticket     uint64
+	Request    relayRequest
+	CreatedAt  time.Time
+	NextAt     time.Time
+	Attempts   uint32
+	Stage      RelayStage
+	Cache      *relayCache
+	ReceiptSet *relayReceiptBinding `json:",omitempty"`
 }
 
 type relayState struct {
@@ -209,6 +215,12 @@ func (j *RelayJournal) Report() RelayReport {
 		r.ScannedThroughHeight = j.state.Discovery.Through.Height
 	}
 	for _, task := range j.state.Tasks {
+		if task.ReceiptSet != nil {
+			r.ReceiptSetBindings++
+		}
+		if task.Cache != nil && task.Cache.ReceiptSetMatched {
+			r.CachedReceiptSetMatches++
+		}
 		switch task.Stage {
 		case RelayPending:
 			r.Pending++
@@ -225,7 +237,8 @@ func (j *RelayJournal) Report() RelayReport {
 
 func taskReport(t relayTask) RelayTaskReport {
 	return RelayTaskReport{Ticket: t.Ticket, Kind: t.Request.Kind, Stage: t.Stage,
-		Attempts: t.Attempts, NextAttemptAt: t.NextAt, CachedUnsignedObservation: t.Cache != nil}
+		Attempts: t.Attempts, NextAttemptAt: t.NextAt, CachedUnsignedObservation: t.Cache != nil,
+		ReceiptSetBindingRetained: t.ReceiptSet != nil, CachedReceiptSetMatched: t.Cache != nil && t.Cache.ReceiptSetMatched}
 }
 
 func (j *RelayJournal) Task(ticket uint64) (RelayTaskReport, error) {
@@ -276,12 +289,22 @@ func (j *RelayJournal) queue(r relayRequest, at time.Time) (uint64, error) {
 // appendRelayRequest changes only a detached candidate state. Discovery uses
 // this same admission rule before atomically saving all tasks and its cursor.
 func appendRelayRequest(next *relayState, r relayRequest, at time.Time) (uint64, bool, error) {
+	return appendRelayBoundRequest(next, r, nil, at)
+}
+
+func appendRelayBoundRequest(next *relayState, r relayRequest, binding *relayReceiptBinding, at time.Time) (uint64, bool, error) {
 	raw, _ := json.Marshal(r)
 	for _, t := range next.Tasks {
 		old := t.Request
 		if old.Transaction == r.Transaction && old.LogIndex == r.LogIndex {
 			previous, _ := json.Marshal(old)
 			if bytes.Equal(previous, raw) {
+				// Never upgrade a hint/manual task, replace a retained binding or
+				// clear one via an unbound duplicate. A new inconsistent bound
+				// candidate conflicts; the entire discovery batch is rejected.
+				if t.ReceiptSet != nil && binding != nil && *t.ReceiptSet != *binding {
+					return 0, false, ErrRelayConflict
+				}
 				return t.Ticket, false, nil
 			}
 			return 0, false, ErrRelayConflict
@@ -294,7 +317,11 @@ func appendRelayRequest(next *relayState, r relayRequest, at time.Time) (uint64,
 		return 0, false, ErrRelayLimit
 	}
 	ticket := uint64(len(next.Tasks) + 1)
-	next.Tasks = append(next.Tasks, relayTask{Ticket: ticket, Request: r, CreatedAt: at, NextAt: at, Stage: RelayPending})
+	if binding != nil {
+		detached := *binding
+		binding = &detached
+	}
+	next.Tasks = append(next.Tasks, relayTask{Ticket: ticket, Request: r, CreatedAt: at, NextAt: at, Stage: RelayPending, ReceiptSet: binding})
 	return ticket, true, nil
 }
 
@@ -353,7 +380,7 @@ func (j *RelayJournal) ObserveNext(ctx context.Context, source ReceiptSource, at
 	}
 	readCtx, cancel := context.WithTimeout(ctx, RelayReadTimeout)
 	defer cancel()
-	cache, err := j.observe(readCtx, source, task.Request)
+	cache, err := j.observe(readCtx, source, task.Request, task.ReceiptSet)
 	if readCtx.Err() != nil {
 		cache, err = nil, ErrRelayObservation
 	}
@@ -375,16 +402,35 @@ func (j *RelayJournal) ObserveNext(ctx context.Context, source ReceiptSource, at
 	return taskReport(*task), nil
 }
 
-func (j *RelayJournal) observe(ctx context.Context, source ReceiptSource, r relayRequest) (result *relayCache, err error) {
+func (j *RelayJournal) observe(ctx context.Context, source ReceiptSource, r relayRequest, binding *relayReceiptBinding) (result *relayCache, err error) {
 	// Provider panics are contained without printing their private payload.
 	defer func() {
 		if recover() != nil {
 			result, err = nil, ErrRelayObservation
 		}
 	}()
+	before, err := j.observationAnchors(ctx, source, binding)
+	if err != nil {
+		return nil, ErrRelayObservation
+	}
+	finish := func(cache *relayCache) (*relayCache, error) {
+		if binding != nil {
+			// The observer's checkpoint must not retreat below the preflight
+			// view, even if the provider later advances again. Recheck all
+			// retained anchors and both read checkpoints before caching.
+			if !checkpointCovers(cache.Checkpoint, before) {
+				return nil, ErrRelayObservation
+			}
+			if _, err := j.observationAnchors(ctx, source, binding, before, cache.Checkpoint); err != nil {
+				return nil, ErrRelayObservation
+			}
+			cache.ReceiptSetMatched = true
+		}
+		return cache, nil
+	}
 	if r.Kind == "deposit" {
 		amount, _ := sdkmath.NewIntFromString(r.Amount)
-		o, err := ObserveDeposit(ctx, j.config, source, DepositRequest{r.Transaction, r.LogIndex, r.Recipient, amount})
+		o, err := observeDeposit(ctx, j.config, source, DepositRequest{r.Transaction, r.LogIndex, r.Recipient, amount}, binding)
 		if err != nil {
 			return nil, ErrRelayObservation
 		}
@@ -392,9 +438,9 @@ func (j *RelayJournal) observe(ctx context.Context, source ReceiptSource, r rela
 		if err != nil {
 			return nil, ErrRelayObservation
 		}
-		return &relayCache{d.Sequence, d.Evidence, digest, checkpoint}, nil
+		return finish(&relayCache{Sequence: d.Sequence, Evidence: d.Evidence, Digest: digest, Checkpoint: checkpoint})
 	}
-	o, err := ObserveResolution(ctx, j.config, source, ResolutionRequest{r.Transaction, r.LogIndex, *r.Withdrawal, godbridge.Status(r.Kind)})
+	o, err := observeResolution(ctx, j.config, source, ResolutionRequest{r.Transaction, r.LogIndex, *r.Withdrawal, godbridge.Status(r.Kind)}, binding)
 	if err != nil {
 		return nil, ErrRelayObservation
 	}
@@ -402,12 +448,70 @@ func (j *RelayJournal) observe(ctx context.Context, source ReceiptSource, r rela
 	if err != nil {
 		return nil, ErrRelayObservation
 	}
-	return &relayCache{w.Sequence, evidence, digest, checkpoint}, nil
+	return finish(&relayCache{Sequence: w.Sequence, Evidence: evidence, Digest: digest, Checkpoint: checkpoint})
+}
+
+// observationAnchors compares provider claims, not independently authenticated
+// finality or header ancestry. Bound tasks must keep the latest retained cursor
+// anchors consistent, even if those later blocks contained no candidate events.
+// Unbound manual/hint tasks keep their earlier read path and acquire no marker.
+func (j *RelayJournal) observationAnchors(ctx context.Context, source Source, binding *relayReceiptBinding, extra ...Block) (Block, error) {
+	if binding == nil {
+		return Block{}, nil
+	}
+	cursor := j.state.Discovery
+	if ctx == nil || ctx.Err() != nil || source == nil || !validRelayCursor(cursor) || cursor == nil || cursor.Through == (Block{}) {
+		return Block{}, ErrRelayObservation
+	}
+	expected, _ := chainID(j.config.private.SourceChainID)
+	chain, err := source.ChainID(ctx)
+	if err != nil || chain == nil || chain.Cmp(expected) != 0 {
+		return Block{}, ErrRelayObservation
+	}
+	checkpoint, err := source.FinalizedBlock(ctx)
+	if err != nil || !validDiscoveryBlock(checkpoint) {
+		return Block{}, ErrRelayObservation
+	}
+	anchors := []Block{binding.Block, cursor.Origin, cursor.Through, cursor.Checkpoint, checkpoint}
+	anchors = append(anchors, extra...)
+	seen := make(map[uint64][32]byte, len(anchors))
+	for _, anchor := range anchors {
+		if !checkpointCovers(checkpoint, anchor) || ctx.Err() != nil {
+			return Block{}, ErrRelayObservation
+		}
+		if previous, ok := seen[anchor.Height]; ok {
+			if previous != anchor.Hash {
+				return Block{}, ErrRelayObservation
+			}
+			continue
+		}
+		canonical, err := source.Block(ctx, anchor.Height)
+		if err != nil || canonical != anchor {
+			return Block{}, ErrRelayObservation
+		}
+		seen[anchor.Height] = anchor.Hash
+	}
+	chain, err = source.ChainID(ctx)
+	if err != nil || chain == nil || chain.Cmp(expected) != 0 || ctx.Err() != nil {
+		return Block{}, ErrRelayObservation
+	}
+	return checkpoint, nil
+}
+
+func checkpointCovers(checkpoint, anchor Block) bool {
+	return validDiscoveryBlock(checkpoint) && validDiscoveryBlock(anchor) && checkpoint.Height >= anchor.Height &&
+		(checkpoint.Height != anchor.Height || checkpoint.Hash == anchor.Hash)
 }
 
 func (j *RelayJournal) copyState() relayState {
 	next := j.state
 	next.Tasks = append([]relayTask{}, j.state.Tasks...)
+	for i := range next.Tasks {
+		if next.Tasks[i].ReceiptSet != nil {
+			binding := *next.Tasks[i].ReceiptSet
+			next.Tasks[i].ReceiptSet = &binding
+		}
+	}
 	if j.state.Discovery != nil {
 		cursor := *j.state.Discovery
 		next.Discovery = &cursor
@@ -494,7 +598,7 @@ func (j *RelayJournal) validate(s relayState) error {
 	protocol, _ := j.config.Binding()
 	for i, task := range s.Tasks {
 		if task.Ticket != uint64(i+1) || task.Attempts > MaxRelayAttempts || !relayTime(task.CreatedAt) ||
-			task.CreatedAt.After(s.Clock) || j.validRequest(task.Request) != nil {
+			task.CreatedAt.After(s.Clock) || j.validRequest(task.Request) != nil || !validRelayReceiptBinding(task.ReceiptSet, task.Request, s.Discovery) {
 			return ErrRelayState
 		}
 		for _, earlier := range s.Tasks[:i] {
@@ -519,6 +623,10 @@ func (j *RelayJournal) validate(s relayState) error {
 				cache.Evidence.TransactionHash != task.Request.Transaction || cache.Evidence.LogIndex != task.Request.LogIndex ||
 				cache.Checkpoint.Height < cache.Evidence.Height || cache.Checkpoint.Hash == [32]byte{} ||
 				cache.Checkpoint.Height == cache.Evidence.Height && cache.Checkpoint.Hash != cache.Evidence.BlockHash {
+				return ErrRelayState
+			}
+			if cache.ReceiptSetMatched != (task.ReceiptSet != nil) || task.ReceiptSet != nil &&
+				(cache.Sequence != task.ReceiptSet.Sequence || cache.Evidence.Height != task.ReceiptSet.Block.Height || cache.Evidence.BlockHash != task.ReceiptSet.Block.Hash) {
 				return ErrRelayState
 			}
 			var digest [32]byte

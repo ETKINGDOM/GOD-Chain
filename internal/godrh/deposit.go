@@ -72,6 +72,10 @@ func (o DepositObservation) Proposal() (godbridge.Deposit, [32]byte, Block, erro
 // again rather than rejecting ordinary forward progress. All evidence remains
 // provider-attested. It creates no approval, replay record, balance or signature.
 func ObserveDeposit(ctx context.Context, c Config, source DepositSource, request DepositRequest) (DepositObservation, error) {
+	return observeDeposit(ctx, c, source, request, nil)
+}
+
+func observeDeposit(ctx context.Context, c Config, source DepositSource, request DepositRequest, receiptSet *relayReceiptBinding) (DepositObservation, error) {
 	fail := func() (DepositObservation, error) { return DepositObservation{}, ErrDepositObservation }
 	if ctx == nil || ctx.Err() != nil || source == nil || !c.Report().ConfigurationReady ||
 		request.TransactionHash == [32]byte{} || request.Recipient == [20]byte{} || request.Amount.IsNil() ||
@@ -79,7 +83,7 @@ func ObserveDeposit(ctx context.Context, c Config, source DepositSource, request
 		return fail()
 	}
 	request.Amount = sdkmath.NewIntFromBigInt(request.Amount.BigInt())
-	observed, err := observeReceipt(ctx, c, source, request.TransactionHash, request.LogIndex)
+	observed, err := observeReceipt(ctx, c, source, request.TransactionHash, request.LogIndex, receiptSet)
 	if err != nil {
 		return fail()
 	}
