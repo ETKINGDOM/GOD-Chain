@@ -38,6 +38,7 @@ type Status struct {
 	RHMaterialHTTP          bool              `json:"rhReadOnlyMaterialHTTPAdapterImplemented"`
 	RHTaskProofFetch        bool              `json:"rhReadOnlyTaskProofFetchImplemented"`
 	RHRetainedProofSource   bool              `json:"rhReadOnlyRetainedProofSourceCheckImplemented"`
+	RHTaskEvidenceReview    bool              `json:"rhReadOnlyTaskEvidenceReviewImplemented"`
 	RHSourceFinality        bool              `json:"rhSourceFinalityImplemented"`
 	Dependencies            map[string]string `json:"dependencies"`
 }
@@ -49,7 +50,7 @@ func BuildStatus() Status {
 		Project: "GOD Chain", Stage: godnode.ImplementationStage,
 		SDK: "God SDK", Consensus: "GodCometBFT", Execution: "God EVM",
 		NativeDenom: "agod", RealAssets: false, NodeReady: false, LocalPrototype: true,
-		RHPrivateConfig: true, RHReadOnlyProbe: true, RHDepositObserver: true, RHResolutionObserver: true, RHReadOnlyJournal: true, RHEventDiscovery: true, RHReceiptSets: true, RHReceiptInclusion: true, RHProofPreparation: true, RHRelayProofPreparation: true, RHProofPersistence: true, RHMaterialHTTP: true, RHTaskProofFetch: true, RHRetainedProofSource: true, RHSourceFinality: false,
+		RHPrivateConfig: true, RHReadOnlyProbe: true, RHDepositObserver: true, RHResolutionObserver: true, RHReadOnlyJournal: true, RHEventDiscovery: true, RHReceiptSets: true, RHReceiptInclusion: true, RHProofPreparation: true, RHRelayProofPreparation: true, RHProofPersistence: true, RHMaterialHTTP: true, RHTaskProofFetch: true, RHRetainedProofSource: true, RHTaskEvidenceReview: true, RHSourceFinality: false,
 		AccountPrefix: godaddress.AccountPrefix, NativeAddressFormat: "Bech32 lowercase", EVMAddressFormat: "0x EIP-55 hex",
 		Dependencies: map[string]string{},
 	}

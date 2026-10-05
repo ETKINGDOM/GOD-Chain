@@ -14,10 +14,11 @@ var ErrTaskReceiptFetch = errors.New("RH read-only task material fetch rejected;
 // authenticated source truth or authority for later signing/asset movement.
 // There is no journal/source/store pointer or future freshness guarantee.
 type FetchedTaskReceiptProof struct {
-	material BlockMaterial
-	witness  ReceiptInclusionWitness
-	review   RelayReceiptProofObservation
-	ready    bool
+	material   BlockMaterial
+	witness    ReceiptInclusionWitness
+	review     RelayReceiptProofObservation
+	checkpoint Block // last provider checkpoint, private and unauthenticated
+	ready      bool
 }
 
 type TaskReceiptFetchReport struct {
@@ -125,12 +126,13 @@ func (j *RelayJournal) fetchTaskReceiptProof(ctx context.Context, ticket uint64,
 	if err != nil {
 		return fail()
 	}
-	if _, err = j.observationAnchors(readCtx, source, &binding, before); err != nil {
+	after, err := j.observationAnchors(readCtx, source, &binding, before)
+	if err != nil {
 		return fail()
 	}
 	afterPin, _, err := j.taskReceiptProofPin(readCtx, ticket)
 	if err != nil || afterPin != pin || readCtx.Err() != nil {
 		return fail()
 	}
-	return FetchedTaskReceiptProof{material: material, witness: witness, review: review, ready: true}, nil
+	return FetchedTaskReceiptProof{material: material, witness: witness, review: review, checkpoint: after, ready: true}, nil
 }

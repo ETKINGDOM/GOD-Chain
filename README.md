@@ -2,7 +2,7 @@
 
 GOD Chain is the independent blockchain project for ETERNAL KINGDOM, a global faith-centered world for prayer, confession, praise and fellowship. This repository contains the [Whitepaper Draft](WHITEPAPER.md) and source candidates for an isolated, synthetic-asset prototype. God EVM execution, God SDK staking and GodCometBFT consensus have been connected in local tests. No public network, RH connection or real assets are enabled.
 
-God EVM + God SDK + GodCometBFT are the project component names. Necessary upstream import paths, licenses and attribution remain intact; these names do not claim independent invention of imported infrastructure. English is the default documentation language.
+God EVM + God SDK + GodCometBFT are the project component names. Necessary upstream import paths, licenses and attribution remain intact; these names do not claim independent invention of imported infrastructure. All project-owned public content is in English.
 
 ## Execution and validators
 
@@ -67,6 +67,8 @@ Read-only authorization, resolution and pause digest helpers build unsigned revi
 `NewHTTPReceiptSetSource` explicitly opts into bounded `debug_getRawBlock` and `debug_getRawReceipts` calls on the privately configured endpoint. The default source and diagnostic probe do not enable them. It checks canonical binary encodings and complete roots with before/after height/hash lookups, without enabling a server debug namespace or falling back to hints. Actual RH availability, encodings and fork compatibility remain unverified.
 
 `RelayJournal.FetchTaskReceiptProof` reads material selected by the original task, checks provider references before and after, and returns detached proof/material bytes. `TaskReceiptProofStore.RecheckSource` first revalidates the loaded private slot, then compares every material and witness byte with that fresh read. Neither changes the journal, consumes attempts, creates a cache or automatically saves a proof. Failed source checks do not overwrite or disable sound local storage. These calls do not query code or terminal/native state and do not replace `ObserveNext`. Provider agreement during one call is not independent finality or a future freshness guarantee. See [BRIDGE.md](BRIDGE.md) for bounds and trust limits.
+
+`RelayJournal.ReviewTaskReceiptEvidence` combines complete-material/task/proof checks with an unsigned deposit or paid/cancelled proposal. It derives the receipt and block-wide log indexes from that same detached complete set rather than asking for a separate provider receipt or log hint. Explicit compatibility, code and terminal-view reads compare provider claims; they are not contract-state proofs. Retained references and every later observed checkpoint must remain consistent. The simulation-only call changes no store, cache, cursor, clock or attempt budget. Detached results use redacted reports; source finality, native-state truth, approval, signing, broadcast and real-asset readiness remain unverified or disabled.
 
 ## Build and inspect
 
