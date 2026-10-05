@@ -4,6 +4,8 @@ GOD Chain is the independent blockchain project for ETERNAL KINGDOM, a global fa
 
 God EVM + God SDK + GodCometBFT are the project component names. Necessary upstream import paths, licenses and attribution remain intact; these names do not claim independent invention of imported infrastructure. All project-owned public content is in English.
 
+See the [Implementation Status and Roadmap](ROADMAP.md) for locally verified capabilities, six remaining core workstreams, ten supporting modules and the proposed delivery sequence. The plan distinguishes implemented prototypes from production acceptance and does not enable a network or real assets.
+
 ## Execution and validators
 
 `internal/godnode` assembles accounts, bank storage, staking, execution and the local consensus adapter. It accepts bounded legacy, access-list and dynamic-fee Ethereum transactions, including contract deployment and storage. Native direct-signature transactions share account sequences with the Ethereum path. There is no Ethereum JSON-RPC server or wallet interface.

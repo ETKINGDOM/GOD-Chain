@@ -100,7 +100,7 @@ A deterministic private negative control bypassing only the wrapper reproduced t
 
 ## Public source checks
 
-The public snapshot contains exactly 64 reviewed files: production-source candidates, documentation, schemas, generated messages, pinned modules, checksums, the checksum-bound build helper and required license/notice, including sixteen RH read-only/simulation interface files and the preserved public whitepaper. Private tests, fixtures, operational deployment scripts, genesis, addresses, keys, runtime data, dependencies, logs and binaries are excluded. Private source-review ancestry is not imported into public history.
+The public snapshot contains exactly 65 reviewed files: production-source candidates, documentation including the implementation roadmap, schemas, generated messages, pinned modules, checksums, the checksum-bound build helper and required license/notice, including sixteen RH read-only/simulation interface files and the preserved public whitepaper. Private tests, fixtures, operational deployment scripts, genesis, addresses, keys, runtime data, dependencies, logs and binaries are excluded. Private source-review ancestry is not imported into public history.
 
 `make check` verifies the pinned lifecycle compiler input, then runs vet, module checksum verification and compilation. `make status` builds and runs a disabled diagnostic; it does not start consensus or bridge operations. Public commands do not reproduce the private tests, fuzz windows or custody-bytecode checks. Publication screening checks exact file scopes, both commit identities, file bytes, commit messages and every reachable public ancestor. It is not a comprehensive secret audit or independent code review.
 
