@@ -17,14 +17,17 @@ check:
 
 build:
 	$(GO) build $(GOD_BUILD_FLAGS) -p 2 -trimpath -o build/godd ./cmd/godd
+	$(GO) build $(GOD_BUILD_FLAGS) -p 2 -trimpath -o build/godpack ./cmd/godpack
 
 status: build
 	./build/godd status
 
-# Diagnostic commands only, not a running node or a runtime support guarantee.
+# Synthetic candidates only. Foreign compilation is not runtime acceptance.
 compile-targets:
 	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build $(GOD_BUILD_FLAGS) -p 2 -trimpath -o build/linux-amd64/godd ./cmd/godd
 	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 $(GO) build $(GOD_BUILD_FLAGS) -p 2 -trimpath -o build/linux-arm64/godd ./cmd/godd
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build $(GOD_BUILD_FLAGS) -p 2 -trimpath -o build/linux-amd64/godpack ./cmd/godpack
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 $(GO) build $(GOD_BUILD_FLAGS) -p 2 -trimpath -o build/linux-arm64/godpack ./cmd/godpack
 	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 $(GO) build $(GOD_BUILD_FLAGS) -p 2 -trimpath -o build/darwin-amd64/godd ./cmd/godd
 	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 $(GO) build $(GOD_BUILD_FLAGS) -p 2 -trimpath -o build/darwin-arm64/godd ./cmd/godd
 	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 $(GO) build $(GOD_BUILD_FLAGS) -p 2 -trimpath -o build/windows-amd64/godd.exe ./cmd/godd

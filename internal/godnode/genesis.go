@@ -71,6 +71,26 @@ type GenesisValidator struct {
 	Stake     string `json:"stakeSmallestUnits"`
 }
 
+// ValidateTestnetGenesis performs offline validation without consuming the
+// process-global execution runtime or touching any database. Only unbacked
+// synthetic genesis is admitted by the standalone testnet tools.
+func ValidateTestnetGenesis(c Config, g *cmttypes.GenesisDoc) error {
+	if c.validate() != nil || c.BridgeGenesis != nil || c.BridgeApprovalGas != 0 || g == nil ||
+		g.ChainID != c.ChainID || g.ConsensusParams == nil || g.ValidateAndComplete() != nil {
+		return ErrGenesis
+	}
+	cp := g.ConsensusParams.ToProto()
+	r := &abci.RequestInitChain{ChainId: g.ChainID, Time: g.GenesisTime, InitialHeight: g.InitialHeight,
+		AppStateBytes: g.AppState, ConsensusParams: &cp}
+	for _, v := range g.Validators {
+		if v.PubKey == nil || v.PubKey.Type() != "ed25519" || len(v.PubKey.Bytes()) != 32 {
+			return ErrGenesis
+		}
+		r.Validators = append(r.Validators, abci.Ed25519ValidatorUpdate(v.PubKey.Bytes(), v.Power))
+	}
+	return validateGenesisRequest(r, c)
+}
+
 func strictJSON(raw []byte) error {
 	d := json.NewDecoder(bytes.NewReader(raw))
 	d.UseNumber()

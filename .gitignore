@@ -20,5 +20,16 @@ client.toml
 priv_validator_key.json
 priv_validator_state.json
 node_key.json
+testnet-node.json
+identity.json
+profile.json
+testnet-bundle.json
+genesis.sha256
+bundle.sha256
+sign-request.json
+signed-transaction.json
+funding-request.json
+signed-funding.json
+test-feedback.json
 keyring-*/
 data/

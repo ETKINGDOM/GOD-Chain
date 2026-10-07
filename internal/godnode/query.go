@@ -9,6 +9,7 @@ import (
 	"github.com/ETKINGDOM/GOD-Chain/internal/godaddress"
 	"github.com/ETKINGDOM/GOD-Chain/x/godrewards"
 	sdk "github.com/cosmos/cosmos-sdk/types"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 )
 
 var (
@@ -57,6 +58,62 @@ type AccountView struct {
 	SpendableG     string        `json:"spendableG"`
 	UnclaimedG     string        `json:"unclaimedG"`
 	PendingEarnedG string        `json:"pendingEarnedG"`
+}
+
+type DelegationView struct {
+	Commit        CommittedView `json:"commit"`
+	Delegator     string        `json:"delegator"`
+	Validator     string        `json:"validator"`
+	Exists        bool          `json:"exists"`
+	Shares        string        `json:"shares"`
+	GodEquivalent string        `json:"godEquivalentSmallestUnits"`
+}
+
+// QueryDelegation is one bounded committed lookup. GOD equivalent is truncated
+// from shares at that height, not spendable funds or an unbonding completion.
+func (a *App) QueryDelegation(owner, validator string, height int64) (view DelegationView, err error) {
+	if a == nil {
+		return view, ErrLifecycle
+	}
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	defer func() {
+		if recover() != nil {
+			view, err = DelegationView{}, ErrQueryState
+		}
+	}()
+	delegator, e := queryAccountAddress(owner)
+	if e != nil {
+		return view, e
+	}
+	val, e := sdk.ValAddressFromBech32(validator)
+	if e != nil || val.String() != validator {
+		return view, ErrQueryAddress
+	}
+	ctx, commit, e := a.committedContext(height)
+	if e != nil {
+		return view, e
+	}
+	native, e := godaddress.ToNative(delegator)
+	if e != nil {
+		return view, ErrQueryAddress
+	}
+	view = DelegationView{Commit: commit, Delegator: native, Validator: validator, Shares: "0", GodEquivalent: "0"}
+	d, e := a.staking.GetDelegation(ctx, delegator, val)
+	if errors.Is(e, stakingtypes.ErrNoDelegation) {
+		return view, nil
+	}
+	if e != nil {
+		return DelegationView{}, ErrQueryState
+	}
+	v, e := a.staking.GetValidator(ctx, val)
+	if e != nil {
+		return DelegationView{}, ErrQueryState
+	}
+	view.Exists = true
+	view.Shares = d.Shares.String()
+	view.GodEquivalent = v.TokensFromShares(d.Shares).TruncateInt().String()
+	return view, nil
 }
 
 // committedContext must run under a.mu. Explicit versions avoid CheckTx and

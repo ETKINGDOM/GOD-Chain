@@ -1,0 +1,103 @@
+# Include inside an operator-reviewed nginx http block, not a server block.
+# Replace every @PLACEHOLDER@ privately before nginx -t. Do not enable as-is.
+# This direct-client template does not trust forwarded IP headers or a CDN.
+# Runtime/TLS/firewall acceptance and public-deployment approval are separate.
+
+limit_req_zone $binary_remote_addr zone=god_rpc_rate:10m rate=10r/s;
+limit_conn_zone $binary_remote_addr zone=god_client_connections:10m;
+limit_conn_zone $server_name zone=god_service_connections:1m;
+
+server {
+    listen @HTTPS_LISTEN@ ssl default_server;
+    server_name _;
+    ssl_certificate @TLS_CERTIFICATE_FILE@;
+    ssl_certificate_key @TLS_PRIVATE_KEY_FILE@;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_session_tickets off;
+    access_log off;
+    error_log /dev/null crit;
+    return 444;
+}
+
+server {
+    listen @HTTPS_LISTEN@ ssl;
+    server_name @RPC_DNS_NAME@;
+    ssl_certificate @TLS_CERTIFICATE_FILE@;
+    ssl_certificate_key @TLS_PRIVATE_KEY_FILE@;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_session_tickets off;
+    server_tokens off;
+    access_log off;
+    error_log /dev/null crit;
+    client_max_body_size 64k;
+    client_body_buffer_size 64k;
+    client_header_timeout 5s;
+    client_body_timeout 10s;
+    send_timeout 10s;
+    keepalive_timeout 10s;
+    limit_req_status 429;
+    limit_conn_status 429;
+    limit_conn god_client_connections 8;
+    limit_conn god_service_connections 48;
+
+    location = / {
+        if ($request_method !~ ^(POST|OPTIONS)$) { return 405; }
+        if ($is_args != "") { return 400; }
+        limit_req zone=god_rpc_rate burst=20 nodelay;
+        proxy_pass http://127.0.0.1:@OBSERVER_RPC_PORT@;
+        proxy_http_version 1.1;
+        proxy_set_header Host 127.0.0.1;
+        proxy_set_header Connection "";
+        proxy_set_header Authorization "";
+        proxy_set_header Cookie "";
+        proxy_set_header X-Forwarded-For "";
+        proxy_set_header Forwarded "";
+        proxy_connect_timeout 2s;
+        proxy_send_timeout 10s;
+        proxy_read_timeout 10s;
+        proxy_next_upstream off;
+        proxy_cache off;
+        proxy_max_temp_file_size 0;
+    }
+    location / { return 404; }
+}
+
+server {
+    listen @HTTPS_LISTEN@ ssl;
+    server_name @COMPANION_DNS_NAME@;
+    ssl_certificate @TLS_CERTIFICATE_FILE@;
+    ssl_certificate_key @TLS_PRIVATE_KEY_FILE@;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_session_tickets off;
+    server_tokens off;
+    access_log off;
+    error_log /dev/null crit;
+    client_max_body_size 1k;
+    client_header_timeout 5s;
+    client_body_timeout 5s;
+    send_timeout 10s;
+    keepalive_timeout 10s;
+    limit_conn_status 429;
+    limit_conn god_client_connections 8;
+    limit_conn god_service_connections 48;
+
+        location ~ ^/(index\.html|wallet\.html|explorer\.html|styles\.css|client\.mjs|main\.mjs|explorer\.mjs)?$ {
+        if ($request_method !~ ^(GET|HEAD)$) { return 405; }
+        if ($is_args != "") { return 400; }
+        proxy_pass http://127.0.0.1:@COMPANION_PORT@;
+        proxy_http_version 1.1;
+        proxy_set_header Host 127.0.0.1;
+        proxy_set_header Connection "";
+        proxy_set_header Authorization "";
+        proxy_set_header Cookie "";
+        proxy_set_header X-Forwarded-For "";
+        proxy_set_header Forwarded "";
+        proxy_connect_timeout 2s;
+        proxy_send_timeout 10s;
+        proxy_read_timeout 10s;
+        proxy_next_upstream off;
+        proxy_cache off;
+        proxy_max_temp_file_size 0;
+    }
+    location / { return 404; }
+}
