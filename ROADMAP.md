@@ -4,7 +4,7 @@ GOD Chain is the independent blockchain project for ETERNAL KINGDOM. This plan s
 
 The current implementation is a synthetic-asset prototype, not a live mainnet or a working Robinhood Chain bridge. Public startup and real-asset operations remain disabled. Publishing this plan does not authorize deployment, custody funding or chain activation.
 
-The recorded verification baseline is 2026-10-05. Detailed evidence and limitations are in [VERIFICATION.md](VERIFICATION.md), [NODE_RUNTIME.md](NODE_RUNTIME.md) and [BRIDGE.md](BRIDGE.md). This plan introduces no new test result, economic parameter or release date.
+The existing verification baseline is 2026-10-05; the committed-query foundation was added on 2026-10-07. Detailed evidence and limitations are in [VERIFICATION.md](VERIFICATION.md), [NODE_RUNTIME.md](NODE_RUNTIME.md) and [BRIDGE.md](BRIDGE.md). No production economic parameter or release date is selected here.
 
 ## Status definitions
 
@@ -22,6 +22,7 @@ The remaining plan groups work into six core workstreams and ten supporting modu
 | Accounts and authentication | Canonical native `god1…` addresses, EVM `0x…` encoding of the same account bytes, ownership checks and shared ordered transaction sequences. | No persistent wallet, recovery workflow or HD account derivation. Format conversion is not bridging. |
 | God SDK staking and penalties | Authenticated validator creation, delegation, unbonding, signed reactivation, downtime handling and verified duplicate-vote quarantine. | Other misconduct classes, production recovery and governance remain incomplete. |
 | GodCometBFT local consensus | Four separate loopback validator processes, verified commits, contract propagation, offline catch-up and restart with original databases and signers. | All processes ran on one computer; independent operators and adversarial-network reliability are not established. |
+| Committed state queries | Latest-committed network metadata, GOD balances, auth account numbers/sequences and three G buckets through read-only Go and trusted in-process ABCI interfaces. | No HTTP or Ethereum JSON-RPC service, historical queries, proofs, gas estimation or wallet connection. The G fields exclude locks and are not total G. |
 | G rewards and GOD redemption | Commit-based contribution accounting, bounded prototype G issuance, daily settlement, transfers and locks, and voluntary pool-based redemption. | Production emission approval and scalable settlement remain required. No guaranteed return is implied. |
 | Bridge ledger and custody | Synthetic one-for-one accounting, quorum approvals, replay protection, segregated withdrawals, delayed authorization, cancellation rules and opt-in authenticated node routes. | No production backing, independent source verification, live signer operation or financial relayer. Successful delayed payments were direct synthetic checks, not a delayed four-node transfer. |
 | Read-only RH evidence interfaces | Private configuration, compatibility probes, deposit and resolution observations, simulation journals, receipt-set checks, proof preparation and retention, and combined task evidence review. | Matching provider data and header commitments are not authenticated finality or contract/native-state proofs. Results remain unsigned. |
@@ -45,7 +46,7 @@ All six remain incomplete for production, even where local foundations exist.
 | Module | Current status | Remaining deliverable |
 | --- | --- | --- |
 | 1. Node installation and management | Partial | Reviewed installation, configuration, synchronization status, lifecycle controls and safe recovery guidance. Current binaries are diagnostics, not node installers. |
-| 2. RPC services | Pending | Standard wallet and explorer queries, transaction submission, receipts, gas estimation and required native queries, with bounded resources and restricted exposure. |
+| 2. RPC services | Partial | Committed-query foundations exist; transport, standard wallet and explorer queries, transaction submission, receipts, gas estimation and further native queries still need bounded resources and restricted exposure. |
 | 3. GOD Chain wallet | Pending | Non-custodial account creation and recovery, encrypted local key storage, GOD and G management, signing and clear network identification. |
 | 4. Browser wallet extension | Pending | Website connection, permission management, transaction review and signing, sharing the wallet core rather than duplicating it. |
 | 5. Blockchain explorer | Pending | Block and transaction indexing, results and fees, validator information, and separately adapted native G and staking views. |
@@ -68,7 +69,7 @@ The sequence below is the proposed delivery order. Security and regression check
 5. **Wallet products and APP integration.** Deliver the shared wallet core, extension and ETERNAL KINGDOM adapter. Verify account formats, recovery, signing consent, network selection and client-side encryption without exposing secrets or private faith text.
 6. **Production release review.** Complete the six core workstreams and acceptance evidence relevant to a proposed release. Actual RH integration additionally requires privately reviewed network and contract configuration, independent signer arrangements, backing and finality verification, and explicit activation authorization. A token contract address alone is insufficient.
 
-The next proposed implementation milestone is local node controls and basic RPC. This document does not implement or enable that milestone.
+The next implementation milestone is local node controls and basic RPC transport using the committed-query foundation. Public services and node startup remain disabled.
 
 ## Reuse and publication requirements
 

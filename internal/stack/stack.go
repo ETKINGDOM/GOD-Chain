@@ -24,6 +24,7 @@ type Status struct {
 	RealAssets              bool              `json:"realAssets"`
 	NodeReady               bool              `json:"nodeReady"`
 	LocalPrototype          bool              `json:"localNodePrototype"`
+	CommittedQueries        bool              `json:"localCommittedQueriesImplemented"`
 	RHPrivateConfig         bool              `json:"rhPrivateConfigurationImplemented"`
 	RHReadOnlyProbe         bool              `json:"rhReadOnlyProbeImplemented"`
 	RHDepositObserver       bool              `json:"rhDepositObservationImplemented"`
@@ -49,7 +50,7 @@ func BuildStatus() Status {
 	status := Status{
 		Project: "GOD Chain", Stage: godnode.ImplementationStage,
 		SDK: "God SDK", Consensus: "GodCometBFT", Execution: "God EVM",
-		NativeDenom: "agod", RealAssets: false, NodeReady: false, LocalPrototype: true,
+		NativeDenom: "agod", RealAssets: false, NodeReady: false, LocalPrototype: true, CommittedQueries: true,
 		RHPrivateConfig: true, RHReadOnlyProbe: true, RHDepositObserver: true, RHResolutionObserver: true, RHReadOnlyJournal: true, RHEventDiscovery: true, RHReceiptSets: true, RHReceiptInclusion: true, RHProofPreparation: true, RHRelayProofPreparation: true, RHProofPersistence: true, RHMaterialHTTP: true, RHTaskProofFetch: true, RHRetainedProofSource: true, RHTaskEvidenceReview: true, RHSourceFinality: false,
 		AccountPrefix: godaddress.AccountPrefix, NativeAddressFormat: "Bech32 lowercase", EVMAddressFormat: "0x EIP-55 hex",
 		Dependencies: map[string]string{},

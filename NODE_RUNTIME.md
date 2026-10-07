@@ -12,6 +12,18 @@ The reference balance setter ordinarily changes bank supply while reconciling EV
 
 EVM self-destruction-to-self can discard native value under Ethereum semantics. GOD Chain preserves that value in a protected quarantine account instead of burning it. This is an intentional native-value policy difference, not general Ethereum equivalence. Quarantine has no authenticated release or reward route. GOD supply remains 1,000,000,000 throughout execution. Fixed supply alone does not establish backing.
 
+## Committed state queries
+
+`QueryNetwork(height)` and `QueryAccount(address, height)` read an explicit committed application version under the runtime mutex. Zero selects the latest committed height; a nonzero height must match that current version. Older, future and negative heights are rejected. Account queries accept either reviewed native or EVM encoding and return canonical presentations of the same account. No account is created by a read.
+
+The network view includes chain identifiers, application height, committed time, application hash, fixed GOD bank supply and reward-pool totals. The account view includes the auth-account existence and module-account flags, account number, sequence, bank GOD balance, spendable G, settled unclaimed G and pending earned G. GOD and G amounts are decimal strings in smallest units. Height, chain ID number, account number and sequence also use JSON strings to preserve exact integer precision. The application hash is not a consensus block hash or an authenticated proof.
+
+Pending earned G is not claimable or redeemable. The three account G fields do not include application locks and must not be labeled as total G. Bank GOD balance is not a spendability estimate. Querying a protected module does not grant permission to spend its funds. Every returned view explicitly marks synthetic operation and disables real assets.
+
+CheckTx caches and finalized but uncommitted changes remain invisible to these queries, including across a UTC-day settlement boundary. Committed metadata supplies the timestamp rather than wall time or a newer working header. Results contain detached values; reading neither settles rewards nor changes fees, sequences, clocks or ledger state. Invalid state returns a static error without a partial result or private panic details.
+
+The trusted in-process ABCI adapter exposes `/god/network` with empty data and `/god/account` with bounded address text. Both reject proof requests and unsupported heights; `/god/status` retains its existing behavior. Store access, simulation and transaction routes are not opened. There is still no external ABCI socket, HTTP or Ethereum JSON-RPC server, wallet connection or public node startup command. This is the query foundation for subsequent local interfaces, not a publicly available testnet.
+
 ## Validators and staking
 
 The runtime uses the locked staking keeper, with `agod` as the bond denomination, a maximum active set of 32 and a 21-day unbonding period. Signed creation requires at least 1,000 GOD of self-delegation and a fixed 10 percent commission. Signed delegation requires at least 1 GOD. Undelegation must not leave a positive position below 1 GOD. Consensus keys are Ed25519; account signing keys remain EVM compatible. Their roles are separate.

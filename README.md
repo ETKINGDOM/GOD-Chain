@@ -20,6 +20,12 @@ Opt-in disk storage preserves application state, consensus databases, WAL and or
 
 Transaction checking defers during the interval between block finalization and commitment, before ante processing or store writes. `LocalNode.Submit` returns `ErrCommitPending` only for that distinct status and makes no internal retry. This avoids checking a newer working ledger against an older checking timestamp without weakening authentication or time rules. The check never waits under a mempool lock needed by commitment.
 
+## Local committed queries
+
+`QueryNetwork` and `QueryAccount` provide detached latest-committed network metadata, GOD balances, auth account numbers/sequences and three G buckets. Native and EVM address encodings query the same account. CheckTx and finalized but uncommitted changes are excluded, including across daily settlement. Queries create no account, settle no reward and change no fee or sequence. Responses mark synthetic operation, keep real assets disabled and use exact decimal strings for amounts and signing-related integers.
+
+The account G fields exclude application locks and must not be labeled total G. GOD bank balance is not a spendability estimate; an application hash is not a block hash or proof. Only the trusted in-process ABCI query adapter exposes the bounded `/god/network` and `/god/account` routes. No external ABCI socket, HTTP or Ethereum JSON-RPC server, public startup or wallet connection is enabled. See [NODE_RUNTIME.md](NODE_RUNTIME.md#committed-state-queries).
+
 ## G rewards and fixed GOD supply
 
 G has no fixed lifetime cap. The prototype bounds issuance to 10,000 G per UTC day. Earned G and GOD fees settle at the next UTC-day boundary; skipped days create no catch-up issuance. Settled unclaimed and locked G count in outstanding supply exactly once. Participants cannot submit issuance allocations.
@@ -84,7 +90,7 @@ make status
 
 Make targets use `cmd/godbuild` to verify the exact pinned reactor, prepare an ignored private module copy and select the reviewed compiler overlay. Original dependency caches and pins are unchanged. A plain unpatched node build fails the worker-join API check; do not bypass it. Required upstream patch license and notice are retained under `licenses/`.
 
-The diagnostic reports `local-consensus-execution-prototype`, `localNodePrototype: true`, `nodeReady: false` and `realAssets: false`. Startup and financial commands fail closed. A build does not start a chain or verify backing. `make compile-targets` cross-compiles only this diagnostic; foreign-platform compilation is not runtime certification.
+The diagnostic reports `local-consensus-execution-prototype`, `localNodePrototype: true` and `localCommittedQueriesImplemented: true`, while retaining `nodeReady: false` and `realAssets: false`. Startup and financial commands fail closed. A build does not start a chain or verify backing. `make compile-targets` cross-compiles only this diagnostic; foreign-platform compilation is not runtime certification.
 
 Generated protobuf messages are included, so ordinary builds need no protobuf compiler. `make generate-proto` uses protoc 33.0 and the locked generator. Solidity custody source requires the separately verified compiler described in the lock; no compiler, private fixture, bytecode or operational build script is distributed.
 

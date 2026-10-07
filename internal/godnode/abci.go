@@ -6,6 +6,7 @@ import (
 	"math"
 	"time"
 
+	"github.com/ETKINGDOM/GOD-Chain/internal/godaddress"
 	"github.com/ETKINGDOM/GOD-Chain/x/godbridge"
 	"github.com/ETKINGDOM/GOD-Chain/x/godrewards"
 	abci "github.com/cometbft/cometbft/abci/types"
@@ -36,10 +37,39 @@ func (x application) Query(_ context.Context, req *abci.RequestQuery) (*abci.Res
 	if !a.usable() {
 		return nil, ErrLifecycle
 	}
-	if req == nil || req.Path != "/god/status" || len(req.Data) != 0 || req.Prove || (req.Height != 0 && req.Height != a.base.LastBlockHeight()) {
+	if req == nil || req.Prove || req.Height < 0 || (req.Height != 0 && req.Height != a.base.LastBlockHeight()) {
 		return &abci.ResponseQuery{Code: 1}, nil
 	}
-	state, err := a.snapshot()
+	var state any
+	var height int64
+	var err error
+	switch req.Path {
+	case "/god/status":
+		if len(req.Data) != 0 {
+			return &abci.ResponseQuery{Code: 1}, nil
+		}
+		var result Snapshot
+		result, err = a.snapshot()
+		state, height = result, result.Height
+	case "/god/network":
+		if len(req.Data) != 0 {
+			return &abci.ResponseQuery{Code: 1}, nil
+		}
+		var result NetworkView
+		result, err = a.queryNetwork(req.Height)
+		state, height = result, result.Commit.Height
+	case "/god/account":
+		if len(req.Data) != godaddress.NativeLength {
+			return &abci.ResponseQuery{Code: 1}, nil
+		}
+		var result AccountView
+		// The payload is the address text, not a JSON envelope or store key.
+		// Address parsers bound its length before decoding or store access.
+		result, err = a.queryAccount(string(req.Data), req.Height)
+		state, height = result, result.Commit.Height
+	default:
+		return &abci.ResponseQuery{Code: 1}, nil
+	}
 	if err != nil {
 		return &abci.ResponseQuery{Code: 1}, nil
 	}
@@ -47,7 +77,7 @@ func (x application) Query(_ context.Context, req *abci.RequestQuery) (*abci.Res
 	if err != nil {
 		return nil, err
 	}
-	return &abci.ResponseQuery{Value: raw, Height: state.Height}, nil
+	return &abci.ResponseQuery{Value: raw, Height: height}, nil
 }
 func (x application) InitChain(_ context.Context, req *abci.RequestInitChain) (*abci.ResponseInitChain, error) {
 	a := x.app
