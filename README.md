@@ -1,10 +1,18 @@
 # GOD Chain
 
-GOD Chain is the independent blockchain project for ETERNAL KINGDOM, a global faith-centered world for prayer, confession, praise and fellowship. This repository contains the [Whitepaper Draft](WHITEPAPER.md) and source candidates for an isolated, synthetic-asset prototype. God EVM execution, God SDK staking and GodCometBFT consensus have been connected in local tests. No public network, RH connection or real assets are enabled.
+GOD Chain is the independent blockchain project for ETERNAL KINGDOM, a global faith-centered world for prayer, confession, praise and fellowship. This repository contains the [Whitepaper Draft](WHITEPAPER.md) and source candidates for a synthetic-asset prototype. God EVM execution, God SDK staking and GodCometBFT consensus have been connected in local tests. Mainnet, RH bridging and real assets remain disabled.
 
 God EVM + God SDK + GodCometBFT are the project component names. Necessary upstream import paths, licenses and attribution remain intact; these names do not claim independent invention of imported infrastructure. All project-owned public content is in English.
 
-See the [Implementation Status and Roadmap](ROADMAP.md) for locally verified capabilities, six remaining core workstreams, ten supporting modules and the proposed delivery sequence. The plan distinguishes implemented prototypes from production acceptance and does not enable a network or real assets.
+## Public testnet status
+
+GOD Chain's public testnet operates with four validator nodes. Deployment across four geographic regions is planned. The current pilot is not an independently operated, geographically distributed network.
+
+A non-signing observer provides restricted public read-only RPC and committed block/account views. A separate automatic faucet distributes existing synthetic GOD without registration or human approval, subject to fixed amounts, rate limits and available pilot funds. General public transaction submission, browser signing and NFT participant tools are not enabled. Test assets have no monetary value, external backing or guaranteed mainnet conversion; the network may be reset.
+
+This source snapshot does not include all separately deployed pilot services. GitHub publication and public build commands do not deploy or activate a chain. Operational endpoints, populated addresses and private configuration are deliberately excluded.
+
+See the [Implementation Status and Roadmap](ROADMAP.md) for verified capabilities, six remaining core workstreams, ten supporting modules and the proposed delivery sequence. The plan distinguishes prototype and pilot checks from production acceptance; it does not authorize further deployment or real assets.
 
 ## Execution and validators
 
@@ -28,7 +36,7 @@ The account G fields exclude application locks and must not be labeled total G. 
 
 ## Synthetic testnet and participant tools
 
-`godd testnet create`, `identity`, `assemble`, `join`, `check` and `start` provide private synthetic setup and persistent operation. Independent initialization keeps consensus and P2P keys with each operator. Four validators and a non-signing observer have been exercised on one macOS computer, not independent hosts. Validators keep RPC on loopback; public exposure requires separate approval and a secured observer gateway. Mainnet, RH bridge startup and real assets remain disabled. See [TESTNET.md](TESTNET.md).
+`godd testnet create`, `identity`, `assemble`, `join`, `check` and `start` provide private synthetic setup and persistent operation. Independent initialization keeps consensus and P2P keys with each operator. Earlier private checks exercised four validators and a non-signing observer; they did not establish independent cross-host operation. The public synthetic pilot runs under separate deployment authorization. Validators keep RPC on loopback and the observer is exposed only through a restricted gateway. Mainnet, RH bridge startup and real assets remain disabled. See [TESTNET.md](TESTNET.md).
 
 The basic Ethereum RPC subset supports external signing, bounded call/gas simulation, raw submission and actual success or revert receipts. Native direct-signature submission shares the same account sequence. Admission is not commitment. Only the explicit commit-pending response permits a post-commit retry; an unknown submission outcome requires checking the known hash before retrying. There is no full historical API, subscription service or unrestricted debug RPC.
 
@@ -36,7 +44,7 @@ The basic Ethereum RPC subset supports external signing, bounded call/gas simula
 
 The [encrypted terminal test wallet](WALLET.md) creates disposable, bundle-bound accounts and signs GOD transfers or six native operations only after explicit terminal approval. Keys remain encrypted at rest and signing stays outside the browser and RPC server. Personal-key import, mnemonic recovery, graphical signing, a Chrome extension and a production wallet are not implemented. The [test explorer](EXPLORER.md) shows bounded committed blocks and actual transaction outcomes, not a complete archive or indexed address history. Test GOD and G have no monetary value or guaranteed mainnet conversion.
 
-`godpack` prepares and verifies private Linux acceptance archives without installation or execution. The included nginx file is an unpopulated review template, not an enabled service or operational configuration. `godd testnet host-check`, `health` and `smoke` provide read-only host budgets, pinned availability checks and matching-resource/origin/progress samples. They never sign, submit or restart a service. Native Linux runtime, independent hosts, secured HTTPS, sustained daily settlement and ordinary-computer resource measurements remain acceptance gates. See [DEPLOYMENT.md](DEPLOYMENT.md). No binaries, node data, keys or configured endpoints are distributed here.
+`godpack` prepares and verifies private Linux acceptance archives without installation or execution. The included nginx file is an unpopulated review template, not an enabled service or operational configuration. `godd testnet host-check`, `health` and `smoke` provide read-only host budgets, pinned availability checks and matching-resource/origin/progress samples. They never sign, submit or restart a service. The pilot has short native Linux and HTTPS checks; independent hosts, sustained daily settlement, failure recovery and ordinary-computer resource measurements remain acceptance gates. See [DEPLOYMENT.md](DEPLOYMENT.md). No binaries, node data, keys or configured endpoints are distributed here.
 
 ## G rewards and fixed GOD supply
 
