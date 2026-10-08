@@ -3,12 +3,12 @@ PROTOC ?= protoc
 .DEFAULT_GOAL := check
 GOD_BUILD_FLAGS = -mod=readonly -modfile="$(CURDIR)/build/.godcomet/god.mod" -overlay="$(CURDIR)/build/.godcomet/overlay.json"
 
-.PHONY: prepare-consensus check build status compile-targets generate-proto
+.PHONY: prepare-consensus check build build-history-index status compile-targets generate-proto
 
 prepare-consensus:
 	GOOS= GOARCH= $(GO) run -mod=readonly ./cmd/godbuild -go "$(GO)"
 
-check build compile-targets generate-proto: prepare-consensus
+check build build-history-index compile-targets generate-proto: prepare-consensus
 
 check:
 	$(GO) vet $(GOD_BUILD_FLAGS) -p 2 ./...
@@ -18,6 +18,10 @@ check:
 build:
 	$(GO) build $(GOD_BUILD_FLAGS) -p 2 -trimpath -o build/godd ./cmd/godd
 	$(GO) build $(GOD_BUILD_FLAGS) -p 2 -trimpath -o build/godpack ./cmd/godpack
+
+# Opt-in keyless synthetic history CLI; building starts no listener or sync.
+build-history-index:
+	$(GO) build $(GOD_BUILD_FLAGS) -p 2 -trimpath -o build/godhistory ./cmd/godhistory
 
 status: build
 	./build/godd status

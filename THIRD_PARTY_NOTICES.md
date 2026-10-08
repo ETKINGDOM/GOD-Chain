@@ -44,3 +44,14 @@ not a public dependency tree or binary release.
 ## Synthetic faucet journal
 
 The separate disposable faucet uses the existing pinned `go.etcd.io/bbolt` v1.4.0-alpha.1 dependency for synchronous transactional journaling. Its upstream MIT license and Ben Johnson copyright remain applicable; the pinned module's complete license accompanies private build material. No database server or new protocol dependency was added or silently upgraded. The faucet also uses the existing God account codec and execution signing libraries with their original dependency licenses. This integration has developer-run tests, not an independent security audit or authorization for public binary redistribution.
+
+## Opt-in address-history index foundation
+
+The separate opt-in history CLI reuses the same pinned `go.etcd.io/bbolt`
+v1.4.0-alpha.1 for its synchronous complete-block checkpoint and address index.
+The original MIT license and Ben Johnson copyright remain applicable and
+accompany the private build material. No dependency version or module checksum
+was changed. Reuse of this existing alpha pin is not production-storage
+acceptance, an independent audit or authorization to redistribute a binary.
+The reviewed public-core scope includes the CLI/module source, not a binary or
+the dependency tree. Source publication does not complete redistribution review.

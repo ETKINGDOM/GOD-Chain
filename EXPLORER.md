@@ -77,6 +77,33 @@ unknown-outcome handling. These tools are served by the public synthetic pilot;
 their availability does not establish live adoption, sustained reliability or
 independent validation. The extension's public activation remains separate.
 
+## Opt-in durable address-history foundation
+
+The included opt-in local CLI indexes selected complete stored blocks through the
+existing observer reads. It validates every twenty-summary page, then persists
+compact transaction identifiers, execution outcomes, supported address
+membership and a checkpoint in one synchronous database transaction. It does
+not store memos, calldata, raw wire, events, logs or private faith text. Queries
+return at most twenty address matches with an exclusive, stored-anchor cursor.
+Native and compatible encodings of the same account share one address index.
+
+Private race checks cover 20/20/5 block and address pagination, failed-page and
+failed-write rollback, abrupt process exit between blocks, corrupt data,
+changed-source rejection and explicit retained-range coverage. Actual persistent
+local consensus accepted a synthetic transfer; its matching indexed record
+survived index reopen and observer restart. A bounded Linux acceptance indexed
+ten already committed public-pilot blocks and recovered an existing native
+exit record once across separate sync/query invocations. It made no claim or
+submission and changed no existing service process, listener or gateway config.
+
+This is a local CLI foundation, not a deployed public history API, complete
+genesis backfill, NFT event index, authenticated proof or accepted production
+database. Its production source and [usage guide](HISTORY.md) are included in
+the reviewed core scope; private tests and operational data remain excluded.
+It counts unsupported summaries explicitly and never turns an empty range into
+proof of no activity. Public queries, browser integration, capacity/retention,
+power-loss acceptance and independent review remain separate gates.
+
 ## Remaining explorer work
 
-Full account/NFT history, independent indexing, general contract verification, historical balances, validator directory, proofs, subscriptions and sustained load testing remain separate work. The secured public synthetic pilot is a bounded alpha, not a production explorer or proof of independent validator operation. Broader cross-host and production acceptance still require the target environment described in [DEPLOYMENT.md](DEPLOYMENT.md).
+Full public account/NFT history, independent index-service operation, general contract verification, historical balances, complete historical validator indexing, proofs, subscriptions and sustained load testing remain separate work. The existing bounded registration directory is not historical signing evidence. The secured public synthetic pilot is a bounded alpha, not a production explorer or proof of independent validator operation. Broader cross-host and production acceptance still require the target environment described in [DEPLOYMENT.md](DEPLOYMENT.md).

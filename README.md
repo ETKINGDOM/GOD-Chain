@@ -65,6 +65,18 @@ The basic Ethereum RPC subset supports external signing, bounded call/gas simula
 
 The [encrypted terminal test wallet](WALLET.md) creates disposable, bundle-bound accounts and signs GOD transfers or six native operations only after explicit terminal approval. Its signing stays outside the browser and RPC server. The separately maintained web/Chrome alpha signs on the participant's device and never sends a vault or password to the node. Browser/extension source and separate pilot gateways are not included in this exact core snapshot. Personal-key import, mnemonic recovery, website-provider signing and production-wallet acceptance remain incomplete. The [test explorer](EXPLORER.md) shows bounded committed blocks and actual transaction outcomes, not a complete archive or indexed address history. Test GOD and G have no monetary value or guaranteed mainnet conversion.
 
+The included [keyless history CLI](HISTORY.md), `godhistory`, indexes selected
+complete blocks from an explicitly configured numeric-loopback observer. It
+atomically stores compact public transaction identifiers, execution status,
+supported address membership and a durable checkpoint. Queries return twenty
+matches with an exclusive stored-anchor cursor and explicit retained coverage.
+Memos, calldata, raw wire, events, logs and faith text are not stored. It opens
+no listener, signs nothing and leaves unknown participant submissions untouched.
+Private pagination, interruption/reopen and persistent-node checks passed;
+bounded Linux acceptance read ten committed pilot blocks without changing any
+existing service. This is not full-genesis backfill, a deployed public history
+API, NFT event history, authenticated proof or production-storage acceptance.
+
 `godpack` prepares and verifies private Linux acceptance archives without installation or execution. The included nginx file is an unpopulated review template, not an enabled service or operational configuration. `godd testnet host-check`, `health` and `smoke` provide read-only host budgets, pinned availability checks and matching-resource/origin/progress samples. They never sign, submit or restart a service. The pilot has short native Linux and HTTPS checks; independent hosts, sustained daily settlement, failure recovery and ordinary-computer resource measurements remain acceptance gates. See [DEPLOYMENT.md](DEPLOYMENT.md). No binaries, node data, keys or configured endpoints are distributed here.
 
 ## G rewards and fixed GOD supply
@@ -131,7 +143,7 @@ make status
 
 Make targets use `cmd/godbuild` to verify the exact pinned reactor, prepare an ignored private module copy and select the reviewed compiler overlay. Original dependency caches and pins are unchanged. A plain unpatched node build fails the worker-join API check; do not bypass it. Required upstream patch license and notice are retained under `licenses/`.
 
-The diagnostic reports `local-consensus-execution-prototype`, `localNodePrototype: true` and `localCommittedQueriesImplemented: true`, while retaining `nodeReady: false` and `realAssets: false`. Mainnet and real-asset startup commands fail closed; the explicit synthetic-testnet path is separate. A build does not start a chain or verify backing. `make build` creates `godd` and `godpack`; `make compile-targets` cross-compiles five node targets and two Linux packager targets without executing foreign binaries. Go 1.25 or newer is required; verification used Go 1.26.8. Windows private operations remain disabled pending ACL acceptance.
+The diagnostic reports `local-consensus-execution-prototype`, `localNodePrototype: true` and `localCommittedQueriesImplemented: true`, while retaining `nodeReady: false` and `realAssets: false`. Mainnet and real-asset startup commands fail closed; the explicit synthetic-testnet path is separate. A build does not start a chain or verify backing. `make build` creates `godd` and `godpack`; `make build-history-index` separately builds the opt-in history CLI without syncing or opening a listener. `make compile-targets` cross-compiles five node targets and two Linux packager targets without executing foreign binaries. Go 1.25 or newer is required; verification used Go 1.26.8. Windows private operations remain disabled pending ACL acceptance.
 
 Generated protobuf messages are included, so ordinary builds need no protobuf compiler. `make generate-proto` uses protoc 33.0 and the locked generator. Solidity custody source requires the separately verified compiler described in the lock; no compiler, private fixture, bytecode or operational build script is distributed.
 

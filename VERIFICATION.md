@@ -9,6 +9,41 @@ real assets. God EVM + God SDK + GodCometBFT pins remain unchanged.
 
 ## Current synthetic participant acceptance
 
+### Opt-in durable address-history foundation
+
+The exact core source includes `internal/godhistory`, `cmd/godhistory` and the
+English [history guide](HISTORY.md), not private tests, runtime databases,
+operational settings or binaries. The keyless CLI reads only the selected
+numeric-loopback observer's `god_network` and `god_block`, with bounded replies,
+complete-block pagination and paced requests. Compact public identifiers,
+supported address membership and checkpoint commit synchronously together.
+It stores no memo, calldata, raw wire, arbitrary message, event, log or faith
+text. Address queries have twenty-row exclusive stored-anchor cursors and
+explicit retained-range/unsupported-summary counts; empty does not mean no
+activity. Interrupted or rejected reconciliation disables queries without
+rewinding durable progress or touching unknown participant submissions.
+
+Private race checks cover 20/20/5 block/address pages, anchored append, native/
+compatible account equivalence, partial-page and late-write rollback, abrupt
+process exit between blocks, malformed/changed source, corrupt membership and
+owner-only storage. Actual persistent local consensus accepted a fixture GOD
+transfer whose indexed sender/recipient records survived index reopen and
+observer restart. The complete local Go suite and 101 wallet/browser checks
+passed; unchanged Go packages may retain valid test-cache results. These are
+developer-run synthetic checks, not independent audit or public payout proof.
+
+A bounded Linux candidate indexed ten already committed pilot blocks over two
+sync invocations and recovered an existing native exit record exactly once
+across reopen. Ten CLI rejection cases passed without changing database bytes.
+All twelve existing service processes, listeners and nginx config remained
+unchanged. No claim, submission, validator restart, public-route activation,
+complete backfill or NFT-history acceptance occurred. The existing pinned
+bbolt alpha dependency is unchanged, not accepted production storage. Public
+query-service/browser integration, NFT events, capacity/retention, power loss,
+torn writes, independent review and sustained measurements remain open gates.
+
+### Existing web and Chrome pilot
+
 Web/Chrome alpha 0.3.9 is deployed under explicit authorization. The participant
 tools support disposable encrypted accounts, recovery, bounded automatic
 funding, reviewed GOD transfers, a restricted test NFT collection and six native
@@ -281,9 +316,9 @@ A deterministic private negative control bypassing only the wrapper reproduced t
 
 ## Public source checks
 
-The public snapshot contains exactly 104 reviewed files: production-source candidates, synthetic node/RPC/wallet/companion/explorer and host-testing interfaces, eight embedded resources, English guides, an unpopulated nginx review template, schemas, generated messages, pinned modules, checksums, the checksum-bound build helper and required license/notice, sixteen RH read-only/simulation interface files and the preserved public whitepaper. Private tests, fixtures, operational deployment scripts, populated configuration, genesis, addresses, keys, runtime data, dependency folders, logs and binaries are excluded. The template is not an enabled service. Private application or source-review ancestry must not become a public parent.
+The public snapshot contains exactly 111 reviewed files: production-source candidates, synthetic node/RPC/wallet/companion/explorer and host-testing interfaces, the opt-in keyless history CLI/module, eight embedded resources, English guides, an unpopulated nginx review template, schemas, generated messages, pinned modules, checksums, the checksum-bound build helper and required license/notice, sixteen RH read-only/simulation interface files and the preserved public whitepaper. Private tests, fixtures, operational deployment scripts, populated configuration, genesis, addresses, keys, runtime data, dependency folders, logs and binaries are excluded. The template is not an enabled service. Private application or source-review ancestry must not become a public parent.
 
-`make check` verifies the pinned lifecycle compiler input, then runs vet, module checksum verification and compilation. `make build` compiles the node/tool and packager commands. `make status` runs the diagnostic without starting consensus or bridge operations. Public commands do not reproduce the private tests, fuzz windows or custody-bytecode checks. Publication screening checks exact file scopes, both commit identities, file bytes, commit messages and every reachable public ancestor. It is not a comprehensive secret audit or independent code review.
+`make check` verifies the pinned lifecycle compiler input, then runs vet, module checksum verification and compilation. `make build` compiles the node/tool and packager commands; `make build-history-index` separately builds the local history CLI. Neither build starts a node or a history sync. `make status` runs the diagnostic without starting consensus or bridge operations. Public commands do not reproduce the private tests, fuzz windows or custody-bytecode checks. Publication screening checks exact file scopes, both commit identities, file bytes, commit messages and every reachable public ancestor. It is not a comprehensive secret audit or independent code review.
 
 Public source verification requires lifecycle vet, original-module checksum verification, compilation, exact reviewed source bytes and byte-for-byte preservation of the public whitepaper. Native diagnostics must retain blank operational fields, disabled mainnet/real-asset commands and false source-finality/real-asset flags. Foreign binaries are not executed or distributed by source publication.
 
