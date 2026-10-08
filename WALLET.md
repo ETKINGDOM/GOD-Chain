@@ -2,7 +2,7 @@
 
 This exact public core snapshot includes the encrypted terminal signer and the
 unsigned local companion. Separately maintained web and downloadable Chrome
-alpha 0.3.6 operate on the authorized synthetic pilot; their browser source,
+alpha 0.3.7 operate on the authorized synthetic pilot; their browser source,
 gateways, deployment scripts, packages and populated network settings are not
 included here. Public build commands do not install or activate those services.
 All test assets have no monetary value or guaranteed mainnet conversion.
@@ -68,6 +68,15 @@ global budget. Definite pre-admission failure is distinct from unknown or
 duplicate attempted results. Earlier unknown IDs retain their conflicting-
 signature guards. A network-bound native TX ID file enables locked read-only
 recovery without proving ownership or unlocking the account.
+
+The G readiness view separates spendable, settled unclaimed and pending earned
+G, as well as settled/pending pool and supply. Pending G is not claimable or
+redeemable. Its minimum-one-G indicative output uses only settled liquidity and
+outstanding G with integer flooring; empty or zero-output liquidity has no
+positive quote. Every redemption still requires fresh state, signed minimum
+output/deadline and explicit consent. A read burns no G and signs nothing.
+The next UTC boundary comes from committed block time and is not a settlement,
+reward or payout guarantee. Live web/mobile/Chrome values matched exact state.
 
 Public delegation/start-unbonding receipts and a real pending one-GOD entry
 were checked, including locked web/Chrome recovery. The progress view shows

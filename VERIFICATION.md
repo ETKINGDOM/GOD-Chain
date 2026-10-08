@@ -9,12 +9,23 @@ real assets. God EVM + God SDK + GodCometBFT pins remain unchanged.
 
 ## Current synthetic participant acceptance
 
-Web/Chrome alpha 0.3.6 is deployed under explicit authorization. The participant
+Web/Chrome alpha 0.3.7 is deployed under explicit authorization. The participant
 tools support disposable encrypted accounts, recovery, bounded automatic
 funding, reviewed GOD transfers, a restricted test NFT collection and six native
 staking/G scopes. General public RPC writes, arbitrary contract signing,
 website-provider signing, RH activation and mainnet assets remain disabled.
 
+- The read-only G readiness view separates spendable, settled unclaimed and
+  pending earned G, settled/pending pools and settled/pending supply. It derives
+  the next UTC boundary from committed time without promising settlement or
+  payment. The minimum-one-G quote uses only settled liquidity and outstanding
+  G with integer flooring. Empty or zero-output liquidity has no positive quote;
+  reads burn no G and start no signer. Twenty-three client/profile/installer
+  tests and desktop/mobile/actual Chrome fixtures passed, including pending,
+  empty-pool and unknown-result guards. Live desktop, mobile and downloaded
+  Chrome checks matched all values to exact committed snapshots, with no
+  claim, signature, submission, native signer, page error, overflow or browser
+  vault storage. This is not positive settled-G workflow acceptance.
 - A captured fresh-account reply proved a quota denial before node admission:
   a confirmation lookup had consumed the IP cooldown for the next submission.
   Status/submission now have independent five-second IP windows while keeping
@@ -33,12 +44,16 @@ website-provider signing, RH activation and mainnet assets remain disabled.
   removed delegation and real one-GOD pending entry were verified. The existing
   21-day completion time was not shortened or bypassed; initiation is not payout.
   Earlier unknown accounts lacked that proof and were not replaced or resent.
-- HTTPS acceptance matched 42 release files, ten preflights and four closed-
+- HTTPS acceptance matched 45 release files, ten preflights and four closed-
   origin denials, with public RPC writes still disabled. The downloaded Chrome
   alpha retained thirteen reviewed files, its stable identity and two host
   permissions. Locked desktop/mobile/Chrome recovery preserved unknown guards
   and recovered the new committed receipt and pending entry without a claim,
   signature or submission. No page error or horizontal overflow was observed.
+- Version 0.3.7 activation changed only frontend files and the nginx site root;
+  bounded static hash handover checks accounted for graceful old-worker exit.
+  Recoverable rollback remained available. All node and gateway processes
+  remained unchanged; no signer, economic rule or dependency pin changed.
 - Final read-only reconciliation found eleven active services and five node
   views at one fresh committed height and app hash. All returned the matching
   undelegation receipt and post-operation account state. Validator processes,
