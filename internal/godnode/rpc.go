@@ -338,7 +338,7 @@ func (r *TestnetRPC) dispatch(ctx context.Context, call rpcRequest) (result any,
 			return nil, unavailable
 		}
 		return map[string]any{"running": r.n.node.IsRunning(), "applicationUsable": usable, "applicationHeight": strconv.FormatInt(height, 10), "blockStoreHeight": strconv.FormatInt(r.n.node.BlockStore().Height(), 10), "commitPending": pending, "connectedPeers": r.n.node.Switch().Peers().Size(), "catchingUp": status.SyncInfo.CatchingUp, "consensusProgress": round.Progress, "synthetic": true, "realAssets": false}, nil
-	case "god_delegation":
+	case "god_delegation", "god_unbonding":
 		if len(call.Params) < 2 || len(call.Params) > 3 {
 			return nil, bad
 		}
@@ -353,6 +353,13 @@ func (r *TestnetRPC) dispatch(ctx context.Context, call rpcRequest) (result any,
 			if !ok {
 				return nil, bad
 			}
+		}
+		if call.Method == "god_unbonding" {
+			v, err := r.n.app.QueryUnbonding(owner, validator, height)
+			if err != nil {
+				return nil, bad
+			}
+			return v, nil
 		}
 		v, err := r.n.app.QueryDelegation(owner, validator, height)
 		if err != nil {

@@ -94,7 +94,7 @@ func smokeOrigin(ctx context.Context, client *http.Client, endpoint, origin stri
 
 func smokeAssets(ctx context.Context, client *http.Client, endpoint string, r *SmokeReport) error {
 	u, _ := url.Parse(endpoint)
-	for _, path := range []string{"/", "/wallet.html", "/explorer.html", "/styles.css", "/client.mjs", "/main.mjs", "/explorer.mjs"} {
+	for _, path := range []string{"/", "/wallet.html", "/explorer.html", "/styles.css", "/client.mjs", "/query-errors.mjs", "/main.mjs", "/explorer.mjs"} {
 		u.Path = path
 		req, _ := http.NewRequestWithContext(ctx, http.MethodGet, u.String(), nil)
 		req.Header.Set("Accept-Encoding", "identity")

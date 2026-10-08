@@ -1,4 +1,5 @@
 // Read-only browser RPC and unsigned request preparation. No signer or proxy.
+import {QueryUnavailableError,transientHTTP,isQueryUnavailable} from './query-errors.mjs';
 const reads=new Set(['god_network','god_liveness','god_account','god_delegation','god_transaction','god_blocks','god_block','god_transactionDetails','eth_getBlockByNumber','eth_getTransactionReceipt']);
 const fail=()=>new Error('Testnet request unavailable. Check the reviewed network and input.');
 const uint=/^(0|[1-9][0-9]*)$/;
@@ -20,16 +21,19 @@ export function createRPC(endpoint,fetcher=globalThis.fetch){
     const body=JSON.stringify({jsonrpc:'2.0',id,method,params});if(body.length>16384)throw fail();
     const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),5000);
     try{
-      const response=await fetcher(url,{method:'POST',headers:{'Content-Type':'application/json'},body,signal:controller.signal,credentials:'omit',cache:'no-store',redirect:'error',referrerPolicy:'no-referrer'});
+      let response;
+      try{response=await fetcher(url,{method:'POST',headers:{'Content-Type':'application/json'},body,signal:controller.signal,credentials:'omit',cache:'no-store',redirect:'error',referrerPolicy:'no-referrer'});}
+      catch(error){if(controller.signal.aborted||error instanceof TypeError)throw new QueryUnavailableError();throw error;}
+      if(transientHTTP(response.status))throw new QueryUnavailableError();
       if(!response.ok)throw fail();
-      let length=0,raw='';const decoder=new TextDecoder();
+      let length=0,raw='';const decoder=new TextDecoder('utf-8',{fatal:true});
       const reader=response.body?.getReader();
       if(!reader)throw fail();
-      try{for(;;){const {value,done}=await reader.read();if(done)break;length+=value.byteLength;if(length>2*1024*1024){await reader.cancel();throw fail();}raw+=decoder.decode(value,{stream:true});}raw+=decoder.decode();}finally{reader.releaseLock();}
+      try{for(;;){let chunk;try{chunk=await reader.read();}catch{throw new QueryUnavailableError();}const {value,done}=chunk;if(done)break;length+=value.byteLength;if(length>2*1024*1024){await reader.cancel();throw fail();}raw+=decoder.decode(value,{stream:true});}raw+=decoder.decode();}finally{reader.releaseLock();}
       const value=JSON.parse(raw);
       if(value?.jsonrpc!=='2.0'||value.id!==id||value.error||!Object.hasOwn(value,'result'))throw fail();
       return value.result;
-    }catch{throw fail();}finally{clearTimeout(timer);}
+    }catch(error){if(isQueryUnavailable(error))throw error;throw fail();}finally{clearTimeout(timer);}
   };
 }
 export function checkNetwork(n){

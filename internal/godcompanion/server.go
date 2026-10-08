@@ -18,7 +18,7 @@ import (
 	"time"
 )
 
-//go:embed assets/index.html assets/styles.css assets/client.mjs assets/main.mjs assets/wallet.html assets/explorer.html assets/explorer.mjs
+//go:embed assets/index.html assets/styles.css assets/client.mjs assets/query-errors.mjs assets/main.mjs assets/wallet.html assets/explorer.html assets/explorer.mjs
 var assets embed.FS
 var ErrCompanion = errors.New("local synthetic companion unavailable")
 
@@ -38,7 +38,7 @@ func assetForPath(path string) (string, string) {
 		return strings.TrimPrefix(path, "/"), "text/html; charset=utf-8"
 	case "/styles.css":
 		return "styles.css", "text/css; charset=utf-8"
-	case "/client.mjs", "/main.mjs", "/explorer.mjs":
+	case "/client.mjs", "/query-errors.mjs", "/main.mjs", "/explorer.mjs":
 		return strings.TrimPrefix(path, "/"), "text/javascript; charset=utf-8"
 	default:
 		return "", ""

@@ -1,10 +1,33 @@
 # GOD Chain synthetic testnet deployment guide
 
-The synthetic GOD Chain testnet runs God EVM + God SDK + GodCometBFT with persistent node storage and a restricted JSON-RPC service. It is intended for public testing with disposable accounts and assets that have no external backing or monetary value. It does not connect to RH, activate a bridge, or authorize further deployment. Mainnet and real-asset commands remain disabled. A separate automatic faucet distributes existing synthetic GOD without registration or human approval, subject to fixed amounts, rate limits and available pilot funds. The local unsigned-request interface and offline operator funding helpers are described in [COMPANION.md](COMPANION.md); they are not required for public pilot faucet claims.
+The synthetic GOD Chain testnet runs God EVM + God SDK + GodCometBFT with persistent node storage and a restricted JSON-RPC service. It is intended for public testing with disposable accounts and assets that have no external backing or monetary value. It does not connect to RH, activate a bridge, or authorize further deployment. Mainnet and real-asset commands remain disabled. Public test-GOD claims use the automatic service in FAUCET.md (separate pilot guide, not included in this core snapshot), with no registration or human approval. The separate local unsigned-request interface and offline operator funding helpers are described in [COMPANION.md](COMPANION.md).
 
-GOD Chain's public testnet operates with four validator nodes. Deployment across four geographic regions is planned. The current pilot is not an independently operated, geographically distributed network. A non-signing observer serves restricted public read-only RPC and committed block/account views. The separate automatic faucet does not enable general public transaction submission, browser signing or NFT participant tools. The network may be reset and test balances have no guaranteed mainnet conversion.
+GOD Chain's public testnet operates with four validator nodes. Deployment across four geographic regions is planned. The current pilot is not an independently operated, geographically distributed network. A non-signing observer serves restricted public read-only RPC and committed block/account views. The separate automatic faucet does not enable general public transaction submission. The connected [test wallet](WALLET.md) signs plain GOD transfers and restricted collection NFT operations locally, using separate keyless submission gateways. The Chrome extension (separate pilot guide, not included in this core snapshot) is a downloadable desktop test alpha connected through one reviewed exact origin; it is not a Store release or an external website signer.
 
-Local checks cover four persistent validators, independently initialized identities, a non-signing observer, signed EVM transfers and contracts, native delegation and recovery. The first encrypted disposable [test wallet](WALLET.md) and bounded [test explorer](EXPLORER.md) are available locally. These local checks do not establish independent cross-host operation. An independently operated multi-region deployment still requires separate hosts, secured infrastructure and the acceptance checks below; production wallet and explorer acceptance remain separate work.
+Local checks cover four persistent validators, independently initialized identities, a non-signing observer, signed EVM transfers and contracts, native delegation and recovery. The first encrypted disposable [test wallet](WALLET.md) and bounded [test explorer](EXPLORER.md) are available locally. These ran on one macOS computer. An independently operated multi-region deployment still requires separate hosts, secured infrastructure and the acceptance checks below; production wallet and explorer acceptance remain separate work.
+
+## Public pilot scope and remaining work
+
+The current HTTPS pilot supports basic participant testing, not every mainnet
+feature. Its website, network and transaction tools use worthless synthetic
+assets; they do not promise persistence, independent validation or conversion
+into real GOD. Participants can begin with the web wallet without waiting for
+a browser extension or an RH bridge.
+
+| Area | Current pilot scope | Remaining work |
+| --- | --- | --- |
+| Web wallet and funding | Local encrypted creation/recovery, fixed automatic test claims, reviewed GOD transfers, known TX IDs and committed recipient checks. | Broader browsers/devices, sustained participant acceptance and independent security review. |
+| Restricted NFTs | One configured collection, locally reviewed mint/send, checked receipts and current ownership cards. | General collection tools, NFT history and independent indexing. |
+| Explorer | Committed blocks/transactions, checksum-matched watch-only accounts and manual five-block sender/recipient scans. | Complete address/NFT history, validator views and proofs. A bounded scan is not a full index. |
+| Chrome wallet | Downloadable alpha with a fixed reviewed identity, exact-origin service activation, English installation/hash guide and actual HTTPS create/recover/claim/transfer/NFT acceptance. | Physical Chrome/device acceptance, transient read recovery, website connection permissions, external provider signing, independent security review and a separately authorized Store release. |
+| Staking and G | Core synthetic operations and offline signing/query tools. | Browser-native signing, validator selection, delegation/exit, G claims/transfers and pool-redemption interfaces. These are not exposed as participant web mining. |
+| Operations | Supervised services, bounded health snapshots, abuse limits and safe frontend rollback. | Sustained load/resource measurements, alerting, storage-growth policy and independently reviewed recovery drills. |
+| Independent validators | Four pilot validator processes. | Independently controlled hosts, cross-host acceptance and signing-safety review. Four geographic deployments remain planned, not established. |
+
+Real assets and the RH bridge remain disabled. Bridge backing, finality,
+custody and signer activation are separate gates, not prerequisites for basic
+worthless-asset wallet testing. No readiness table substitutes for the broader
+acceptance checklist below.
 
 ## Build requirements
 
@@ -15,7 +38,7 @@ make check build
 make compile-targets
 ```
 
-Every target selects the checksum-bound GodCometBFT lifecycle build. Never bypass it with an unpatched node build. Compilation for Linux, macOS or Windows does not establish native runtime support. Windows private node operations are disabled until owner-only ACL behavior is implemented and verified. Generated binaries remain private; there is no installer, binary publication or automatic deployment.
+Every target selects the checksum-bound GodCometBFT lifecycle build. Never bypass it with an unpatched node build. Compilation for Linux, macOS or Windows does not establish native runtime support. Windows private node operations are disabled until owner-only ACL behavior is implemented and verified. Generated node binaries remain private; there is no node installer, binary publication or automatic deployment. The separately authorized Chrome test-alpha ZIP is not a node binary release.
 
 ## Network layout
 
@@ -179,7 +202,20 @@ The private `sign-request.json` schema has version, mode, chain ID, account numb
 
 The command signs offline, creates a new private output and reports `submitted: false`. Send its wire separately through `god_submitTransaction` and verify the consensus result. Never treat a signed file or admission response as payment confirmation. Native transactions and EVM transfers consume the same account sequence.
 
-For an initial controlled test, validators can manually transfer their unbonded synthetic test funds to participant disposable wallets through externally signed EVM transfers. The offline `testnet sign-funding` helper binds a manually reviewed request to the complete synthetic bundle, bounds its amount and fee, and creates a private signed output without broadcast. The local companion exports unsigned participant requests and displays actual receipts and balances; see [COMPANION.md](COMPANION.md). This is not a public faucet service. Automated faucet abuse controls, a funding allocation and participant onboarding remain launch tasks. Do not release restricted reserve, borrow RH funds, shorten unbonding, or fund testing by changing the fixed GOD supply.
+Offline operators can transfer their unbonded synthetic funds through externally signed compatible GOD transfers. The `testnet sign-funding` helper binds a separately reviewed private operator request to the complete synthetic bundle, bounds its amount and fee, and creates a signed output without broadcast. It can seed a dedicated disposable faucet account without putting operator or consensus keys on the faucet service. The local companion's unsigned-request export is not an automatic claim; see [COMPANION.md](COMPANION.md).
+
+Participants use the separately deployed automatic faucet instead: exactly 1 test GOD per address every 24 hours, with bounded IP/global quotas, a finite already-funded pool and durable idempotency. There is no participant account registration or manual approval. Its dedicated synthetic signer is separate from the keyless read-only public RPC. Private Linux transfers, persisted quotas, restart recovery, an actual public HTTPS claim and desktop/mobile status display have passed developer-run checks. Browser transfer signing and the restricted NFT collection use the separate boundaries described in [WALLET.md](WALLET.md) and NFT.md (separate pilot guide, not included in this core snapshot); general contract submission and native browser staking are not enabled by the faucet. The exact-origin downloadable extension is a separate activation, not a faucet permission. Do not release restricted reserve, borrow RH funds, shorten unbonding, or fund testing by changing the fixed GOD supply.
+
+The public portal provides a manual read-only delegation check for the already
+matched watch-only account and one canonical `godvaloper1` operator address.
+Both addresses and the committed response are checked; stale, mismatched and
+unavailable replies never become a zero staked balance or a completed exit.
+Network refresh also displays committed GOD-pool and G totals, distinguishing
+pending settlement/issuance from available balances. These are service views,
+not proofs, validator endorsements, yield promises or redemption quotes.
+Browser delegation, unbonding, G claims and redemption remain disabled until
+their native signing/admission flows pass separate acceptance. See the full
+public-testnet gates in [ROADMAP.md](ROADMAP.md).
 
 ## Shutdown and recovery
 

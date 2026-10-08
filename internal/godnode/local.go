@@ -3,6 +3,9 @@ package godnode
 import (
 	"context"
 	"encoding/hex"
+	"github.com/ETKINGDOM/GOD-Chain/internal/godtx"
+	"github.com/ETKINGDOM/GOD-Chain/x/godrewards"
+	"log"
 	"net"
 	"net/url"
 	"path/filepath"
@@ -251,6 +254,9 @@ func (n *LocalNode) Submit(ctx context.Context, wire []byte) error {
 		case commitPendingCheck(res):
 			result <- ErrCommitPending
 		case res == nil || res.Code != 0:
+			// Fixed private operational category only. Never print the SDK Log:
+			// it can include user-controlled messages or account identifiers.
+			log.Printf("native check unresolved: %s", nativeCheckCategory(res))
 			result <- ErrBlock
 		default:
 			result <- nil
@@ -265,6 +271,33 @@ func (n *LocalNode) Submit(ctx context.Context, wire []byte) error {
 	case <-ctx.Done():
 		return ctx.Err()
 	}
+}
+
+func nativeCheckCategory(res *abci.ResponseCheckTx) string {
+	if res == nil {
+		return "missing-response"
+	}
+	if strings.Contains(res.Log, godrewards.ErrTimeRegression.Error()) {
+		return "reward-time-regression"
+	}
+	if strings.Contains(res.Log, godtx.ErrPolicy.Error()) {
+		return "native-policy"
+	}
+	if res.Codespace == "sdk" {
+		switch res.Code {
+		case 4:
+			return "authentication"
+		case 5:
+			return "insufficient-funds"
+		case 11:
+			return "gas-limit"
+		case 13:
+			return "fee-policy"
+		case 32:
+			return "account-sequence"
+		}
+	}
+	return "unclassified-rejection"
 }
 
 func (n *LocalNode) Stop() error {

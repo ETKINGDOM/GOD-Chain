@@ -1,6 +1,57 @@
 # GOD Chain core verification
 
-Developer-run verification on 2026-10-07 used macOS arm64 and Go 1.26.8. This record covers synthetic execution, staking, consensus, recovery, bridge accounting, read-only RH evidence, committed queries, restricted RPC, encrypted terminal signing, the participant companion, test explorer and host-testing tools. Whole-module and targeted private checks passed with race detection. This is not an independent audit, deployed network, source-finality proof or mainnet safety certification. Private tests and generated inputs are not distributed; no public service or real assets are activated.
+This record separates exact public-core source checks from acceptance of the
+separately deployed synthetic pilot. It is not an independent audit, source-
+finality proof or mainnet safety certification. Private tests, browser/extension
+source, separate pilot gateways and generated operational inputs are not
+distributed in this exact source snapshot. Publication activates no service or
+real assets. God EVM + God SDK + GodCometBFT pins remain unchanged.
+
+## Current synthetic participant acceptance
+
+Web/Chrome alpha 0.3.6 is deployed under explicit authorization. The participant
+tools support disposable encrypted accounts, recovery, bounded automatic
+funding, reviewed GOD transfers, a restricted test NFT collection and six native
+staking/G scopes. General public RPC writes, arbitrary contract signing,
+website-provider signing, RH activation and mainnet assets remain disabled.
+
+- A captured fresh-account reply proved a quota denial before node admission:
+  a confirmation lookup had consumed the IP cooldown for the next submission.
+  Status/submission now have independent five-second IP windows while keeping
+  the combined global request budget. Definite non-admission is distinguished
+  only through exact closed response contracts; duplicates, malformed replies,
+  generic errors and transport uncertainty preserve unknown signing guards.
+  Nothing is automatically resent or retroactively declared rejected.
+- Race-enabled gateway/codec/CLI and privacy checks passed. Browser signatures
+  passed independent pinned SDK wire checks. Four persistent local validators
+  and an observer accepted a fresh browser-signed delegation, start-unbonding
+  and donation; its pending entry survived observer restart. These fixtures are
+  not independent operator or sustained daily-settlement acceptance.
+- One new public disposable account's captured never-admitted signed wire was
+  submitted once after the fix, with the same original native ID and no new
+  signature. Its matching successful receipt, account sequence advancement,
+  removed delegation and real one-GOD pending entry were verified. The existing
+  21-day completion time was not shortened or bypassed; initiation is not payout.
+  Earlier unknown accounts lacked that proof and were not replaced or resent.
+- HTTPS acceptance matched 42 release files, ten preflights and four closed-
+  origin denials, with public RPC writes still disabled. The downloaded Chrome
+  alpha retained thirteen reviewed files, its stable identity and two host
+  permissions. Locked desktop/mobile/Chrome recovery preserved unknown guards
+  and recovered the new committed receipt and pending entry without a claim,
+  signature or submission. No page error or horizontal overflow was observed.
+- Final read-only reconciliation found eleven active services and five node
+  views at one fresh committed height and app hash. All returned the matching
+  undelegation receipt and post-operation account state. Validator processes,
+  identities and signing state were not reset or restarted. Private recoverable
+  backups and frontend rollback were retained. Geography is not independently
+  distributed, and this is not sustained-load or adversarial acceptance.
+
+Full 21-day release/payout, positive settled-G claim/transfer/redemption,
+physical devices, independent operators, sustained resource measurements and
+independent security review remain incomplete. No Store release, RH bridge or
+real-asset operation is established by these checks. The following record is
+the earlier 2026-10-07 macOS arm64/Go 1.26.8 local source verification; its
+browser/host exclusions describe that earlier check, not the current pilot.
 
 ## Testnet and participant checks
 
@@ -128,7 +179,7 @@ A deterministic private negative control bypassing only the wrapper reproduced t
 
 ## Public source checks
 
-The public snapshot contains exactly 101 reviewed files: production-source candidates, synthetic node/RPC/wallet/companion/explorer and host-testing interfaces, seven embedded resources, English guides, an unpopulated nginx review template, schemas, generated messages, pinned modules, checksums, the checksum-bound build helper and required license/notice, sixteen RH read-only/simulation interface files and the preserved public whitepaper. Private tests, fixtures, operational deployment scripts, populated configuration, genesis, addresses, keys, runtime data, dependency folders, logs and binaries are excluded. The template is not an enabled service. Private application or source-review ancestry must not become a public parent.
+The public snapshot contains exactly 104 reviewed files: production-source candidates, synthetic node/RPC/wallet/companion/explorer and host-testing interfaces, eight embedded resources, English guides, an unpopulated nginx review template, schemas, generated messages, pinned modules, checksums, the checksum-bound build helper and required license/notice, sixteen RH read-only/simulation interface files and the preserved public whitepaper. Private tests, fixtures, operational deployment scripts, populated configuration, genesis, addresses, keys, runtime data, dependency folders, logs and binaries are excluded. The template is not an enabled service. Private application or source-review ancestry must not become a public parent.
 
 `make check` verifies the pinned lifecycle compiler input, then runs vet, module checksum verification and compilation. `make build` compiles the node/tool and packager commands. `make status` runs the diagnostic without starting consensus or bridge operations. Public commands do not reproduce the private tests, fuzz windows or custody-bytecode checks. Publication screening checks exact file scopes, both commit identities, file bytes, commit messages and every reachable public ancestor. It is not a comprehensive secret audit or independent code review.
 
