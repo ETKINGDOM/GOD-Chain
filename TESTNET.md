@@ -18,9 +18,9 @@ a browser extension or an RH bridge.
 | --- | --- | --- |
 | Web wallet and funding | Local encrypted creation/recovery, fixed automatic test claims, reviewed GOD transfers, known TX IDs and committed recipient checks. | Broader browsers/devices, sustained participant acceptance and independent security review. |
 | Restricted NFTs | One configured collection, locally reviewed mint/send, checked receipts and current ownership cards. | General collection tools, NFT history and independent indexing. |
-| Explorer | Committed blocks/transactions, checksum-matched watch-only accounts and manual five-block sender/recipient scans. | Complete address/NFT history, validator views and proofs. A bounded scan is not a full index. |
+| Explorer | Committed blocks/transactions, checksum-matched watch-only accounts and manual five-block sender/recipient scans. | Complete address/NFT history, complete validator indexing and proofs. A bounded scan is not a full index. |
 | Chrome wallet | Downloadable alpha with a fixed reviewed identity, exact-origin service activation, English installation/hash guide and actual HTTPS create/recover/claim/transfer/NFT acceptance. | Physical Chrome/device acceptance, transient read recovery, website connection permissions, external provider signing, independent security review and a separately authorized Store release. |
-| Staking and G | Core synthetic operations and offline signing/query tools. | Browser-native signing, validator selection, delegation/exit, G claims/transfers and pool-redemption interfaces. These are not exposed as participant web mining. |
+| Staking and G | Connected web/Chrome six-action signing, bounded committed unbonding progress and locked one-operator validator lookup; public delegation and start-unbonding receipts with a real pending entry. | Full delayed payout, positive settled-G claim/transfer/redemption and fuller validator indexing over sustained consensus. A configured record is not an uptime, ownership or location proof, and delegation is not web mining. |
 | Operations | Supervised services, bounded health snapshots, abuse limits and safe frontend rollback. | Sustained load/resource measurements, alerting, storage-growth policy and independently reviewed recovery drills. |
 | Independent validators | Four pilot validator processes. | Independently controlled hosts, cross-host acceptance and signing-safety review. Four geographic deployments remain planned, not established. |
 
@@ -176,7 +176,7 @@ RPC accepts a single JSON-RPC 2.0 POST request at the root path. Batch calls and
 | `eth_sendRawTransaction`, `eth_getTransactionReceipt` | Externally signed legacy, access-list and dynamic-fee transactions; actual indexed inclusion and EVM success or revert. Admission is not inclusion. |
 | `eth_getBlockByNumber` | Stored committed block identifiers and ordered Ethereum transaction hashes. Full transaction objects are unsupported. No fabricated Ethereum state or receipt roots. |
 | `god_network`, `god_account`, `god_delegation` | Exact decimal committed network, account and individual delegation views. Native and EVM account encodings read the same account. |
-| `god_validator` | One canonical operator's committed stake/shares, commission, staking status and stored suspension/exclusion flags. Local source interface only; no list scan, uptime/ownership proof or deployed public-gateway activation is implied. |
+| `god_validator` | One canonical operator's committed stake/shares, commission, staking status and stored suspension/exclusion flags. The pilot wallet uses it only through a separately restricted query-only gateway; general public RPC is unchanged. No list scan, signing/uptime/ownership/location proof or complete validator index is implied. |
 | `god_liveness` | Redacted running state, application/block-store heights, commit phase, connected peer count and consensus progress. No peer identities, endpoints, keys or private paths. |
 | `god_submitTransaction`, `god_transaction` | Externally signed native SDK wire and consensus-indexed results. `sdkSuccessful` alone must not be interpreted as EVM success. |
 

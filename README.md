@@ -10,7 +10,7 @@ GOD Chain's public testnet operates with four validator nodes. Deployment across
 
 A non-signing observer provides restricted public read-only RPC and committed block/account views. A separate automatic faucet distributes existing synthetic GOD without registration or human approval, subject to fixed amounts, rate limits and available pilot funds. Separately deployed web and downloadable Chrome test wallets support locally reviewed signing, plain GOD transfers, restricted NFT mint/send and six bounded native staking/G actions. General public RPC submission, arbitrary contract signing and external website-provider signing remain disabled. Test assets have no monetary value, external backing or guaranteed mainnet conversion; the network may be reset.
 
-Web/Chrome alpha 0.3.7 separates native status/submission IP cooldowns, distinguishes exact definite non-admission from unknown outcomes and retains no-replacement guards. Public disposable-account delegation and start-unbonding produced matching committed results and a real pending entry; locked web/Chrome recovery passed. Its read-only G view distinguishes settled/pending balances and pools, derives a UTC boundary from committed time and displays only a settled-liquidity indicative quote. Live desktop/mobile/Chrome values matched exact committed snapshots. A boundary or quote promises no reward or payment. The 21-day delay is unchanged, and initiation is not payout. Earlier unknown IDs remain unresolved rather than automatically resent.
+Web/Chrome alpha 0.3.8 separates native status/submission IP cooldowns, distinguishes exact definite non-admission from unknown outcomes and retains no-replacement guards. Public disposable-account delegation and start-unbonding produced matching committed results and a real pending entry; locked web/Chrome recovery passed. Its read-only G view distinguishes settled/pending balances and pools, derives a UTC boundary from committed time and displays only a settled-liquidity indicative quote. Live desktop/mobile/Chrome values matched exact committed snapshots. A boundary or quote promises no reward or payment. The 21-day delay is unchanged, and initiation is not payout. Earlier unknown IDs remain unresolved rather than automatically resent.
 
 This source snapshot does not include all separately deployed pilot services. GitHub publication and public build commands do not deploy or activate a chain. Operational endpoints, populated addresses and private configuration are deliberately excluded.
 
@@ -38,8 +38,12 @@ Transaction checking defers during the interval between block finalization and c
 fixed commission/minimum self-delegation, staking status and stored suspension/
 permanent exclusion. It scans no collections and omits arbitrary descriptions.
 Local Go, trusted ABCI and opt-in RPC interfaces are included. Bonded status is
-not actual signing, uptime, ownership or geography proof. Public gateway
-discovery and wallet integration remain pending; publication activates no route.
+not actual signing, uptime, ownership or geography proof. The separately
+deployed web/Chrome alpha 0.3.8 checks one configured pilot operator through a
+keyless query-only gateway, including while locked. Selection only fills an
+unsigned delegation form; it never signs or clears an unknown transaction.
+The configured list is not a complete validator index. General public RPC is
+unchanged, and publication itself activates no route.
 
 The account G fields exclude application locks and must not be labeled total G. GOD bank balance is not a spendability estimate; an application hash is not a block hash or proof. Trusted ABCI routes remain internal. A separately configured synthetic RPC adapter exposes bounded committed reads and externally signed submission, without a server-held wallet or authenticated light-client proofs. See [NODE_RUNTIME.md](NODE_RUNTIME.md#committed-state-queries).
 

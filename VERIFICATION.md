@@ -9,11 +9,38 @@ real assets. God EVM + God SDK + GodCometBFT pins remain unchanged.
 
 ## Current synthetic participant acceptance
 
-Web/Chrome alpha 0.3.7 is deployed under explicit authorization. The participant
+Web/Chrome alpha 0.3.8 is deployed under explicit authorization. The participant
 tools support disposable encrypted accounts, recovery, bounded automatic
 funding, reviewed GOD transfers, a restricted test NFT collection and six native
 staking/G scopes. General public RPC writes, arbitrary contract signing,
 website-provider signing, RH activation and mainnet assets remain disabled.
+
+- Version 0.3.8 adds locked-wallet queries for one configured pilot operator
+  through an independently constrained, keyless query-only process. The
+  response's exact operator, quantities, commission, status and flags are
+  checked against one fresh committed network snapshot. No list scan,
+  arbitrary descriptions or signing work occurs. A fresh bonded record only
+  fills an unsigned delegation form; absent, stale, jailed and tombstoned
+  records cannot enable that shortcut. Unknown transactions keep signing
+  blocked. Bonded status is not signing, uptime, ownership or geography proof.
+  The configured list is not a complete validator index.
+- One hundred private wallet unit/browser regressions passed with bounded
+  concurrency; the actual unpacked Chrome native-action fixture and native
+  query/gateway race regressions also passed. Negative checks reject mixed,
+  missing, case-aliased, null, excessive and changed-policy records. Query-only
+  mode cannot reach a transaction route or an upstream submission.
+- Live desktop/mobile/actual downloaded Chrome acceptance checked all four
+  configured operators, twelve exact displayed committed records, zero
+  native signing workers and zero submissions/claims. Forty-eight HTTPS
+  resources matched their hashes, twelve exact-origin preflights passed and
+  five closed-origin requests were denied. The non-signing observer alone
+  was upgraded. Four validator and all existing submission/faucet processes
+  retained their PIDs and original service definitions; request reservations
+  were not reset. Twelve services were active, five nodes shared a fresh
+  height/app hash, and the original successful exit receipt, unchanged bank
+  state and real pending 21-day entry were retained. These checks do not
+  establish withdrawal completion, positive settled-G execution, independent
+  operators or production-grade reliability.
 
 - The read-only G readiness view separates spendable, settled unclaimed and
   pending earned G, settled/pending pools and settled/pending supply. It derives
@@ -86,8 +113,9 @@ matching network/account/validator views after signed contract work. Controlled
 keeper jail/tombstone fixtures expose changes only after commit; corrupt status
 returns no record and changes no store. These fixtures are not live misconduct
 evidence. Bonded status is not proof of actual signing, uptime, ownership or
-geography. Public gateway discovery and wallet integration are not activated;
-no signer, economic rule, validator-selection rule or dependency pin changed.
+geography. Separately deployed pilot wallet integration is described above;
+its browser and gateway source are outside this exact public-core allowlist.
+No signer, economic rule, validator-selection rule or dependency pin changed.
 
 ## Testnet and participant checks
 

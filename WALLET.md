@@ -2,10 +2,16 @@
 
 This exact public core snapshot includes the encrypted terminal signer and the
 unsigned local companion. Separately maintained web and downloadable Chrome
-alpha 0.3.7 operate on the authorized synthetic pilot; their browser source,
+alpha 0.3.8 operate on the authorized synthetic pilot; their browser source,
 gateways, deployment scripts, packages and populated network settings are not
 included here. Public build commands do not install or activate those services.
 All test assets have no monetary value or guaranteed mainnet conversion.
+
+The connected alpha offers a locked-wallet lookup of one configured operator's
+committed staking record. Selecting a fresh bonded, non-suspended record only
+fills an unsigned delegation form; it does not start a signer or resolve an
+unknown transaction. The configured list is not a complete validator index,
+and the record is not a signing, uptime, ownership or location proof.
 
 ## Included terminal signer
 
