@@ -1,11 +1,13 @@
 package godnode
 
 import (
+	"bytes"
 	"encoding/hex"
 	"errors"
 	"strings"
 	"time"
 
+	storetypes "cosmossdk.io/store/types"
 	"github.com/ETKINGDOM/GOD-Chain/internal/godaddress"
 	"github.com/ETKINGDOM/GOD-Chain/x/godrewards"
 	sdk "github.com/cosmos/cosmos-sdk/types"
@@ -128,7 +130,14 @@ func (a *App) queryValidator(operator string, height int64) (view ValidatorView,
 	if errors.Is(e, stakingtypes.ErrNoValidatorFound) {
 		return ValidatorView{Commit: commit, Validator: operator, Status: "absent", TokensGod: "0", DelegatorShares: "0", CommissionRate: "0", MinSelfDelegation: "0"}, nil
 	}
-	if e != nil || v.OperatorAddress != operator || v.Tokens.IsNil() || v.Tokens.IsNegative() || v.Tokens.GT(godrewards.FixedGodSupply()) ||
+	if e != nil {
+		return ValidatorView{}, ErrQueryState
+	}
+	return a.validatorView(ctx, commit, operator, v)
+}
+
+func (a *App) validatorView(ctx sdk.Context, commit CommittedView, operator string, v stakingtypes.Validator) (ValidatorView, error) {
+	if v.OperatorAddress != operator || v.Tokens.IsNil() || v.Tokens.IsNegative() || v.Tokens.GT(godrewards.FixedGodSupply()) ||
 		v.DelegatorShares.IsNil() || v.DelegatorShares.IsNegative() || v.DelegatorShares.BigInt().BitLen() > 256 ||
 		v.Commission.Rate.IsNil() || !v.Commission.Rate.Equal(commission()) || v.MinSelfDelegation.IsNil() ||
 		!v.MinSelfDelegation.Equal(minSelfStake()) {
@@ -145,6 +154,10 @@ func (a *App) queryValidator(operator string, height int64) (view ValidatorView,
 	default:
 		return ValidatorView{}, ErrQueryState
 	}
+	address, e := queryValidatorAddress(operator)
+	if e != nil {
+		return ValidatorView{}, ErrQueryState
+	}
 	consensus, e := v.GetConsAddr()
 	if e != nil || len(consensus) != godaddress.AccountBytes {
 		return ValidatorView{}, ErrQueryState
@@ -157,6 +170,90 @@ func (a *App) queryValidator(operator string, height int64) (view ValidatorView,
 		Jailed: v.Jailed, Tombstoned: info.Tombstoned || ctx.KVStore(a.key).Has(penaltyKey(6, address)),
 		TokensGod: v.Tokens.String(), DelegatorShares: v.DelegatorShares.String(),
 		CommissionRate: v.Commission.Rate.String(), MinSelfDelegation: v.MinSelfDelegation.String()}, nil
+}
+
+const ValidatorPageLimit = 8
+
+// ValidatorsView enumerates registration records in raw operator-key order,
+// not by stake, eligibility or consensus power. NextAfter is an exclusive
+// cursor, valid only at this exact latest commit. An advanced tip requires a
+// new first page; clients must never combine pages from different commits.
+// No total-count scan, descriptions, contacts or consensus keys are exposed.
+type ValidatorsView struct {
+	Commit     CommittedView   `json:"commit"`
+	After      string          `json:"after"`
+	Limit      int             `json:"limit"`
+	NextAfter  string          `json:"nextAfter"`
+	Validators []ValidatorView `json:"validators"`
+}
+
+func (a *App) QueryValidators(after string, height int64) (ValidatorsView, error) {
+	if a == nil {
+		return ValidatorsView{}, ErrLifecycle
+	}
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return a.queryValidators(after, height)
+}
+
+func (a *App) queryValidators(after string, height int64) (view ValidatorsView, err error) {
+	defer func() {
+		if recover() != nil {
+			view, err = ValidatorsView{}, ErrQueryState
+		}
+	}()
+	start := append([]byte(nil), stakingtypes.ValidatorsKey...)
+	if after != "" {
+		address, e := queryValidatorAddress(after)
+		if e != nil {
+			return ValidatorsView{}, e
+		}
+		if height <= 0 {
+			return ValidatorsView{}, ErrQueryHeight
+		}
+		// Exact keys have fixed length. Appending zero seeks strictly past the
+		// cursor without walking earlier entries or relying on its existence.
+		start = append(stakingtypes.GetValidatorKey(address), 0)
+	}
+	ctx, commit, e := a.committedContext(height)
+	if e != nil {
+		return ValidatorsView{}, e
+	}
+	view = ValidatorsView{Commit: commit, After: after, Limit: ValidatorPageLimit, Validators: make([]ValidatorView, 0, ValidatorPageLimit)}
+	iterator := ctx.KVStore(a.stakingKey).Iterator(start, storetypes.PrefixEndBytes(stakingtypes.ValidatorsKey))
+	defer func() {
+		if iterator.Close() != nil {
+			view, err = ValidatorsView{}, ErrQueryState
+		}
+	}()
+	for ; iterator.Valid(); iterator.Next() {
+		key := iterator.Key()
+		if len(key) != 2+godaddress.AccountBytes || key[0] != stakingtypes.ValidatorsKey[0] || key[1] != godaddress.AccountBytes {
+			return ValidatorsView{}, ErrQueryState
+		}
+		address := sdk.ValAddress(append([]byte(nil), key[2:]...))
+		operator := address.String()
+		if _, e := queryValidatorAddress(operator); e != nil || !bytes.Equal(key, stakingtypes.GetValidatorKey(address)) {
+			return ValidatorsView{}, ErrQueryState
+		}
+		// At most eight records and one look-ahead key are read per request.
+		if len(view.Validators) == ValidatorPageLimit {
+			view.NextAfter = view.Validators[len(view.Validators)-1].Validator
+			break
+		}
+		v, e := a.staking.GetValidator(ctx, address)
+		if e != nil {
+			return ValidatorsView{}, ErrQueryState
+		}
+		record, e := a.validatorView(ctx, commit, operator, v)
+		if e != nil {
+			return ValidatorsView{}, e
+		}
+		view.Validators = append(view.Validators, record)
+	}
+	// The pinned SDK cache-merge iterator reports Error at normal exhaustion.
+	// Valid controls EOF; reads/panics and Close failures still fail closed.
+	return view, nil
 }
 
 // QueryDelegation is one bounded committed lookup. GOD equivalent is truncated

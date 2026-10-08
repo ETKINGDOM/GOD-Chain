@@ -287,9 +287,12 @@ func strictRPCJSON(raw []byte) bool {
 }
 
 func rpcString(raw json.RawMessage) (string, bool) {
-	var s string
+	var s *string
 	err := json.Unmarshal(raw, &s)
-	return s, err == nil
+	if err != nil || s == nil {
+		return "", false
+	}
+	return *s, true
 }
 func rpcHeight(raw json.RawMessage) (int64, bool) {
 	s, ok := rpcString(raw)
@@ -338,6 +341,29 @@ func (r *TestnetRPC) dispatch(ctx context.Context, call rpcRequest) (result any,
 			return nil, unavailable
 		}
 		return map[string]any{"running": r.n.node.IsRunning(), "applicationUsable": usable, "applicationHeight": strconv.FormatInt(height, 10), "blockStoreHeight": strconv.FormatInt(r.n.node.BlockStore().Height(), 10), "commitPending": pending, "connectedPeers": r.n.node.Switch().Peers().Size(), "catchingUp": status.SyncInfo.CatchingUp, "consensusProgress": round.Progress, "synthetic": true, "realAssets": false}, nil
+	case "god_validators":
+		if len(call.Params) < 1 || len(call.Params) > 2 {
+			return nil, bad
+		}
+		after, ok := rpcString(call.Params[0])
+		if !ok || after != "" && func() bool { _, err := queryValidatorAddress(after); return err != nil }() {
+			return nil, bad
+		}
+		height := int64(0)
+		if len(call.Params) == 2 {
+			height, ok = rpcHeight(call.Params[1])
+			if !ok {
+				return nil, bad
+			}
+		}
+		if after != "" && height == 0 {
+			return nil, bad
+		}
+		v, err := r.n.app.QueryValidators(after, height)
+		if err != nil {
+			return nil, unavailable
+		}
+		return v, nil
 	case "god_validator":
 		if len(call.Params) < 1 || len(call.Params) > 2 {
 			return nil, bad

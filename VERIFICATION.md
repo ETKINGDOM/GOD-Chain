@@ -9,11 +9,30 @@ real assets. God EVM + God SDK + GodCometBFT pins remain unchanged.
 
 ## Current synthetic participant acceptance
 
-Web/Chrome alpha 0.3.8 is deployed under explicit authorization. The participant
+Web/Chrome alpha 0.3.9 is deployed under explicit authorization. The participant
 tools support disposable encrypted accounts, recovery, bounded automatic
 funding, reviewed GOD transfers, a restricted test NFT collection and six native
 staking/G scopes. General public RPC writes, arbitrary contract signing,
 website-provider signing, RH activation and mainnet assets remain disabled.
+
+- Version 0.3.9 adds keyless current registration pages, at most eight validated
+  records per request with an exclusive cursor and one exact commit. The
+  101-test wallet suite, separate actual Chrome six-action fixture and selected
+  node/gateway race regressions passed. Seventeen-validator 8/8/1 pagination,
+  disk reopen, malformed/null inputs, corrupted records, changed tips and
+  unknown-ID guards were checked privately. No dependency or economic rule
+  changed.
+- Live locked desktop/mobile/downloaded Chrome directory views verified all
+  four current records at exact displayed commits, without native signers,
+  claims or submissions. Fifty-one HTTPS files matched reviewed hashes;
+  fourteen exact-origin preflights and six closed-origin denials passed.
+  Existing disposable recovery and old unknown-ID guards passed on 0.3.9.
+  Twelve services stayed active; five nodes had a matching fresh height/app
+  hash and retained the original receipt, bank state and pending 21-day entry.
+  The observer and keyless query process were updated; validator and existing
+  submission/faucet processes retained their PIDs and original service files.
+  A read-only registration page is not a persistent historical index, actual
+  consensus participation, independent operation or completed exit/G workflow.
 
 - Version 0.3.8 adds locked-wallet queries for one configured pilot operator
   through an independently constrained, keyless query-only process. The
@@ -96,6 +115,25 @@ retain the earlier 2026-10-07 macOS arm64/Go 1.26.8 local source verification;
 their browser/host exclusions describe that earlier check, not the current pilot.
 
 ## Local one-operator validator-query foundation
+
+The source also includes bounded current registration pages through
+`QueryValidators`, trusted ABCI and opt-in local RPC. At most eight validated
+records and one look-ahead key are read per request. Exclusive cursors use raw
+operator-key ordering and exact latest-commit pins; a changed tip requires a new
+first page. No offset walk, total-count scan, arbitrary metadata or keys are
+exposed. Pages are registration records, not a consensus signing set, uptime
+ranking or proof of independent operators or geography.
+
+Private race checks passed seventeen-validator 8/8/1 pagination, empty ranges,
+exact ABCI/RPC results, working/committed isolation, disk reopen and corruption
+rejection. Normal EOF follows the pinned SDK iterator's `Valid` contract; read
+panics and close failures return no partial page. Null RPC strings are rejected.
+Private gateway checks preserve unknown-attempt reservations and reject mixed,
+malformed, excessive and changed-policy responses. The 101-test wallet suite
+and separate actual unpacked Chrome native fixture passed, including locked
+pagination, no automatic retry and existing signing guards. Browser/gateway
+source remains outside this exact public-core allowlist. These local checks do
+not establish historical indexing or production readiness.
 
 The included `QueryValidator`, trusted ABCI and opt-in local RPC interfaces read
 one detached current committed operator record, with bounded canonical input

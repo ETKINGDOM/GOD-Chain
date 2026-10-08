@@ -128,6 +128,7 @@ type App struct {
 	rewards                                godrewards.Keeper
 	bridge                                 *godbridge.Keeper
 	key                                    *storetypes.KVStoreKey
+	stakingKey                             *storetypes.KVStoreKey
 	config                                 Config
 	binding                                []byte
 	clock, pendingTime                     time.Time
@@ -222,7 +223,7 @@ func New(db dbm.DB, c Config) (*App, error) {
 	ek := evmkeeper.NewKeeper(enc.Codec, keys[evmtypes.StoreKey], transients[evmtypes.TransientKey], keys, authority, ak, eb, sk, fk, &cp,
 		disabledERC20{}, c.EVMChainID, "").WithDefaultEvmCoinInfo(evmtypes.EvmCoinInfo{Denom: godrewards.GodDenom, ExtendedDenom: godrewards.GodDenom, DisplayDenom: "god", Decimals: 18})
 	a := &App{base: base, encoding: enc, accounts: ak, bank: bk, staking: sk, slashing: slk, fees: fk, evm: ek, evmBank: eb, rewards: rewards,
-		key: keys[nodeStore], config: c, binding: binding}
+		key: keys[nodeStore], stakingKey: keys[stakingtypes.StoreKey], config: c, binding: binding}
 	if c.BridgeGenesis != nil {
 		bridge, err := godbridge.NewKeeper(keys[godbridge.StoreKey], bk, ak, *c.BridgeGenesis)
 		if err != nil {

@@ -2,7 +2,7 @@
 
 This exact public core snapshot includes the encrypted terminal signer and the
 unsigned local companion. Separately maintained web and downloadable Chrome
-alpha 0.3.8 operate on the authorized synthetic pilot; their browser source,
+alpha 0.3.9 operate on the authorized synthetic pilot; their browser source,
 gateways, deployment scripts, packages and populated network settings are not
 included here. Public build commands do not install or activate those services.
 All test assets have no monetary value or guaranteed mainnet conversion.
@@ -12,6 +12,15 @@ committed staking record. Selecting a fresh bonded, non-suspended record only
 fills an unsigned delegation form; it does not start a signer or resolve an
 unknown transaction. The configured list is not a complete validator index,
 and the record is not a signing, uptime, ownership or location proof.
+
+The locked-wallet registration directory also exposes at most eight current
+records per page in raw operator-key order. Exclusive cursors bind the same
+latest commit; a changed tip or rejected read clears the page and requires a
+new first request. It does not merge snapshots, retry automatically, start a
+signer or clear unknown-TX guards. Live desktop/mobile/downloaded Chrome views
+checked all four current records. This directory is not historical indexing,
+the actual consensus signing set, an uptime ranking or independent ownership
+or geographic proof. The configured lookup remains a separate unsigned helper.
 
 ## Included terminal signer
 

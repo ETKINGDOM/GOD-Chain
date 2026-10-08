@@ -1,6 +1,7 @@
 package godnode
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"math"
@@ -74,6 +75,22 @@ func (x application) Query(_ context.Context, req *abci.RequestQuery) (*abci.Res
 		}
 		var result ValidatorView
 		result, err = a.queryValidator(string(req.Data), req.Height)
+		state, height = result, result.Commit.Height
+	case "/god/validators":
+		var q struct {
+			After string `json:"after"`
+		}
+		if len(req.Data) > 128 || json.Unmarshal(req.Data, &q) != nil {
+			return &abci.ResponseQuery{Code: 1}, nil
+		}
+		// A closed canonical envelope rejects duplicates, missing/extra keys,
+		// wrong-case keys and null without reflecting supplied input.
+		canonical, e := json.Marshal(q)
+		if e != nil || !bytes.Equal(canonical, req.Data) {
+			return &abci.ResponseQuery{Code: 1}, nil
+		}
+		var result ValidatorsView
+		result, err = a.queryValidators(q.After, req.Height)
 		state, height = result, result.Commit.Height
 	default:
 		return &abci.ResponseQuery{Code: 1}, nil

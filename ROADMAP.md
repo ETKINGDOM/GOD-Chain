@@ -48,7 +48,7 @@ All six remain incomplete for production, even where local foundations exist.
 | 1. Node installation and management | Partial | Synthetic identity, assembly, join, startup/check commands, private Linux package creation/verification and recovery guidance exist. Native target-host acceptance, installers, upgrade controls and operator recovery remain required. |
 | 2. RPC services | Partial | The public pilot has a keyless read-only HTTPS gateway and a separate plain-transfer-only submission boundary. Actual browser transfer acceptance passed. Full compatible RPC coverage, sustained public-service acceptance, proofs and complete explorer interfaces remain required. |
 | 3. GOD Chain wallet | Partial | The connected browser alpha supports encrypted disposable accounts, recovery, funding, plain transfers, a restricted test NFT collection and six reviewed native staking/G actions. HTTPS transfer and NFT acceptance cover the existing submission flows. Ownership cards, same-key backup re-encryption, public-address copying, separate known-native-ID recovery and locked-wallet unbonding progress queries are deployed. Full delayed withdrawal completion, positive settled-G workflows, production recovery, HD accounts, signing-key rotation and independent security review remain required. |
-| 4. Browser wallet extension | Partial | A downloadable Manifest V3 test alpha packages the shared connected wallet with exact network pins, a fixed reviewed identity, toolbar entry and constrained transport. Exact-origin public activation and actual HTTPS creation/recovery, claim, committed GOD transfer and restricted NFT mint/send acceptance passed; the English installer provides ZIP/asset hashes and the expected ID. Version 0.3.8 exposes six restricted native actions and one consolidated read-only state request without loosening exact-commit checks. Fresh reads are paced, quota errors are explicit, and staking/unbonding guards match the existing chain policy before signing. Local desktop/mobile and actual unpacked Chrome fixtures cover all six actions, rejected/stale/unknown results and recovery. Physical browser/device acceptance, complete exit and settled-G workflows, website connection permissions, external provider signing, independent security review and separately authorized Store publication remain pending. See EXTENSION.md (separate pilot guide, not included in this core snapshot). |
+| 4. Browser wallet extension | Partial | A downloadable Manifest V3 test alpha packages the shared connected wallet with exact network pins, a fixed reviewed identity, toolbar entry and constrained transport. Exact-origin public activation and actual HTTPS creation/recovery, claim, committed GOD transfer and restricted NFT mint/send acceptance passed; the English installer provides ZIP/asset hashes and the expected ID. Version 0.3.9 retains six restricted native actions and consolidated read-only state queries, and adds locked-wallet registration pages bounded to eight current records with same-commit cursors. Fresh reads are paced, quota errors are explicit, and staking/unbonding guards match the existing chain policy before signing. Local desktop/mobile and actual unpacked Chrome fixtures cover all six actions, rejected/stale/unknown results and recovery. Physical browser/device acceptance, complete exit and settled-G workflows, website connection permissions, external provider signing, independent security review and separately authorized Store publication remain pending. See EXTENSION.md (separate pilot guide, not included in this core snapshot). |
 | 5. Blockchain explorer | Partial | A read-only test explorer displays paginated committed blocks and native/EVM details with actual execution outcomes. The public portal provides checksum-checked, identity-matched account lookup/share links, manual five-block sender/recipient activity scans, observer diagnostics and a redacted local report. Bounded scans are not complete address or NFT history. Full indexing, a complete validator index, proofs and sustained public acceptance remain required. |
 | 6. Staking and rewards interface | Partial | Connected web/Chrome preparation, six-action explicit signing, restricted native admission, known-hash recovery and bounded committed unbonding progress plus locked single-operator validator lookup are deployed. The browser signatures pass independent pinned SDK byte/signature checks. The portal's separate delegation/pool views remain watch-only. Public disposable-account delegation and start-unbonding produced matching committed receipts and a real pending entry. Locked web/Chrome recovery passed; the progress lookup does not imply payout. Full delayed withdrawal completion, positive settled-G claim/transfer/redemption, fuller validator discovery and sustained public acceptance remain required. This can be part of the wallet or APP. |
 | 7. Bridge website | Pending | RH to GOD Chain and return-transfer workflows, progress, limits and explicit failure or cancellation states. Live operations remain gated. |
@@ -111,6 +111,23 @@ unknown TX guards, economic rules and public RPC restrictions are unchanged.
 Source publication itself activates no route, and the configured list is not
 a complete validator index.
 
+The bounded directory foundation now enumerates current registration records
+in pages of at most eight, with an exclusive raw-key cursor and exact commit
+pin. Seventeen-validator 8/8/1 pagination and disk reopen passed local race
+checks. Local desktop/mobile/actual Chrome fixtures reject changed or malformed
+pages and retain unknown-ID guards. This is not a persistent historical index,
+an actual consensus-signing set or independent operator evidence. Public
+activation and HTTPS acceptance are recorded separately from these local checks.
+
+Web/Chrome 0.3.9 publicly exposes those bounded registration pages through the
+existing independent keyless query-only process. Locked desktop/mobile and the
+actual downloaded Chrome package checked all four current records in one exact
+committed page. No signatures, submissions or claims occurred. The observer and
+query process were updated; validators and every existing submission/faucet
+process retained their PIDs and original service definitions. Historical address,
+NFT and validator indexing, actual signing history and sustained acceptance are
+still separate unfinished gates. Public RPC write restrictions are unchanged.
+
 The next functional gates are full delayed withdrawal completion, positive
 settled-G workflows, fuller validator discovery and sustained public-service
 measurements. Do not open general transaction submission, shorten the exit
@@ -127,6 +144,27 @@ The sequence below is the proposed delivery order. Security and regression check
 6. **Production release review.** Complete the six core workstreams and acceptance evidence relevant to a proposed release. Actual RH integration additionally requires privately reviewed network and contract configuration, independent signer arrangements, backing and finality verification, and explicit activation authorization. A token contract address alone is insufficient.
 
 The next acceptance milestone is an independently operated synthetic test on intended hosts, with secured observer RPC, disposable-wallet checks, sustained daily settlement, test funding and measured resource use. Existing short local tests do not satisfy those gates. Public deployment still requires separate authorization; mainnet and real assets remain disabled.
+
+### Production transition gates
+
+Testnet iteration does not authorize changing its asset mode or turning its
+balances into real GOD. A proposed production release needs a separately
+reviewed candidate and explicit final activation approval. These gates are open,
+not completed by version 0.3.9 or a passing developer regression suite.
+
+| Gate | Required evidence before production activation |
+| --- | --- |
+| Participant workflows | Positive daily-settled G claim/transfer/redemption, actual 21-day unbonding payout and failure/recovery checks on persistent consensus; no clock fast-forwarding or fabricated settlement |
+| Independently operated validation | Intended-host installation, actual independent key/control custody, secured cross-host peering, catch-up and safe restart/upgrade; reported locations must match real infrastructure |
+| Capacity and recovery | Sustained settlement and public traffic, storage-growth/retention budgets, abuse and depletion recovery, alerts and restore drills that never roll back signing progress |
+| Economics and initial funding | Explicitly approved production emissions, gas/fee and authority rules, source-backed validator/Gas funding and exact fixed-GOD conservation; test parameters are not approval |
+| Bridge and reserve | Independently authenticated source identity/ancestry/finality, verified custody/contract permissions, one-for-one backing, delayed returns, replay/reorg rejection and interrupted-operation reconciliation |
+| Release and control | Reviewed immutable candidate, migrations, independent/adversarial review as available, documented unresolved risks and upgrade/rollback authority; no claim that upstream maturity transfers an audit |
+| Activation decision | Review all required evidence and remaining risks with the owner, approve the exact production configuration privately, then explicitly authorize activation; keep synthetic and real-asset environments separate |
+
+No mainnet date, guaranteed return, public safety certification or test-to-mainnet
+asset conversion is selected here. Development can continue on open gates without
+buying infrastructure, moving real assets or weakening the existing test rules.
 
 ## Reuse and publication requirements
 
