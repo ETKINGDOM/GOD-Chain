@@ -34,6 +34,13 @@ Transaction checking defers during the interval between block finalization and c
 
 `QueryNetwork`, `QueryAccount` and `QueryDelegation` provide detached latest-committed network metadata, GOD balances, auth account numbers/sequences, three G buckets and individual staking views. Native and EVM address encodings query the same account. CheckTx and finalized but uncommitted changes are excluded, including across daily settlement. Queries create no account, settle no reward and change no fee or sequence. Responses mark synthetic operation, keep real assets disabled and use exact decimal strings for amounts and signing-related integers.
 
+`QueryValidator` adds a bounded one-operator view with committed stake/shares,
+fixed commission/minimum self-delegation, staking status and stored suspension/
+permanent exclusion. It scans no collections and omits arbitrary descriptions.
+Local Go, trusted ABCI and opt-in RPC interfaces are included. Bonded status is
+not actual signing, uptime, ownership or geography proof. Public gateway
+discovery and wallet integration remain pending; publication activates no route.
+
 The account G fields exclude application locks and must not be labeled total G. GOD bank balance is not a spendability estimate; an application hash is not a block hash or proof. Trusted ABCI routes remain internal. A separately configured synthetic RPC adapter exposes bounded committed reads and externally signed submission, without a server-held wallet or authenticated light-client proofs. See [NODE_RUNTIME.md](NODE_RUNTIME.md#committed-state-queries).
 
 ## Synthetic testnet and participant tools

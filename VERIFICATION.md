@@ -64,9 +64,30 @@ website-provider signing, RH activation and mainnet assets remain disabled.
 Full 21-day release/payout, positive settled-G claim/transfer/redemption,
 physical devices, independent operators, sustained resource measurements and
 independent security review remain incomplete. No Store release, RH bridge or
-real-asset operation is established by these checks. The following record is
-the earlier 2026-10-07 macOS arm64/Go 1.26.8 local source verification; its
-browser/host exclusions describe that earlier check, not the current pilot.
+real-asset operation is established by these checks. Later historical sections
+retain the earlier 2026-10-07 macOS arm64/Go 1.26.8 local source verification;
+their browser/host exclusions describe that earlier check, not the current pilot.
+
+## Local one-operator validator-query foundation
+
+The included `QueryValidator`, trusted ABCI and opt-in local RPC interfaces read
+one detached current committed operator record, with bounded canonical input
+and exact optional height pinning. Unknown operators are explicit absence;
+invalid state returns no partial record. Exact stake/shares, fixed commission
+and minimum self-delegation, staking status and stored suspension/permanent
+exclusion are included. Arbitrary descriptions, contact data, signing keys,
+validator/delegator collection scans and promised returns are excluded.
+
+Fifteen selected private query/HTTP RPC regressions passed twice with race
+detection in 23.922 seconds. Commit isolation, disk reopen, exact HTTP results,
+malformed input, concurrent non-mutating reads, missing operators and closed
+transport budgets passed. Actual single-validator loopback execution returned
+matching network/account/validator views after signed contract work. Controlled
+keeper jail/tombstone fixtures expose changes only after commit; corrupt status
+returns no record and changes no store. These fixtures are not live misconduct
+evidence. Bonded status is not proof of actual signing, uptime, ownership or
+geography. Public gateway discovery and wallet integration are not activated;
+no signer, economic rule, validator-selection rule or dependency pin changed.
 
 ## Testnet and participant checks
 

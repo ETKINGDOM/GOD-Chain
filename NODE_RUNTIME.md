@@ -26,6 +26,18 @@ The trusted in-process ABCI adapter exposes `/god/network` with empty data and `
 
 `QueryDelegation` adds one bounded committed staking lookup for a canonical validator and native/EVM delegator. It returns the shares and truncated GOD equivalent at that height, not spendable GOD or completed unbonding. It does not enumerate all historical validators or delegators.
 
+`QueryValidator(operator, height)` adds one canonical lowercase operator lookup,
+with exact stake/shares, fixed commission/minimum self-delegation, staking status,
+jailed state and stored permanent exclusion. It returns explicit absence for an
+unknown operator and no partial record for invalid state. It scans no validator
+or delegator collection and exposes no descriptions, contact data, signing key
+or private content. The trusted `/god/validator` and opt-in local
+`god_validator` routes use the same committed view. Bonded status is not proof
+of signing a particular block, independent ownership, uptime or location.
+This source-level interface has local race/HTTP/loopback acceptance, not public
+pilot activation. The deployed public read-only gateway and wallet routes are
+unchanged; bounded participant discovery and UI integration remain separate.
+
 ## Synthetic node commands and RPC
 
 `internal/godtestnet` provisions private persistent synthetic workspaces and supplies independent identity, bundle assembly, join, check, startup and offline native-signing tools. Profiles are signed by both consensus and P2P keys; account keys remain externally held. Joining pins the complete reviewed bundle, not only genesis, and refuses existing data or nonempty signing progress. This initialization protocol does not establish independent human control or account ownership.

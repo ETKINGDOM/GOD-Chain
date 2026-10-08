@@ -67,6 +67,14 @@ func (x application) Query(_ context.Context, req *abci.RequestQuery) (*abci.Res
 		// Address parsers bound its length before decoding or store access.
 		result, err = a.queryAccount(string(req.Data), req.Height)
 		state, height = result, result.Commit.Height
+	case "/god/validator":
+		const length = len(godaddress.ValidatorOperatorPrefix) + 1 + godaddress.AccountBytes*8/5 + 6
+		if len(req.Data) != length {
+			return &abci.ResponseQuery{Code: 1}, nil
+		}
+		var result ValidatorView
+		result, err = a.queryValidator(string(req.Data), req.Height)
+		state, height = result, result.Commit.Height
 	default:
 		return &abci.ResponseQuery{Code: 1}, nil
 	}

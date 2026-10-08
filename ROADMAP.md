@@ -100,6 +100,13 @@ minimum-one-G output. Local and real web/mobile/Chrome checks passed without a
 new claim, signature or submission. This is display acceptance, not positive
 G settlement, guaranteed redemption or completed payout.
 
+The next validator-view foundation adds one bounded committed operator lookup
+through local Go/ABCI/opt-in RPC interfaces, without scanning collections or
+changing staking. Exact amounts, staking status and stored suspension/exclusion
+are not proof of actual signing, operator independence or geography. Public
+gateway discovery and participant UI integration are not activated by source
+publication and remain pending.
+
 The next functional gates are full delayed withdrawal completion, positive
 settled-G workflows, fuller validator discovery and sustained public-service
 measurements. Do not open general transaction submission, shorten the exit

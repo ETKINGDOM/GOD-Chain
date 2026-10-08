@@ -69,6 +69,96 @@ type DelegationView struct {
 	GodEquivalent string        `json:"godEquivalentSmallestUnits"`
 }
 
+// ValidatorView is one detached staking record, not a consensus-membership,
+// uptime, operator-ownership or geography proof. Bonded status alone does not
+// establish signing in a particular block. No arbitrary description is exposed.
+type ValidatorView struct {
+	Commit            CommittedView `json:"commit"`
+	Validator         string        `json:"validator"`
+	Exists            bool          `json:"exists"`
+	Status            string        `json:"status"`
+	Jailed            bool          `json:"jailed"`
+	Tombstoned        bool          `json:"tombstoned"`
+	TokensGod         string        `json:"tokensGodSmallestUnits"`
+	DelegatorShares   string        `json:"delegatorShares"`
+	CommissionRate    string        `json:"commissionRate"`
+	MinSelfDelegation string        `json:"minSelfDelegationGodSmallestUnits"`
+}
+
+func queryValidatorAddress(text string) (sdk.ValAddress, error) {
+	// Reject oversized input before codec work, keeper access or allocation.
+	const length = len(godaddress.ValidatorOperatorPrefix) + 1 + godaddress.AccountBytes*8/5 + 6
+	if len(text) != length {
+		return nil, ErrQueryAddress
+	}
+	raw, err := validatorAddress(text)
+	if err != nil {
+		return nil, ErrQueryAddress
+	}
+	return sdk.ValAddress(raw), nil
+}
+
+// QueryValidator reads exactly one canonical operator at the latest committed
+// version. It scans no validator/delegator collections and mutates no stake,
+// signing progress, reward or sequence. Unknown operators are explicit absence.
+func (a *App) QueryValidator(operator string, height int64) (ValidatorView, error) {
+	if a == nil {
+		return ValidatorView{}, ErrLifecycle
+	}
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	return a.queryValidator(operator, height)
+}
+
+func (a *App) queryValidator(operator string, height int64) (view ValidatorView, err error) {
+	defer func() {
+		if recover() != nil {
+			view, err = ValidatorView{}, ErrQueryState
+		}
+	}()
+	address, e := queryValidatorAddress(operator)
+	if e != nil {
+		return view, e
+	}
+	ctx, commit, e := a.committedContext(height)
+	if e != nil {
+		return view, e
+	}
+	v, e := a.staking.GetValidator(ctx, address)
+	if errors.Is(e, stakingtypes.ErrNoValidatorFound) {
+		return ValidatorView{Commit: commit, Validator: operator, Status: "absent", TokensGod: "0", DelegatorShares: "0", CommissionRate: "0", MinSelfDelegation: "0"}, nil
+	}
+	if e != nil || v.OperatorAddress != operator || v.Tokens.IsNil() || v.Tokens.IsNegative() || v.Tokens.GT(godrewards.FixedGodSupply()) ||
+		v.DelegatorShares.IsNil() || v.DelegatorShares.IsNegative() || v.DelegatorShares.BigInt().BitLen() > 256 ||
+		v.Commission.Rate.IsNil() || !v.Commission.Rate.Equal(commission()) || v.MinSelfDelegation.IsNil() ||
+		!v.MinSelfDelegation.Equal(minSelfStake()) {
+		return ValidatorView{}, ErrQueryState
+	}
+	var status string
+	switch v.Status {
+	case stakingtypes.Bonded:
+		status = "bonded"
+	case stakingtypes.Unbonding:
+		status = "unbonding"
+	case stakingtypes.Unbonded:
+		status = "unbonded"
+	default:
+		return ValidatorView{}, ErrQueryState
+	}
+	consensus, e := v.GetConsAddr()
+	if e != nil || len(consensus) != godaddress.AccountBytes {
+		return ValidatorView{}, ErrQueryState
+	}
+	info, e := a.slashing.GetValidatorSigningInfo(ctx, consensus)
+	if e != nil {
+		return ValidatorView{}, ErrQueryState
+	}
+	return ValidatorView{Commit: commit, Validator: operator, Exists: true, Status: status,
+		Jailed: v.Jailed, Tombstoned: info.Tombstoned || ctx.KVStore(a.key).Has(penaltyKey(6, address)),
+		TokensGod: v.Tokens.String(), DelegatorShares: v.DelegatorShares.String(),
+		CommissionRate: v.Commission.Rate.String(), MinSelfDelegation: v.MinSelfDelegation.String()}, nil
+}
+
 // QueryDelegation is one bounded committed lookup. GOD equivalent is truncated
 // from shares at that height, not spendable funds or an unbonding completion.
 func (a *App) QueryDelegation(owner, validator string, height int64) (view DelegationView, err error) {

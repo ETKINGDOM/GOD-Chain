@@ -176,6 +176,7 @@ RPC accepts a single JSON-RPC 2.0 POST request at the root path. Batch calls and
 | `eth_sendRawTransaction`, `eth_getTransactionReceipt` | Externally signed legacy, access-list and dynamic-fee transactions; actual indexed inclusion and EVM success or revert. Admission is not inclusion. |
 | `eth_getBlockByNumber` | Stored committed block identifiers and ordered Ethereum transaction hashes. Full transaction objects are unsupported. No fabricated Ethereum state or receipt roots. |
 | `god_network`, `god_account`, `god_delegation` | Exact decimal committed network, account and individual delegation views. Native and EVM account encodings read the same account. |
+| `god_validator` | One canonical operator's committed stake/shares, commission, staking status and stored suspension/exclusion flags. Local source interface only; no list scan, uptime/ownership proof or deployed public-gateway activation is implied. |
 | `god_liveness` | Redacted running state, application/block-store heights, commit phase, connected peer count and consensus progress. No peer identities, endpoints, keys or private paths. |
 | `god_submitTransaction`, `god_transaction` | Externally signed native SDK wire and consensus-indexed results. `sdkSuccessful` alone must not be interpreted as EVM success. |
 
