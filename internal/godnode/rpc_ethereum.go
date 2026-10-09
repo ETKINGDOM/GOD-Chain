@@ -223,8 +223,15 @@ func (r *TestnetRPC) ethereum(ctx context.Context, call rpcRequest) (any, *rpcEr
 			return hexutil.EncodeUint64(account.GetSequence()), nil
 		}
 		height, ok := ethHeight(call.Params[count-1])
-		if !ok || height != 0 && height != commit.Height {
+		if !ok || height != 0 && height != commit.Height && call.Method != "eth_getCode" {
 			return nil, bad
+		}
+		if call.Method == "eth_getCode" && height != 0 {
+			code, err := a.retainedCode(address, height)
+			if err != nil {
+				return nil, unavailable
+			}
+			return hexutil.Encode(code), nil
 		}
 		switch call.Method {
 		case "eth_getBalance":

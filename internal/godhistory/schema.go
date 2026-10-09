@@ -23,8 +23,11 @@ const (
 	PageLimit  = 20
 	BlockLimit = 128
 	BatchLimit = 128
-	maxReply   = 512 << 10
-	maxFile    = 512 << 20
+	// Empty blocks still consume retained coverage. The independently selected
+	// policy remains bounded by this ceiling and the unchanged 512 MiB file cap.
+	MaxBlockBudget = 1000000
+	maxReply       = 512 << 10
+	maxFile        = 512 << 20
 )
 
 type Config struct {
@@ -37,7 +40,7 @@ type Config struct {
 }
 
 func (c Config) valid() bool {
-	if len(c.ChainID) != len("god-test-")+32 || !strings.HasPrefix(c.ChainID, "god-test-") || !digest(c.ChainID[9:], 16) || !digest(c.BundleSHA256, 32) || c.FirstHeight < 1 || c.MaxBlocks < 1 || c.MaxBlocks > 100000 || c.MaxTransactions < 1 || c.MaxTransactions > 100000 {
+	if len(c.ChainID) != len("god-test-")+32 || !strings.HasPrefix(c.ChainID, "god-test-") || !digest(c.ChainID[9:], 16) || !digest(c.BundleSHA256, 32) || c.FirstHeight < 1 || c.MaxBlocks < 1 || c.MaxBlocks > MaxBlockBudget || c.MaxTransactions < 1 || c.MaxTransactions > 100000 {
 		return false
 	}
 	n, err := strconv.ParseUint(c.CompatibleChainID, 10, 64)

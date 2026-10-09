@@ -100,12 +100,16 @@ export function transferRequest(network,account,pin,recipient,amount,price){
 // Render only known public summary fields, never arbitrary memo/calldata/logs.
 export function publicSummary(value){
   if(value?.synthetic!==true||value.realAssets!==false||!['native','ethereum'].includes(value.kind)||!/^0x[0-9a-fA-F]{64}$/.test(value.consensusHash)||
-    typeof value.height!=='string'||!uint.test(value.height)||BigInt(value.height)<1n||typeof value.consensusIndex!=='string'||!uint.test(value.consensusIndex)||typeof value.sdkSuccessful!=='boolean'||!Number.isSafeInteger(value.code)||value.code<0||value.code>4294967295)throw fail();
+    typeof value.height!=='string'||!uint.test(value.height)||BigInt(value.height)<1n||typeof value.consensusIndex!=='string'||!uint.test(value.consensusIndex)||typeof value.sdkSuccessful!=='boolean'||!Number.isSafeInteger(value.code)||value.code<0||value.code>4294967295||value.sdkSuccessful!==(value.code===0))throw fail();
   const result={};
   for(const key of ['kind','consensusHash','ethereumHash','height','blockHash','consensusIndex','code','sdkSuccessful','gasWanted','gasUsed','sender','senderEVM','recipient','valueSmallestUnits','inputBytes','sequence','evmExecution','fee','synthetic','realAssets']){
     if(!Object.hasOwn(value,key))continue;const v=value[key];if(v!==null&&!['string','number','boolean'].includes(typeof v)||typeof v==='string'&&v.length>200)throw fail();result[key]=v;
   }
-  if(value.kind==='ethereum'&&(!/^0x[0-9a-fA-F]{64}$/.test(value.ethereumHash)||!['succeeded','failed','sdk-failed'].includes(value.evmExecution)))throw fail();
+  if(value.kind==='ethereum'&&(!/^0x[0-9a-fA-F]{64}$/.test(value.ethereumHash)||!['succeeded','failed','sdk-failed'].includes(value.evmExecution)||(value.code!==0)!==(value.evmExecution==='sdk-failed')))throw fail();
+  for(const key of ['gasWanted','gasUsed'])if(Object.hasOwn(value,key)){
+    if(key==='gasWanted'&&value[key]==='-1'&&value.kind==='ethereum'&&value.evmExecution==='sdk-failed'){result[key]='unavailable';continue;}
+    if(typeof value[key]!=='string'||value[key].length>19||!uint.test(value[key])||BigInt(value[key])>9223372036854775807n)throw fail();
+  }
   if(value.kind==='native'){
     if(!Array.isArray(value.operations)||value.operations.length>64)throw fail();
     result.operations=value.operations.map(operation=>{const out={};for(const key of ['operation','sender','recipient','validator','amountSmallestUnits','minGodOutSmallestUnits','deadlineUnixNanos'])if(Object.hasOwn(operation,key)){if(typeof operation[key]!=='string'||operation[key].length>200)throw fail();out[key]=operation[key];}return out;});

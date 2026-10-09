@@ -16,6 +16,16 @@ EVM self-destruction-to-self can discard native value under Ethereum semantics. 
 
 `QueryNetwork(height)` and `QueryAccount(address, height)` read an explicit committed application version under the runtime mutex. Zero selects the latest committed height; a nonzero height must match that current version. Older, future and negative heights are rejected. Account queries accept either reviewed native or EVM encoding and return canonical presentations of the same account. No account is created by a read.
 
+The local synthetic RPC adapter separately allows code-only `eth_getCode` reads
+at an explicit retained committed application height for NFT history acquisition.
+It validates that version's stored height metadata and never substitutes latest
+code for missing/pruned state. Predeployment code stays absent even after later
+deployment. Other account/storage/call query height rules remain unchanged. This
+is not an archive or header/state proof. The separately authorized NFT history
+pilot now upgrades only its nonsigning observer for these code reads, preserving
+its identity/data and the four validator processes. Generic public RPC does not
+gain code/call/submission methods from this observer-only change.
+
 The network view includes chain identifiers, application height, committed time, application hash, fixed GOD bank supply and reward-pool totals. The account view includes the auth-account existence and module-account flags, account number, sequence, bank GOD balance, spendable G, settled unclaimed G and pending earned G. GOD and G amounts are decimal strings in smallest units. Height, chain ID number, account number and sequence also use JSON strings to preserve exact integer precision. The application hash is not a consensus block hash or an authenticated proof.
 
 Pending earned G is not claimable or redeemable. The three account G fields do not include application locks and must not be labeled as total G. Bank GOD balance is not a spendability estimate. Querying a protected module does not grant permission to spend its funds. Every returned view explicitly marks synthetic operation and disables real assets.

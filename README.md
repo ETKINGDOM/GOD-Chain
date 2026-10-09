@@ -63,7 +63,7 @@ The basic Ethereum RPC subset supports external signing, bounded call/gas simula
 
 `godd companion --listen <explicit-loopback>` serves eight embedded English resources for read-only account, staking, block and receipt views, unsigned requests and local feedback downloads. It starts no chain, handles no wallet password and contains no browser signer, automatic broadcaster, analytics or automatic faucet. Manual test funding moves existing synthetic GOD rather than minting. See [COMPANION.md](COMPANION.md).
 
-The [encrypted terminal test wallet](WALLET.md) creates disposable, bundle-bound accounts and signs GOD transfers or six native operations only after explicit terminal approval. Its signing stays outside the browser and RPC server. The separately maintained web/Chrome alpha signs on the participant's device and never sends a vault or password to the node. Browser/extension source and separate pilot gateways are not included in this exact core snapshot. Personal-key import, mnemonic recovery, website-provider signing and production-wallet acceptance remain incomplete. The [test explorer](EXPLORER.md) shows bounded committed blocks and actual transaction outcomes, not a complete archive or indexed address history. Test GOD and G have no monetary value or guaranteed mainnet conversion.
+The [encrypted terminal test wallet](WALLET.md) creates disposable, bundle-bound accounts and signs GOD transfers or six native operations only after explicit terminal approval. Its signing stays outside the browser and RPC server. The separately maintained web/Chrome alpha signs on the participant's device and never sends a vault or password to the node. Browser/extension source and other pilot gateways remain excluded; the restricted native gateway candidate is included below. Personal-key import, mnemonic recovery, website-provider signing and production-wallet acceptance remain incomplete. The [test explorer](EXPLORER.md) shows bounded committed blocks and actual transaction outcomes, not a complete archive. Test GOD and G have no monetary value or guaranteed mainnet conversion.
 
 The included [keyless history CLI](HISTORY.md), `godhistory`, indexes selected
 complete blocks from an explicitly configured numeric-loopback observer. It
@@ -74,8 +74,22 @@ Memos, calldata, raw wire, events, logs and faith text are not stored. It opens
 no listener, signs nothing and leaves unknown participant submissions untouched.
 Private pagination, interruption/reopen and persistent-node checks passed;
 bounded Linux acceptance read ten committed pilot blocks without changing any
-existing service. This is not full-genesis backfill, a deployed public history
-API, NFT event history, authenticated proof or production-storage acceptance.
+existing service. Its included offline `audit` checks retained logical storage
+without source reads, repair or query activation. The separately deployed
+history API/browser integration is excluded from this source snapshot. Neither
+is full-genesis backfill, NFT event history, authenticated proof or production-
+storage acceptance.
+
+The [restricted native gateway candidate](NATIVE_GATEWAY.md), `godnative`,
+includes six-action signature/envelope admission, coherent bounded preparation
+and status reads, and synchronous attempt guards before one upstream send.
+Unknown outcomes are never automatically resent or replaced. A bounded disk
+inventory survives reopen independently of its 1,000-entry RAM cache. Explicit
+offline audit/copy can preserve all hashes at an equal/larger reviewed capacity,
+up to 100,000 records, without changing the source or activating the copy.
+The deployed pilot still uses its earlier volatile reservation map; this source
+publication is not its migration. Complete legacy inventory, controlled drain,
+intended-host cutover and physical-durability acceptance remain required.
 
 `godpack` prepares and verifies private Linux acceptance archives without installation or execution. The included nginx file is an unpopulated review template, not an enabled service or operational configuration. `godd testnet host-check`, `health` and `smoke` provide read-only host budgets, pinned availability checks and matching-resource/origin/progress samples. They never sign, submit or restart a service. The pilot has short native Linux and HTTPS checks; independent hosts, sustained daily settlement, failure recovery and ordinary-computer resource measurements remain acceptance gates. See [DEPLOYMENT.md](DEPLOYMENT.md). No binaries, node data, keys or configured endpoints are distributed here.
 
@@ -142,6 +156,14 @@ make status
 ```
 
 Make targets use `cmd/godbuild` to verify the exact pinned reactor, prepare an ignored private module copy and select the reviewed compiler overlay. Original dependency caches and pins are unchanged. A plain unpatched node build fails the worker-join API check; do not bypass it. Required upstream patch license and notice are retained under `licenses/`.
+
+`make build-native-gateway` and `make build-native-gateway-linux` separately
+compile the keyless candidate without initializing a store or opening a listener.
+The optional `cmd/godbuild -native-gateway` retains the lifecycle overlay and
+checksum-binds two logging files to standard-library JSON, excluding runtime
+Sonic/base64x JIT dependencies. Changed pins, altered/extra mirror files and
+unsafe outputs fail closed. This does not alter other node builds or relax
+service hardening. Public `make check` also verifies this isolated build graph.
 
 The diagnostic reports `local-consensus-execution-prototype`, `localNodePrototype: true` and `localCommittedQueriesImplemented: true`, while retaining `nodeReady: false` and `realAssets: false`. Mainnet and real-asset startup commands fail closed; the explicit synthetic-testnet path is separate. A build does not start a chain or verify backing. `make build` creates `godd` and `godpack`; `make build-history-index` separately builds the opt-in history CLI without syncing or opening a listener. `make compile-targets` cross-compiles five node targets and two Linux packager targets without executing foreign binaries. Go 1.25 or newer is required; verification used Go 1.26.8. Windows private operations remain disabled pending ACL acceptance.
 

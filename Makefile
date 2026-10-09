@@ -2,18 +2,25 @@ GO ?= go
 PROTOC ?= protoc
 .DEFAULT_GOAL := check
 GOD_BUILD_FLAGS = -mod=readonly -modfile="$(CURDIR)/build/.godcomet/god.mod" -overlay="$(CURDIR)/build/.godcomet/overlay.json"
+GOD_NATIVE_BUILD_FLAGS = -mod=readonly -modfile="$(CURDIR)/build/.godnative/god.mod" -overlay="$(CURDIR)/build/.godnative/overlay.json"
 
-.PHONY: prepare-consensus check build build-history-index status compile-targets generate-proto
+.PHONY: prepare-consensus prepare-native-gateway check build build-history-index build-native-gateway build-native-gateway-linux status compile-targets generate-proto
 
 prepare-consensus:
 	GOOS= GOARCH= $(GO) run -mod=readonly ./cmd/godbuild -go "$(GO)"
 
-check build build-history-index compile-targets generate-proto: prepare-consensus
+prepare-native-gateway: prepare-consensus
+	GOOS= GOARCH= $(GO) run -mod=readonly ./cmd/godbuild -native-gateway -go "$(GO)"
+
+check build-native-gateway build-native-gateway-linux: prepare-native-gateway
+build build-history-index compile-targets generate-proto: prepare-consensus
 
 check:
 	$(GO) vet $(GOD_BUILD_FLAGS) -p 2 ./...
 	$(GO) mod verify
 	$(GO) build $(GOD_BUILD_FLAGS) -p 2 ./...
+	$(GO) vet $(GOD_NATIVE_BUILD_FLAGS) -p 2 ./internal/godnative ./internal/godnativegateway ./internal/godorigin ./cmd/godnative
+	$(GO) build $(GOD_NATIVE_BUILD_FLAGS) -p 2 -o build/godnative ./cmd/godnative
 
 build:
 	$(GO) build $(GOD_BUILD_FLAGS) -p 2 -trimpath -o build/godd ./cmd/godd
@@ -22,6 +29,13 @@ build:
 # Opt-in keyless synthetic history CLI; building starts no listener or sync.
 build-history-index:
 	$(GO) build $(GOD_BUILD_FLAGS) -p 2 -trimpath -o build/godhistory ./cmd/godhistory
+
+# Opt-in keyless candidate. Builds never initialize storage or start a service.
+build-native-gateway:
+	$(GO) build $(GOD_NATIVE_BUILD_FLAGS) -p 2 -trimpath -o build/godnative ./cmd/godnative
+
+build-native-gateway-linux:
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build $(GOD_NATIVE_BUILD_FLAGS) -p 2 -trimpath -buildvcs=false -o build/linux-amd64/godnative ./cmd/godnative
 
 status: build
 	./build/godd status

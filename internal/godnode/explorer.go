@@ -167,11 +167,17 @@ func (r *TestnetRPC) explorer(ctx context.Context, call rpcRequest) (any, *rpcEr
 }
 
 func explorerSummary(a *App, wire []byte, result *abci.ExecTxResult, height int64, index uint32) (map[string]any, error) {
-	if result == nil || height < 1 || result.GasUsed < 0 || result.GasWanted < 0 || len(wire) > a.config.Policy.MaxTxBytes {
+	if result == nil || height < 1 || result.GasUsed < 0 || result.GasWanted < -1 || len(wire) > a.config.Policy.MaxTxBytes {
 		return nil, ErrBlock
 	}
 	tx, err := a.encoding.Decoder(a.config.Policy.MaxTxBytes)(wire)
 	if err != nil {
+		return nil, ErrBlock
+	}
+	// The pinned SDK can return -1 (an infinite ante gas-meter sentinel narrowed
+	// to int64) when a compatible transaction fails before setting its gas budget.
+	// Preserve only that explicit committed failure; never normalize it to zero.
+	if result.GasWanted == -1 && (!godtx.IsEthereum(tx) || result.Code == 0) {
 		return nil, ErrBlock
 	}
 	v := map[string]any{"consensusHash": "0x" + hex.EncodeToString(cmttypes.Tx(wire).Hash()), "height": strconv.FormatInt(height, 10), "consensusIndex": strconv.FormatUint(uint64(index), 10), "code": result.Code, "sdkSuccessful": result.Code == 0, "gasWanted": strconv.FormatInt(result.GasWanted, 10), "gasUsed": strconv.FormatInt(result.GasUsed, 10), "synthetic": true, "realAssets": false}

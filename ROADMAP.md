@@ -30,6 +30,37 @@ The remaining plan groups work into six core workstreams and ten supporting modu
 
 These capabilities share a fixed GOD supply of 1,000,000,000 in the prototype. Equal bank supply does not establish external backing. G has no fixed lifetime cap at this stage; its prototype issuance bounds are not a finalized mainnet schedule. Empty redemption liquidity preserves G, and only successful redemption burns the offered G.
 
+Private assembled-application acceptance now covers positive signed daily G
+settlement, claim, transfer, proportional redemption, exact rejection reasons,
+batch rollback and process-level disk recovery. An empty settled GOD pool
+preserves G and its transfer use. Two independent local application runs produce
+identical final committed state. Explicit synthetic timestamps exercise the
+unchanged 21-day boundary and one-time bank release; this does not complete the
+actual public waiting-period gate. The locally verified native-gateway candidate
+also refuses contradictory account/network bucket totals and changed network
+data under the same claimed commit. It is not deployed, an authenticated state
+proof, sustained consensus settlement or production acceptance.
+
+The native-gateway local candidate now requires a separately initialized,
+policy-bound private attempt store. It synchronously retains exact hashes before
+admission and checks them from disk after process exit without TTL or read-side release.
+Invalid/missing storage refuses new submissions rather than resetting unknown
+records. Explicit offline seeding never contacts a node or starts a listener.
+The local candidate separates its 1,000-entry memory cache from retained disk
+membership. Offline aggregate audit and checksum-pinned atomic copy preserve
+every hash and leave the original unchanged. Explicit equal/larger copies can
+hold up to 100,000 records without changing chain/gas/fee policy; exhausted
+capacity still refuses admission instead of deleting records. Version-one
+stores retain their original capacity and require an explicit copy to expand.
+Isolated offline initialization/audit/copy and refusal cases also pass on the
+authorized Linux pilot host as the existing non-root service account, with
+network access denied and current consensus data inaccessible. Existing public
+processes remain unchanged; this is not native-gateway HTTP/cutover acceptance.
+This is not yet a public migration: the deployed pilot's earlier process map,
+complete legacy-attempt inventory, sustained-load/storage sizing and safe
+intended-host cutover/restore remain separate gates. No chain retry, economy,
+waiting period or public activation is authorized by local recovery checks.
+
 ## Six remaining core workstreams
 
 All six remain incomplete for production, even where local foundations exist.
@@ -70,14 +101,14 @@ keeper test is not enough. No completion percentage or deadline is implied.
 | --- | --- | --- |
 | Participants and recovery | Connected web/Chrome alpha, encrypted backup/recovery, GOD transfer, automatic faucet, restricted NFT mint/send and known-ID checks | Physical target devices, complete onboarding and incident/feedback workflow; reviewed website-provider permissions if delivered |
 | Native staking and G | Connected web/Chrome six-action signing, exact fresh account/sequence checks, restricted admission, ID recovery and bounded unbonding progress; independent SDK byte/signature checks, public committed delegation and start-unbonding with a real pending entry | Full delayed withdrawal completion and failure recovery, fuller validator discovery and positive settled-G claims/transfers/redemption over sustained consensus; failures must preserve balances and existing IDs |
-| Explorer and API | Stored blocks, exact transaction outcomes, latest account state and limited activity scans | Restart-safe bounded full address/NFT indexing, complete validator indexing, explicit retention/pruning rules, pagination and compatibility acceptance; no private memo/calldata/plaintext faith feed |
+| Explorer and API | Stored blocks, exact transaction outcomes, latest account state, limited scans and read-only retained address/collection-NFT snapshot pages with pinned pagination | Full backfill, complete validator indexing, sustained capacity/load/recovery and explicit retention/pruning rules; no private memo/calldata/plaintext faith feed |
 | Node participation | Four-validator synthetic consensus, private assembly/join checks and a non-signing observer | Intended-host installs, reviewed external peering/synchronization, independent operator acceptance, signer identity/progress preservation and safe upgrades; geography must reflect actual infrastructure |
 | Reliability and operations | Supervision, developer smoke/resource checks, constrained gateways and frontend rollback | Sustained settlement/traffic measurements, bounded public-load tests, finite-pool depletion recovery, monitoring/alerts and backup/restore drills without replaying validator signatures |
 | Economic edge cases | Fixed GOD supply and bounded synthetic G issuance; keeper redemption/locks tests | End-to-end settlement and pool cases on persistent multi-validator operation, exact conservation after failure/restart and no guaranteed G-to-GOD liquidity or reward promises |
 | Bridge simulation | Read-only evidence helpers, synthetic custody/ledger and authenticated private routes | Complete UI/relay/signer simulation with source finality, deposits, delayed return payments, cancellation, replay/reorg and interrupted-operation recovery; no real backing or RH activation implied |
 | Release security | Pinned builds, exact origins, restricted operations, local secret handling and developer regressions | Adversarial acceptance, independent review as available, published limitations and release/rollback procedures; real assets and mainnet remain separately gated |
 
-A separate restricted native-operation boundary (separate pilot guide, not included in this core snapshot) passes
+A separate [restricted native-operation boundary](NATIVE_GATEWAY.md) passes
 fresh-state/signature guards, bounded submission/result tests and pinned
 browser-byte authentication. Persistent local consensus acceptance covers
 delegation, undelegation, donation and a matching failed delegation. The keyless
@@ -147,6 +178,84 @@ acceptance. The reviewed core scope includes its production source and English
 usage guide, not private tests or operational data. Complete retained-range catch-up,
 independent constrained query-service/browser integration, NFT event indexing,
 capacity/retention and storage-failure acceptance remain open.
+
+The separate read-only history query boundary and opt-in browser integration
+now pass local schema/admission, stale-source, exclusive cursor, privacy and
+desktop/mobile checks. Actual persistent local consensus returned its indexed
+fixture transfer before and after observer restart, without writing index
+bytes through the query boundary. The authorized synthetic pilot now deploys an
+independently hardened query service, bounded working-index sync timer and
+atomically published read-only snapshots. Version-two website configuration
+enables the manual history panel; version one remains supported with the panel
+hidden. Actual Linux concurrency, public HTTPS request/rate controls and
+desktop/mobile-width TX lookup passed without claims, signatures or submissions.
+Retained coverage is partial and catch-up continues. Complete backfill,
+intended-host capacity/load, NFT events, storage-failure review and independent
+operation remain separate gates. These checks do not activate production or
+expand the earlier GitHub source allowlist.
+
+The independent history CLI now adds a read-only offline logical storage audit.
+It checks all declared retained blocks/transactions and reverse-index links,
+not only the final checkpoint; cancellation, malformed copies and logical
+inconsistency never produce a partial success or repair. Private restore-copy
+acceptance preserved exact database bytes and a committed local-consensus TX,
+including fresh observer/anchor query checks after restoring the copy. This is
+not a live restore, physical-page/power-loss test, authenticated backup or full
+address/NFT history. A trusted digest, fresh reconciliation, physical storage
+drills and intended-host service-switch acceptance remain separate requirements.
+The deployed binaries and website are unchanged by this local tool milestone.
+
+The next NFT-history foundation is a separate pure projection boundary for the
+configured synthetic collection. It checks supplied receipt/block/runtime
+bindings, distinct compatible-lane indexes and ordered event identities, then
+emits only bounded mint/transfer/self-transfer identifiers. Approved-operator calls,
+contract recipients and nested events are represented without changing wallet
+admission. Missing/failed/malformed results never become fabricated transfers;
+raw payloads are not retained. This local helper is not a complete NFT index or
+source/finality proof. An independent collection-bound stored index now adds
+local atomic block/receipt/event/address/token progress, namespace/budget refusal,
+pinned twenty-event pagination and a read-only logical retained-range audit.
+Private corruption, interruption between commits, closed-copy restore and actual
+committed SDK mint/send/revert acceptance passed. These are stored snapshots,
+not fresh source checks or current ownership. A separate opt-in bounded loopback
+acquisition now checks all consensus pages, exact retained-height runtime and
+matching compatible receipts, then reconciles network/anchors before and after
+the run. Actual persistent local consensus mint/send history survived observer
+restart, index reopen and isolated restore. Missing/pruned/contradictory evidence
+stops without skipping or fabricated events; success is dated service consistency,
+not finality or an enduring query grant. Explicit SDK-failure representation now
+reconciles the native consensus-hash detail, preserves its lane and accounts for
+used gas without a receipt or event. Actual committed SDK stale-nonce rejection,
+later normal events, storage corruption refusal, publication and query checks
+passed. Sustained intended-host concurrency/load/restore acceptance remains required.
+The private Linux package executable additionally
+passed acquisition/storage/refusal/recovery fixtures on the intended host under
+the existing low-privilege user, isolated loopback, no-new-privileges, memory
+write/execute protection and bounded resources. Those package fixtures alone do
+not establish deployed acquisition or sustained capacity/physical recovery.
+
+The separately authorized pilot now has a read-only collection-history page,
+independent query service, owner-only working/published images and an explicit
+bounded refresh timer. It preserves the address-history schema, wallet/extension
+assets and generic public RPC write restrictions. HTTPS desktop/mobile checks
+match newly committed mint/send TX IDs through token, sender and recipient
+filters and the existing explorer. Query flags retain partial stored-event scope,
+not current ownership or fresh per-event proofs. Each query reconciles synthetic
+network identity, retained headers and exact-height runtime independently.
+Missing/pruned/contradictory inputs and replaced snapshots remain unavailable rather
+than invented empty history. Full backfill, retention/pruning, sustained
+capacity/load/recovery and independent operation remain open. This does not
+expand a public source allowlist or activate mainnet/RH/real assets.
+
+The pilot observer and NFT-history reader/writer now include explicit SDK-failure
+handling without a data reset or validator/signing change. Actual SDK execution
+and storage/browser regressions cover that negative case; no rejected SDK slot
+was present in the audited public range. A later low-rate observation exposed a
+device/server timestamp disagreement: replies remained unconfirmed under the
+unchanged freshness window. An explicit English clock-window warning and private
+boundary tests distinguish this refusal without weakening authentication or
+inventing activity. Correct time agreement and sustained availability remain
+required before production acceptance.
 
 The sequence below is the proposed delivery order. Security and regression checks apply at every stage, not only at the end.
 

@@ -25,7 +25,7 @@ func uintValue(s string) (uint64, error) {
 	return n, nil
 }
 func run(ctx context.Context, args []string, out io.Writer) error {
-	if len(args) < 1 || args[0] != "sync" && args[0] != "status" && args[0] != "page" {
+	if len(args) < 1 || args[0] != "sync" && args[0] != "status" && args[0] != "page" && args[0] != "audit" {
 		return godhistory.ErrHistory
 	}
 	f := flag.NewFlagSet("godhistory", flag.ContinueOnError)
@@ -103,6 +103,8 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 		result, e = x.Sync(ctx, rpc, int(batch))
 	case "page":
 		result, e = x.Page(*address, cursor)
+	case "audit":
+		result, e = x.Audit(ctx)
 	case "status":
 		var s godhistory.State
 		s, e = x.Status()

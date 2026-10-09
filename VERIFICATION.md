@@ -3,11 +3,52 @@
 This record separates exact public-core source checks from acceptance of the
 separately deployed synthetic pilot. It is not an independent audit, source-
 finality proof or mainnet safety certification. Private tests, browser/extension
-source, separate pilot gateways and generated operational inputs are not
+source, other pilot gateways and generated operational inputs are not
 distributed in this exact source snapshot. Publication activates no service or
 real assets. God EVM + God SDK + GodCometBFT pins remain unchanged.
 
 ## Current synthetic participant acceptance
+
+### Restricted native gateway and durable inventory candidate
+
+Included source now covers the six-action codec and keyless native boundary,
+synchronous blocked-hash storage, offline audit/copy CLI, retained-height code
+lookup and the history CLI's existing offline storage audit. Browser signing,
+other gateways, private tests, configuration and binaries remain excluded.
+The deployed native gateway has not been replaced by this durable candidate.
+
+Private race checks cover all six actions, exact signature/wire rebuilding,
+coherent snapshots and disjoint fixed-supply/G buckets, acknowledged/unknown/
+pre-ante outcomes, corrupt/unsafe storage, exclusive locking, seed/capacity
+refusal, version-one compatibility and independent RAM/disk limits. Fixtures
+retain 100,000 records without placing the entire inventory in RAM. Offline
+copies preserve source bytes, exact count and logical digest; wrong source
+checksums, shrink, overwrite and implicit policy changes are refused. Full
+local Go regressions, uncached gateway/CLI race checks and private browser
+signing/build guards passed. These are developer-run tests, not an audit.
+
+Fresh processes exit without closing stores after reservation, unknown send
+and pre-ante response before release. Copy fixtures exit before initialization
+commit (a private format fixture) and after the actual atomic copy commits.
+Recovery refuses the uncommitted target and retains every committed record.
+These are process boundaries around completed commits, not power cuts during
+fsync. Persistent local validators and an observer also exercised gateway
+reopen after successful and failed execution without clearing guards.
+
+A private equivalent logging-only build passed eight isolated Linux offline-
+tool cases under the existing unprivileged account, write/execute-memory denial
+and network denial, with consensus storage inaccessible. It initialized 1,000
+fixture hashes and copied at capacity 2,000 without replacing live processes.
+That evidence concerns offline tools, not public HTTP migration. The public
+Go build helper adds an explicitly selectable checksum-bound logging overlay;
+private race tests verify deterministic edits, original-cache preservation,
+exact mirror scope, missing compiler/pin failures and symlink-output refusal.
+Public compilation is a separate requirement, not rerunning private tests.
+
+The original module pins, GodCometBFT patch, economic rules and signing identities
+are unchanged. Complete legacy inventory/drain, actual elapsed 21-day release,
+public positive settled-G workflows, independent hosts/operators, sustained
+capacity, physical restoration and valid-image rollback remain release gates.
 
 ### Opt-in durable address-history foundation
 
@@ -166,7 +207,7 @@ panics and close failures return no partial page. Null RPC strings are rejected.
 Private gateway checks preserve unknown-attempt reservations and reject mixed,
 malformed, excessive and changed-policy responses. The 101-test wallet suite
 and separate actual unpacked Chrome native fixture passed, including locked
-pagination, no automatic retry and existing signing guards. Browser/gateway
+pagination, no automatic retry and existing signing guards. Browser/other-gateway
 source remains outside this exact public-core allowlist. These local checks do
 not establish historical indexing or production readiness.
 
@@ -187,7 +228,7 @@ keeper jail/tombstone fixtures expose changes only after commit; corrupt status
 returns no record and changes no store. These fixtures are not live misconduct
 evidence. Bonded status is not proof of actual signing, uptime, ownership or
 geography. Separately deployed pilot wallet integration is described above;
-its browser and gateway source are outside this exact public-core allowlist.
+its browser source and other gateways are outside this exact public-core allowlist.
 No signer, economic rule, validator-selection rule or dependency pin changed.
 
 ## Testnet and participant checks
@@ -316,9 +357,14 @@ A deterministic private negative control bypassing only the wrapper reproduced t
 
 ## Public source checks
 
-The public snapshot contains exactly 111 reviewed files: production-source candidates, synthetic node/RPC/wallet/companion/explorer and host-testing interfaces, the opt-in keyless history CLI/module, eight embedded resources, English guides, an unpopulated nginx review template, schemas, generated messages, pinned modules, checksums, the checksum-bound build helper and required license/notice, sixteen RH read-only/simulation interface files and the preserved public whitepaper. Private tests, fixtures, operational deployment scripts, populated configuration, genesis, addresses, keys, runtime data, dependency folders, logs and binaries are excluded. The template is not an enabled service. Private application or source-review ancestry must not become a public parent.
+The public snapshot contains exactly 126 reviewed files: the previously reviewed core and history source, fifteen additional fixed production/guide paths for the native gateway and dependency completion, and the unchanged public whitepaper. This includes the keyless native codec/gateway, bounded durable reservations, offline maintenance and optional logging build helper, not browser signers or other gateways. Private tests, fixtures, operational scripts, populated configuration, genesis, addresses, keys, runtime data, dependency folders, logs and binaries are excluded. The nginx template is not an enabled service. Private application or source-review ancestry must not become a public parent.
 
 `make check` verifies the pinned lifecycle compiler input, then runs vet, module checksum verification and compilation. `make build` compiles the node/tool and packager commands; `make build-history-index` separately builds the local history CLI. Neither build starts a node or a history sync. `make status` runs the diagnostic without starting consensus or bridge operations. Public commands do not reproduce the private tests, fuzz windows or custody-bytecode checks. Publication screening checks exact file scopes, both commit identities, file bytes, commit messages and every reachable public ancestor. It is not a comprehensive secret audit or independent code review.
+
+The native-specific check/build targets also select the logging-only overlay
+and reject executable-memory dependencies in the gateway graph. Public guide
+commands refer only to included production targets; operational values remain
+unset. The source package does not distribute binaries or activate storage.
 
 Public source verification requires lifecycle vet, original-module checksum verification, compilation, exact reviewed source bytes and byte-for-byte preservation of the public whitepaper. Native diagnostics must retain blank operational fields, disabled mainnet/real-asset commands and false source-finality/real-asset flags. Foreign binaries are not executed or distributed by source publication.
 

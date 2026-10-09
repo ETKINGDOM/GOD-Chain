@@ -24,6 +24,13 @@ Details verify stored block membership, transaction bytes and execution results 
 
 Native summaries expose supported operations, sender, recipient or validator, amounts, fees, SDK outcome and gas. EVM summaries expose sender, recipient, value, sequence, calldata byte count and actual execution outcome. `succeeded`, `failed` and `sdk-failed` are distinct. Inclusion and SDK success do not become fabricated EVM payment success.
 
+The pinned SDK can report `gasWanted = "-1"` for a compatible SDK failure before
+its gas budget was established. The adapter preserves this only when SDK code
+is nonzero, and the participant display renders it as `unavailable`. Other
+negative gas, success with this marker, inconsistent code/success flags and
+relabeled execution are rejected. This marker is neither negative used gas nor
+a refunded or charged fee; it does not create an execution receipt.
+
 Explorer methods omit memos, calldata bytes, events, logs, raw execution errors and unknown message payloads. The browser renders fixed summary fields as text. This reduces accidental display but does not make public-chain data private: raw block and receipt interfaces can still expose submitted payloads. The application must encrypt private faith text before submission and protect its decryption keys.
 
 An unknown hash remains pending, unsubmitted, pruned or unknown; it gets no confirmation claim. Verify actual execution and independently query the intended recipient balance. Block hashes are GodCometBFT identifiers, not fabricated Ethereum RLP headers or state roots.
@@ -96,13 +103,99 @@ ten already committed public-pilot blocks and recovered an existing native
 exit record once across separate sync/query invocations. It made no claim or
 submission and changed no existing service process, listener or gateway config.
 
-This is a local CLI foundation, not a deployed public history API, complete
+That earlier acceptance covered the local CLI, not a public history API, complete
 genesis backfill, NFT event index, authenticated proof or accepted production
 database. Its production source and [usage guide](HISTORY.md) are included in
 the reviewed core scope; private tests and operational data remain excluded.
 It counts unsupported summaries explicitly and never turns an empty range into
-proof of no activity. Public queries, browser integration, capacity/retention,
-power-loss acceptance and independent review remain separate gates.
+proof of no activity. The bounded pilot deployment below is separate;
+capacity/retention, power-loss acceptance and independent review remain open.
+
+## Bounded public retained-history query and browser integration
+
+An independent query-only loopback boundary and opt-in browser panel are now
+deployed on the explicitly authorized synthetic pilot. Every response declares
+the retained range, stored block anchor,
+unsupported-summary count, index reconciliation time and fresh observer-check
+time. Queries recheck network identity and current/older retained anchors; they
+reject stale data, missing source blocks, malformed requests and file-lock
+conflicts instead of returning fabricated empty pages. First/older pages are
+manual, limited to twenty matches and never merged across stored anchors.
+
+The exact version-one preview configuration still leaves this panel hidden.
+The deployed version-two configuration additionally binds the reviewed bundle
+digest and fixed same-origin
+`/history/` route. The client validates addresses, schemas, ordered rows,
+execution outcomes and cursors, omits credentials and browser storage, and
+discards replies superseded by an address or network change. It renders only
+the compact allowlisted fields. Unknown transaction and faucet IDs are not
+modified. This is not a proof, NFT event index or historical balance view.
+
+Private desktop/mobile fixtures and actual persistent local consensus queried
+one separately signed synthetic transfer before and after observer recovery.
+Those local checks did not activate a public route or participant asset. A
+separate authorized deployment now supplies a bounded working-index sync timer,
+verified atomic read-only snapshots and an exact-path restricted HTTPS proxy.
+Actual hardened Linux query/writer concurrency, public request refusal and
+read-rate limits passed. Desktop and mobile-width HTTPS browser checks recovered
+an already committed TX through the new panel without signing or submitting.
+The original chain processes and wallet/Chrome bytes were preserved. Coverage
+remains partial and catching up; complete backfill, NFT events, sustained
+capacity/load and storage-failure acceptance remain open. This query/build
+addition still requires a separate public source-scope review before GitHub
+upload. See [HISTORY.md](HISTORY.md).
+
+The separate offline retained-snapshot audit now checks declared block/record
+coverage and logical reverse-index consistency without source reads or writes.
+Isolated restore copies preserved a real local-consensus TX and its checked
+query result; a private pilot snapshot also passed a local read-only scan with
+unchanged bytes. It is not a public explorer route, live restore, physical-page
+check, authenticated backup or complete address/NFT history. The existing public
+website and binaries are unchanged by this tool addition. See the
+[storage audit guide](HISTORY.md#offline-retained-snapshot-storage-audit).
+
+## Local NFT event projection foundation
+
+The separately deployed collection-history page retains strict timestamp checks.
+A query outside the five-second future/thirty-second past window clears activity
+and pagination and shows an explicit English time-window warning. A network-time
+refusal during initial configuration leaves history disabled and explains the
+need to check automatic device time and reload. These messages do not adjust
+either clock, relax freshness, automatically retry, sign or confirm an NFT event.
+Observed device/server time disagreement remains an open acceptance issue.
+
+A separate pure helper now checks bounded supplied receipts for the configured
+synthetic collection and produces compact mint/transfer/self-transfer records.
+Participants are taken from contract events rather than transaction signers;
+approved-operator and nested transfers do not widen public signing permissions.
+It binds receipt-lane indexes separately from consensus indexes, rejects
+malformed or oversized inputs as a whole and retains no raw event payload.
+Results explicitly decline full history and current-ownership proofs. A separate
+collection-bound `nft-history.db` now supplies local atomic receipt/event/address/
+token storage, immutable namespace/capacity policy, pinned twenty-event pages
+and a read-only logical retained-range audit. Private reopen, between-commit
+process interruption, isolated restore and committed SDK execution acceptance
+passed. Stored pages deliberately decline fresh-source checks and current
+ownership. The separate opt-in loopback acquisition now reads all consensus pages,
+exact retained-height collection code and matching compatible receipts with
+bounded schemas, pacing and pre/post anchor/network checks. Actual persistent
+local consensus mint/send history survived observer/index recovery and isolated
+restore. SDK failures now retain an explicit separately reconciled consensus
+rejection, not an invented receipt or event. Missing or contradictory evidence
+still stops the block. The private package fixtures also passed on Linux under the existing
+low-privilege user with isolated loopback, no-new-privileges, memory write/execute
+protection and bounded resources. Those package fixtures alone are not public
+query or browser acceptance. A separately authorized public collection-history
+page now uses its own read-only query service and atomically published images;
+the retained address database and wallet/extension assets remain unchanged.
+Token and address filters return at most twenty compact events with pinned
+cursors, TX links and explicit partial coverage. Current network and retained
+header/runtime consistency checks do not freshly re-fetch every event, authenticate
+finality or prove current ownership. Snapshot/source drift yields unavailable,
+not an empty-history claim. See the NFT history boundary (separate pilot guide, not included in this core snapshot)
+and independent storage (separate pilot guide, not included in this core snapshot), plus
+source acquisition (separate pilot guide, not included in this core snapshot) and
+public collection history (separate pilot guide, not included in this core snapshot).
 
 ## Remaining explorer work
 

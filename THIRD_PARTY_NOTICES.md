@@ -55,3 +55,18 @@ was changed. Reuse of this existing alpha pin is not production-storage
 acceptance, an independent audit or authorization to redistribute a binary.
 The reviewed public-core scope includes the CLI/module source, not a binary or
 the dependency tree. Source publication does not complete redistribution review.
+
+## Restricted native gateway storage and build
+
+The keyless native gateway uses the same pinned `go.etcd.io/bbolt`
+v1.4.0-alpha.1 for synchronous reservations and offline inventory copying.
+Its MIT license and Ben Johnson copyright remain applicable. This alpha pin
+is unchanged and is not accepted production storage or binary redistribution.
+
+The optional gateway build mirrors unchanged `cosmossdk.io/log` v1.6.1 under
+its original Apache-2.0 license, retaining all original files and notices in
+ignored local build material. Two checksum-bound logging overlays substitute
+standard-library JSON for Sonic without altering the original module cache.
+`cmd/godbuild` contains project patch instructions, not a vendored logging tree.
+The source does not claim upstream authorship or complete future binary license
+review. GodCometBFT's original license and notice remain unchanged.

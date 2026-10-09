@@ -251,6 +251,7 @@ func prepare(goBinary, root string) (string, string, error) {
 
 func main() {
 	goBinary := flag.String("go", filepath.Join(runtime.GOROOT(), "bin", "go"), "Go compiler used to locate the pinned module")
+	native := flag.Bool("native-gateway", false, "prepare the separate checksum-bound no-JIT native gateway build")
 	flag.Parse()
 	if flag.NArg() != 0 {
 		fmt.Fprintln(os.Stderr, "expected only the optional -go flag")
@@ -260,8 +261,14 @@ func main() {
 	if err == nil {
 		var overlay, digest string
 		overlay, digest, err = prepare(*goBinary, root)
+		if err == nil && *native {
+			overlay, err = prepareNative(*goBinary, root, overlay)
+		}
 		if err == nil {
-			_ = json.NewEncoder(os.Stdout).Encode(struct{ Overlay, PatchedSHA256 string }{overlay, digest})
+			_ = json.NewEncoder(os.Stdout).Encode(struct {
+				Overlay, PatchedSHA256 string
+				GatewayOnly            bool `json:"gatewayOnly,omitempty"`
+			}{overlay, digest, *native})
 			return
 		}
 	}
