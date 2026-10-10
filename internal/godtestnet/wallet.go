@@ -21,6 +21,7 @@ import (
 	"github.com/ETKINGDOM/GOD-Chain/internal/godaddress"
 	"github.com/ETKINGDOM/GOD-Chain/x/godrewards"
 	rewardmsg "github.com/ETKINGDOM/GOD-Chain/x/godrewards/msg"
+	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
 	"github.com/ethereum/go-ethereum/common"
 	ethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
@@ -69,20 +70,25 @@ type WalletTransferRequest struct {
 // Review is delivered only to the caller's private terminal, not server logs.
 // The explicit callback must approve the derived sender and exact signed fields.
 type WalletReview struct {
-	ChainID       string `json:"chainId"`
-	EVMChainID    string `json:"evmChainId"`
-	BundleSHA256  string `json:"bundleSha256"`
-	Sender        string `json:"sender"`
-	Operation     string `json:"operation"`
-	Sequence      string `json:"sequence"`
-	AccountNumber string `json:"accountNumber,omitempty"`
-	Recipient     string `json:"recipient,omitempty"`
-	Validator     string `json:"validator,omitempty"`
-	Amount        string `json:"amountSmallestUnits,omitempty"`
-	Gas           string `json:"gas"`
-	Fee           string `json:"maximumFeeSmallestUnits"`
-	MinGodOut     string `json:"minGodOutSmallestUnits,omitempty"`
-	Deadline      string `json:"deadlineUnixNanos,omitempty"`
+	ChainID            string `json:"chainId"`
+	EVMChainID         string `json:"evmChainId"`
+	BundleSHA256       string `json:"bundleSha256"`
+	Sender             string `json:"sender"`
+	Operation          string `json:"operation"`
+	Sequence           string `json:"sequence"`
+	AccountNumber      string `json:"accountNumber,omitempty"`
+	Recipient          string `json:"recipient,omitempty"`
+	Validator          string `json:"validator,omitempty"`
+	Amount             string `json:"amountSmallestUnits,omitempty"`
+	Gas                string `json:"gas"`
+	Fee                string `json:"maximumFeeSmallestUnits"`
+	MinGodOut          string `json:"minGodOutSmallestUnits,omitempty"`
+	Deadline           string `json:"deadlineUnixNanos,omitempty"`
+	GenesisSHA256      string `json:"genesisSha256,omitempty"`
+	ConsensusPublicKey string `json:"consensusPublicKeyHex,omitempty"`
+	MinSelfDelegation  string `json:"minSelfDelegationSmallestUnits,omitempty"`
+	CommissionRate     string `json:"commissionRate,omitempty"`
+	ValidatorProof     bool   `json:"validatorProofEnforced,omitempty"`
 }
 
 func walletPassword(p []byte) bool {
@@ -295,6 +301,41 @@ func WalletSign(path, request, output, bundlePath, pin string, password []byte, 
 		return SignReport{}, ErrWallet
 	}
 	result, err := signNativeBytes(b, q, payload[:32])
+	if err != nil {
+		return SignReport{}, ErrWallet
+	}
+	return writeSigned(output, result)
+}
+
+// WalletSignRegistration is a distinct operator-only offline action. It reads
+// one exact request, validates its node proof and wallet owner before review,
+// then signs in memory after explicit approval. WalletSign's six-action
+// allowlist, browser paths and public gateway permissions remain unchanged.
+func WalletSignRegistration(path, request, output, bundlePath, pin string, password []byte, approve func(WalletReview) bool) (SignReport, error) {
+	if approve == nil {
+		return SignReport{}, ErrWallet
+	}
+	b, payload, err := walletUnlock(path, bundlePath, pin, password)
+	if err != nil {
+		return SignReport{}, ErrWallet
+	}
+	defer clear(payload)
+	id, err := walletIdentity(b, pin, payload[:32])
+	var q RegistrationRequest
+	if err != nil || readDocument(request, 16<<10, &q) != nil || q.Owner != id.NativeAddress {
+		return SignReport{}, ErrWallet
+	}
+	m, err := registrationIntent(b, q)
+	if err != nil {
+		return SignReport{}, ErrWallet
+	}
+	view := WalletReview{ChainID: id.ChainID, EVMChainID: id.EVMChainID, BundleSHA256: pin, Sender: id.NativeAddress, Operation: "register-validator", AccountNumber: q.AccountNumber,
+		Sequence: q.Sequence, Validator: m.(*stakingtypes.MsgCreateValidator).ValidatorAddress, Amount: q.Stake, Gas: q.Gas, Fee: q.Fee, GenesisSHA256: q.GenesisSHA256,
+		ConsensusPublicKey: hex.EncodeToString(q.ConsensusPublicKey), MinSelfDelegation: godrewards.Unit().MulRaw(1000).String(), CommissionRate: "0.1", ValidatorProof: b.Runtime.RequireValidatorProof}
+	if !approve(view) {
+		return SignReport{}, ErrWallet
+	}
+	result, err := signRegistrationBytes(b, q, payload[:32])
 	if err != nil {
 		return SignReport{}, ErrWallet
 	}

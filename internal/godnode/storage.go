@@ -91,11 +91,12 @@ func bindLocalStorage(a *App, o LocalOptions) error {
 		return ErrConfig
 	}
 	binding, err := json.Marshal(struct {
-		Version      uint32
-		Config       []byte
-		Genesis      [32]byte
-		Signer, Peer []byte
-	}{1, a.binding, genesisHash, pub.Bytes(), o.NodeKey.PubKey().Bytes()})
+		Version        uint32
+		Config         []byte
+		Genesis        [32]byte
+		Signer, Peer   []byte
+		CandidateOwner string `json:",omitempty"`
+	}{1, a.binding, genesisHash, pub.Bytes(), o.NodeKey.PubKey().Bytes(), o.CandidateOwner})
 	if err != nil {
 		return ErrConfig
 	}

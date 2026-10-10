@@ -13,6 +13,7 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/ETKINGDOM/GOD-Chain/internal/godhistory"
 )
@@ -25,7 +26,7 @@ func uintValue(s string) (uint64, error) {
 	return n, nil
 }
 func run(ctx context.Context, args []string, out io.Writer) error {
-	if len(args) < 1 || args[0] != "sync" && args[0] != "status" && args[0] != "page" && args[0] != "audit" {
+	if ctx == nil || ctx.Err() != nil || len(args) < 1 || args[0] != "sync" && args[0] != "backfill" && args[0] != "status" && args[0] != "page" && args[0] != "audit" {
 		return godhistory.ErrHistory
 	}
 	f := flag.NewFlagSet("godhistory", flag.ContinueOnError)
@@ -38,9 +39,17 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 	blocks := f.String("max-blocks", "", "")
 	transactions := f.String("max-transactions", "", "")
 	var upstream, limit, address, snapshotHeight, snapshotHash, beforeHeight, beforeIndex *string
-	if args[0] == "sync" {
+	var throughHeight, throughHash, batchSize, maxBatches, pause *string
+	writer := args[0] == "sync" || args[0] == "backfill"
+	if writer {
 		upstream = f.String("upstream", "", "")
+	}
+	if args[0] == "sync" {
 		limit = f.String("limit", "", "")
+	}
+	if args[0] == "backfill" {
+		throughHeight, throughHash = f.String("through-height", "", ""), f.String("through-hash", "", "")
+		batchSize, maxBatches, pause = f.String("batch-size", "", ""), f.String("max-batches", "", ""), f.String("pause-seconds", "", "")
 	}
 	if args[0] == "page" {
 		address = f.String("address", "", "")
@@ -78,11 +87,27 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 	c := godhistory.Config{ChainID: *chain, CompatibleChainID: *compatible, BundleSHA256: *pin, FirstHeight: int64(h), MaxBlocks: b, MaxTransactions: t}
 	var rpc *godhistory.RPC
 	var batch uint64
+	var backfill godhistory.BackfillOptions
 	if args[0] == "sync" {
 		batch, e = uintValue(*limit)
 		if e != nil || batch < 1 || batch > godhistory.BatchLimit {
 			return godhistory.ErrHistory
 		}
+	}
+	if args[0] == "backfill" {
+		through, e1 := uintValue(*throughHeight)
+		size, e2 := uintValue(*batchSize)
+		batches, e3 := uintValue(*maxBatches)
+		seconds, e4 := uintValue(*pause)
+		if e1 != nil || e2 != nil || e3 != nil || e4 != nil || through > 9223372036854775807 || size > godhistory.BatchLimit || batches > 32 || seconds > 30 {
+			return godhistory.ErrHistory
+		}
+		backfill = godhistory.BackfillOptions{ThroughHeight: int64(through), ThroughHash: *throughHash, BatchSize: int(size), MaxBatches: int(batches), Pause: time.Duration(seconds) * time.Second}
+		if backfill.Validate(c) != nil {
+			return godhistory.ErrHistory
+		}
+	}
+	if writer {
 		rpc, e = godhistory.NewRPC(*upstream)
 		if e != nil {
 			return e
@@ -93,7 +118,7 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 	if args[0] == "page" && (*snapshotHeight != "" || *snapshotHash != "" || *beforeHeight != "" || *beforeIndex != "") {
 		cursor = &godhistory.Cursor{SnapshotHeight: *snapshotHeight, SnapshotHash: *snapshotHash, BeforeHeight: *beforeHeight, BeforeIndex: *beforeIndex}
 	}
-	x, e := godhistory.Open(*home, c, args[0] != "sync")
+	x, e := godhistory.Open(*home, c, !writer)
 	if e != nil {
 		return e
 	}
@@ -101,6 +126,8 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 	switch args[0] {
 	case "sync":
 		result, e = x.Sync(ctx, rpc, int(batch))
+	case "backfill":
+		result, e = x.Backfill(ctx, rpc, backfill)
 	case "page":
 		result, e = x.Page(*address, cursor)
 	case "audit":
@@ -113,6 +140,13 @@ func run(ctx context.Context, args []string, out io.Writer) error {
 		}
 	}
 	closed := x.Close()
+	if args[0] == "backfill" {
+		report := result.(godhistory.BackfillReport)
+		if closed != nil || report.Reason == "configuration" || json.NewEncoder(out).Encode(report) != nil {
+			return godhistory.ErrHistory
+		}
+		return e
+	}
 	if e != nil || closed != nil {
 		return godhistory.ErrHistory
 	}

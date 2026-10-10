@@ -2,7 +2,7 @@
 
 GOD Chain is the independent blockchain project for ETERNAL KINGDOM. This plan separates capabilities implemented and tested locally from work still required for a usable network and its supporting tools. The technical stack is God EVM + God SDK + GodCometBFT.
 
-The current implementation is a synthetic-asset prototype, not a live mainnet or a working Robinhood Chain bridge. GOD Chain's public testnet operates with four validator nodes. Deployment across four geographic regions is planned. The current pilot is not an independently operated, geographically distributed network. An observer preview, automatic synthetic faucet and connected browser test wallet operate under explicit deployment authorization. HTTPS acceptance covered creation, encrypted recovery, an automatic claim, locally signed plain GOD transfers, committed recipient balances and matching explorer data. The public RPC remains read-only. Plain GOD transfers use a separate keyless submission boundary; restricted test collection minting and owner sends use an independent NFT gateway. A separate keyless native gateway and connected web/Chrome review and local signing now expose six fixed staking/G actions. Arbitrary contract calls, validator creation, mainnet and real-asset operations remain disabled. Publishing this plan does not authorize further deployment, custody funding or chain activation.
+The current implementation is a synthetic-asset prototype, not a live mainnet or a working Robinhood Chain bridge. The pilot uses four validator processes and an observer on one founder-operated machine. The selected initial release topology remains single-host and multi-service; independent hosts and geographic distribution are later expansion work, not established infrastructure. An observer preview, automatic synthetic faucet and connected browser test wallet operate under explicit deployment authorization. HTTPS acceptance covered creation, encrypted recovery, an automatic claim, locally signed plain GOD transfers, committed recipient balances and matching explorer data. The public RPC remains read-only. Plain GOD transfers use a separate keyless submission boundary; restricted test collection minting and owner sends use an independent NFT gateway. A separate keyless native gateway and connected web/Chrome review and local signing now expose six fixed staking/G actions. Arbitrary contract calls, validator creation, mainnet and real-asset operations remain disabled. Publishing this plan does not authorize further deployment, custody funding or chain activation.
 
 Detailed local evidence and limitations are in [VERIFICATION.md](VERIFICATION.md), [NODE_RUNTIME.md](NODE_RUNTIME.md) and [BRIDGE.md](BRIDGE.md). The synthetic deployment workflow and public-test gates are in [TESTNET.md](TESTNET.md). No production economic parameter or release date is selected here.
 
@@ -13,6 +13,26 @@ Detailed local evidence and limitations are in [VERIFICATION.md](VERIFICATION.md
 - **Pending** means the usable deliverable has not been implemented or accepted. It may reuse existing core components.
 
 The remaining plan groups work into six core workstreams and ten supporting modules. These are planning categories, not sixteen independent applications or a completion percentage. Some modules can share a service, interface or wallet core.
+
+### Local-only completion scope
+
+The selected operating plan is [single-host and multi-service](SINGLE_HOST.md),
+with four separate validator identities/processes and a non-signing observer.
+Cross-machine acceptance moves to a later distributed stage; it is not required
+to continue this local candidate and is not relabeled as passed. A shared host
+still has correlated control, resource and whole-machine failure risks.
+
+The current development round is limited to code and local acceptance. No
+external Mac observer, VPS connection, public cutover or real-asset operation is
+authorized by these checks. The requested five deliverables remain partial:
+
+| Deliverable | Local foundation verified | Remaining completion evidence or code |
+| --- | --- | --- |
+| Self-service installation and joining | Trusted-pin bundle fetch, offline inspection, private package staging, fresh observer/candidate setup and signer-safe local recovery | Accepted public configuration/pin delivery, reviewed participant installers and target-machine startup/update checks |
+| Single-host node operation | Persistent five-process loopback join, catch-up, guarded candidate admission and process/quorum/whole-group restart checks | Intended-host isolation, resource limits, reboot and signing-safe storage/upgrade drills; external-host admission and routing become later distributed-stage gates |
+| Staking and G lifecycle | Signed application settlement, claim, transfer, redemption, empty-pool preservation and disk recovery; unchanged synthetic 21-day boundary | Positive workflows over sustained consensus and real elapsed-period payout evidence; no accelerated public clock or invented funding |
+| Explorer and wallets | Fixed-target bounded summary backfill with retained progress, history/query/recovery foundations, web/Chrome local cryptography, an opt-in address-only connection candidate and shared same-profile GOD/NFT/native attempt recovery across reload/browser restart | Public range acquisition/coverage, complete participant/NFT semantics, storage-loss and multi-device handling, safe resolution of non-included signed attempts, website transaction authorization/review, public connection activation, and physical target devices |
+| Long-run operations | Finite first-fault read-only observation, private attempt/history audit-copy checks and bounded health/host helpers | Sustained stress/resource/storage measurements, reviewed external alert delivery, signer-safe backup/restore and safe-upgrade drills |
 
 ## Implemented and locally tested capabilities
 
@@ -52,6 +72,14 @@ every hash and leave the original unchanged. Explicit equal/larger copies can
 hold up to 100,000 records without changing chain/gas/fee policy; exhausted
 capacity still refuses admission instead of deleting records. Version-one
 stores retain their original capacity and require an explicit copy to expand.
+The offline CLI also checks physical page/freelist invariants in a separately
+supervised process and verifies a selected image against an independently
+retained exact file checksum. Valid stale images are refused against a current
+approved checkpoint. Neither an unpinned audit nor a checksum computed from the
+backup itself establishes freshness; checkpoint custody and completeness remain
+operator gates. Damaged pages, worker panic/timeout and malformed reports fail
+closed without repair or RPC. This is not power-loss certification, automatic
+restore, validator signing-state recovery or a public gateway cutover.
 Isolated offline initialization/audit/copy and refusal cases also pass on the
 authorized Linux pilot host as the existing non-root service account, with
 network access denied and current consensus data inaccessible. Existing public
@@ -60,6 +88,76 @@ This is not yet a public migration: the deployed pilot's earlier process map,
 complete legacy-attempt inventory, sustained-load/storage sizing and safe
 intended-host cutover/restore remain separate gates. No chain retry, economy,
 waiting period or public activation is authorized by local recovery checks.
+
+The operator CLI also offers a keyless, offline full-bundle preview before a
+fresh synthetic join. It displays exact chain/policy identities, bounded
+participant/topology counts, block/transaction limits and prototype economic
+quantities without exposing participant addresses, endpoints, node keys or
+paths. Private tests cover bundle-only storage, full-digest binding, malformed
+profiles, unsafe files, precise large integers and canonical IP aliases. A
+preview neither initializes a node nor proves independent ownership, routing,
+geography, production approval or an installed cross-host network.
+
+The requested rollout starts with founder-operated validation while keeping
+participant onboarding open. The synthetic `join-observer` candidate now allows
+a fresh local non-signing identity to join the original pinned genesis/peers
+without advance launch-profile registration. It preserves keys/progress and
+rejects role escalation, key reuse, unsafe RPC and existing state. Private
+persistent consensus checks cover joining after a committed transfer, catch-up,
+matching block/balance and restart without votes. The launch bundle and economic
+rules are unchanged. A fresh `init --role observer|candidate` now combines local
+identity creation and pinned joining. The distinct candidate registration
+request binds node-key possession, canonical owner and exact network/amounts;
+the separate encrypted terminal wallet reviews and signs it without exporting
+an account key. A candidate signs only after locally committed ownership and
+the exact-height active set authorize it, preserving the two-block delay and
+original FilePV/storage binding. Private five-process consensus checks cover
+post-genesis catch-up, authenticated registration, actual signed contribution/G,
+restart, changed-owner refusal and self-undelegation followed by non-signing
+replication. These are local synthetic candidates, not deployed registration
+tools or production acceptance. The public six-action gateway remains closed to
+registration. An explicit new-bundle opt-in now verifies consensus-key possession
+on-chain before standard validator registration; candidate tools refuse legacy
+unprotected bundles without altering their observer paths. Cross-host abuse
+acceptance, circulating stake funding, accepted public configuration delivery, installers, secured
+public peering and intended-host acceptance remain incomplete. Founder-operated
+startup does not establish decentralized control or authorize production assets.
+
+The private package tool now adds trusted-digest, fixed-inventory unpacking into
+a new owner-only staging directory and a separate read-only directory recheck.
+It never overwrites existing state, installs services, executes archive content,
+creates keys or starts a node. Failed partial directories remain unusable pending
+manual review. This is an installation-preparation component, not a public
+installer, authenticated join-bundle delivery or cross-host admission. Linux
+package contents and macOS staging are checked locally; intended participant-
+host runtime acceptance and Windows private-disk ACL support remain separate.
+
+The local onboarding candidate now downloads one explicitly selected synthetic
+bundle with an independently reviewed complete digest, verifies immutable bytes
+and full policy/profile/genesis consistency, then creates only a new private
+configuration file. It never initializes or starts a node. CLI and negative
+transport/storage fixtures pass, and an isolated five-process test covers
+download-to-observer initialization, committed transfer replay and retained
+identity restart without votes. Public trusted-pin delivery, publisher identity,
+external reachability and participant-host acceptance are not established.
+
+Finite read-only observation now emits bounded redacted sample/final reports,
+requires an explicit duration budget and stops on the first health, continuity,
+stall or output failure without retrying or restarting. Actual-time local
+loopback reads and deterministic fault-policy fixtures pass; deterministic time
+is test input, not sustained uptime evidence. External alerts, long runs and
+native-host resource/backup/upgrade drills remain required. The latest work is
+local-only: it does not connect to or change the existing public pilot, publish
+source, release binaries, enable website-provider signing or activate assets.
+
+The local history candidate now adds explicit fixed-target backfill over up to
+32 bounded batches, with target-hash/checkpoint reconciliation, inter-batch
+pauses, durable complete-block progress and manual continuation after a budget
+exit. Queries remain unavailable after an interrupted refresh until successful
+reconciliation. Reaching the target means declared-range summary coverage, not
+complete account/NFT semantics, authenticated finality or public catch-up.
+Private pagination, rejection, cancellation, abrupt-exit and actual persistent
+consensus/observer-restart checks pass without changing the public worker.
 
 ## Six remaining core workstreams
 
@@ -76,7 +174,7 @@ All six remain incomplete for production, even where local foundations exist.
 
 | Module | Current status | Remaining deliverable |
 | --- | --- | --- |
-| 1. Node installation and management | Partial | Synthetic identity, assembly, join, startup/check commands, private Linux package creation/verification and recovery guidance exist. Native target-host acceptance, installers, upgrade controls and operator recovery remain required. |
+| 1. Node installation and management | Partial | Synthetic identity/assembly, launch and self-service join, explicit trusted-pin configuration fetching, fresh observer/candidate initialization, offline registration signing and exact-height guarded candidate admission pass private checks. Newly assembled synthetic bundles can explicitly require chain-enforced consensus-key possession; candidate tools refuse unprotected bundles without migrating legacy data. Private Linux packaging, safe non-overwriting staging, read-only staging checks and recovery tools exist. Public candidate-path activation, cross-host abuse acceptance, stake funding, target-host acceptance, accepted public configuration/pin delivery, installers, upgrade controls and operator recovery remain required. |
 | 2. RPC services | Partial | The public pilot has a keyless read-only HTTPS gateway and a separate plain-transfer-only submission boundary. Actual browser transfer acceptance passed. Full compatible RPC coverage, sustained public-service acceptance, proofs and complete explorer interfaces remain required. |
 | 3. GOD Chain wallet | Partial | The connected browser alpha supports encrypted disposable accounts, recovery, funding, plain transfers, a restricted test NFT collection and six reviewed native staking/G actions. HTTPS transfer and NFT acceptance cover the existing submission flows. Ownership cards, same-key backup re-encryption, public-address copying, separate known-native-ID recovery and locked-wallet unbonding progress queries are deployed. Full delayed withdrawal completion, positive settled-G workflows, production recovery, HD accounts, signing-key rotation and independent security review remain required. |
 | 4. Browser wallet extension | Partial | A downloadable Manifest V3 test alpha packages the shared connected wallet with exact network pins, a fixed reviewed identity, toolbar entry and constrained transport. Exact-origin public activation and actual HTTPS creation/recovery, claim, committed GOD transfer and restricted NFT mint/send acceptance passed; the English installer provides ZIP/asset hashes and the expected ID. Version 0.3.9 retains six restricted native actions and consolidated read-only state queries, and adds locked-wallet registration pages bounded to eight current records with same-commit cursors. Fresh reads are paced, quota errors are explicit, and staking/unbonding guards match the existing chain policy before signing. Local desktop/mobile and actual unpacked Chrome fixtures cover all six actions, rejected/stale/unknown results and recovery. Physical browser/device acceptance, complete exit and settled-G workflows, website connection permissions, external provider signing, independent security review and separately authorized Store publication remain pending. See EXTENSION.md (separate pilot guide, not included in this core snapshot). |
@@ -85,9 +183,18 @@ All six remain incomplete for production, even where local foundations exist.
 | 7. Bridge website | Pending | RH to GOD Chain and return-transfer workflows, progress, limits and explicit failure or cancellation states. Live operations remain gated. |
 | 8. Bridge relay and signer tools | Partial | Independently reviewed approvals, safe submission, recovery, reconciliation and duplicate prevention. Existing read-only simulation helpers are not an operating financial service. |
 | 9. ETERNAL KINGDOM integration | Pending for GOD Chain | A replaceable chain adapter, wallet connection, GOD and G operations, and submission and retrieval of client-encrypted faith content. This status does not describe unrelated existing APP features. |
-| 10. Monitoring and operator documentation | Partial | Synthetic deployment/recovery guides, bundle-pinned health and short service checks, explicit host budget snapshots, redacted diagnostics and a Linux supervision template exist. Target-host verification, alerting, sustained resource measurements and reviewed incident recovery remain required. |
+| 10. Monitoring and operator documentation | Partial | Synthetic deployment/recovery guides, bundle-pinned health, finite first-fault observation, short service checks, explicit host budget snapshots, redacted diagnostics and a Linux supervision template exist. Target-host verification, external alerting, sustained resource measurements and reviewed incident recovery remain required. |
 
 The encrypted terminal wallet, local offline browser build, connected public test wallet and downloadable Chrome test alpha share the fixed encrypted format. The public alpha connects creation, backup/recovery, fresh balance/sequence queries, automatic test funding, reviewed plain GOD and restricted native signing, one-attempt submission and known-hash confirmation. The restricted collection also supports synthetic NFT minting and owner sends through a separate gateway. Signing and admission are not payment: only matching committed execution establishes the displayed success. Faucet claims need no registration or human approval; FAUCET.md (separate pilot guide, not included in this core snapshot) specifies durable idempotency, pilot limits and pool depletion. Complete native exit/G workflows, general NFT tools, external website signing and production-wallet acceptance remain unfinished. Existing compatible wallets can still be evaluated against required interfaces. Public query services and indexing have operating costs; decentralized validation does not make them cost-free.
+
+The local version-three Chrome connection candidate adds explicit, revocable
+public-address sharing to one reviewed test website, with browser-created
+approval tabs and no external signing or arbitrary RPC. Actual isolated
+Chromium covers encrypted recovery, consent, forbidden origins/frames,
+revocation, worker termination and document navigation. It is not the current
+public ZIP or a deployed website provider. Public scope/activation review,
+durable unknown-attempt preservation before any website signature, independent
+review and physical browser/device acceptance remain required.
 
 ## Implementation sequence and acceptance
 
@@ -102,7 +209,7 @@ keeper test is not enough. No completion percentage or deadline is implied.
 | Participants and recovery | Connected web/Chrome alpha, encrypted backup/recovery, GOD transfer, automatic faucet, restricted NFT mint/send and known-ID checks | Physical target devices, complete onboarding and incident/feedback workflow; reviewed website-provider permissions if delivered |
 | Native staking and G | Connected web/Chrome six-action signing, exact fresh account/sequence checks, restricted admission, ID recovery and bounded unbonding progress; independent SDK byte/signature checks, public committed delegation and start-unbonding with a real pending entry | Full delayed withdrawal completion and failure recovery, fuller validator discovery and positive settled-G claims/transfers/redemption over sustained consensus; failures must preserve balances and existing IDs |
 | Explorer and API | Stored blocks, exact transaction outcomes, latest account state, limited scans and read-only retained address/collection-NFT snapshot pages with pinned pagination | Full backfill, complete validator indexing, sustained capacity/load/recovery and explicit retention/pruning rules; no private memo/calldata/plaintext faith feed |
-| Node participation | Four-validator synthetic consensus, private assembly/join checks and a non-signing observer | Intended-host installs, reviewed external peering/synchronization, independent operator acceptance, signer identity/progress preservation and safe upgrades; geography must reflect actual infrastructure |
+| Node participation | Four-validator synthetic consensus, private assembly/launch-join checks and self-service late observer catch-up/restart | Intended-host installs, validated configuration delivery, reviewed external peering, post-launch validator admission, signer identity/progress preservation and safe upgrades; founder bootstrap must be disclosed and geography must reflect actual infrastructure |
 | Reliability and operations | Supervision, developer smoke/resource checks, constrained gateways and frontend rollback | Sustained settlement/traffic measurements, bounded public-load tests, finite-pool depletion recovery, monitoring/alerts and backup/restore drills without replaying validator signatures |
 | Economic edge cases | Fixed GOD supply and bounded synthetic G issuance; keeper redemption/locks tests | End-to-end settlement and pool cases on persistent multi-validator operation, exact conservation after failure/restart and no guaranteed G-to-GOD liquidity or reward promises |
 | Bridge simulation | Read-only evidence helpers, synthetic custody/ledger and authenticated private routes | Complete UI/relay/signer simulation with source finality, deposits, delayed return payments, cancellation, replay/reorg and interrupted-operation recovery; no real backing or RH activation implied |
@@ -266,7 +373,7 @@ The sequence below is the proposed delivery order. Security and regression check
 5. **Wallet products and APP integration.** Deliver the shared wallet core, extension and ETERNAL KINGDOM adapter. Verify account formats, recovery, signing consent, network selection and client-side encryption without exposing secrets or private faith text.
 6. **Production release review.** Complete the six core workstreams and acceptance evidence relevant to a proposed release. Actual RH integration additionally requires privately reviewed network and contract configuration, independent signer arrangements, backing and finality verification, and explicit activation authorization. A token contract address alone is insufficient.
 
-The next acceptance milestone is an independently operated synthetic test on intended hosts, with secured observer RPC, disposable-wallet checks, sustained daily settlement, test funding and measured resource use. Existing short local tests do not satisfy those gates. Public deployment still requires separate authorization; mainnet and real assets remain disabled.
+The next acceptance milestone is a synthetic test on the intended single host, with secured observer RPC, process isolation, self-service late-node catch-up, disposable-wallet checks, sustained daily settlement, test funding and aggregate measured resource use. Founder-operated bootstrap does not require inventing independent participants or renting multiple validator hosts. Independent-control and cross-host evidence remain required for a later decentralized-validation claim, not a substitute for single-host safety. Short local tests do not satisfy host/reboot/durability gates. Public deployment still requires separate authorization; mainnet and real assets remain disabled.
 
 ### Production transition gates
 
@@ -278,7 +385,8 @@ not completed by version 0.3.9 or a passing developer regression suite.
 | Gate | Required evidence before production activation |
 | --- | --- |
 | Participant workflows | Positive daily-settled G claim/transfer/redemption, actual 21-day unbonding payout and failure/recovery checks on persistent consensus; no clock fast-forwarding or fabricated settlement |
-| Independently operated validation | Intended-host installation, actual independent key/control custody, secured cross-host peering, catch-up and safe restart/upgrade; reported locations must match real infrastructure |
+| Operator control and open participation | Intended-host installation, secured peering/catch-up, safe signer restart/upgrade and validated self-service admission; founder-controlled bootstrap and its correlated failure/control risks must be explicitly reviewed and disclosed. Independent key/control custody is required before claiming decentralized validation; reported locations must match real infrastructure |
+| Single-host operating scope | All services measured together, separate private data/ports/permissions, process/quorum and host-reboot recovery, explicit no-failover limitation and reviewed independently retained backup/incident evidence; no requirement to invent extra validator machines |
 | Capacity and recovery | Sustained settlement and public traffic, storage-growth/retention budgets, abuse and depletion recovery, alerts and restore drills that never roll back signing progress |
 | Economics and initial funding | Explicitly approved production emissions, gas/fee and authority rules, source-backed validator/Gas funding and exact fixed-GOD conservation; test parameters are not approval |
 | Bridge and reserve | Independently authenticated source identity/ancestry/finality, verified custody/contract permissions, one-for-one backing, delayed returns, replay/reorg rejection and interrupted-operation reconciliation |

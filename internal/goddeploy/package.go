@@ -1,7 +1,7 @@
 //go:build go1.25
 
 // Package goddeploy prepares private Linux host-acceptance archives only. It
-// never installs, activates, uploads, extracts or provisions operational keys.
+// never installs services, activates, uploads or provisions operational keys.
 package goddeploy
 
 import (
@@ -30,6 +30,7 @@ var ErrPackage = errors.New("private synthetic deployment package rejected")
 const lifecycleSHA = "e981cc0e1f296fff12ebb0246dac870b0f2f111aa0ba49927f2d42b605ad182a"
 const maxBinary = 256 << 20
 const maxText = 1 << 20
+const maxArchive = maxBinary + 32*maxText
 
 var sourceFiles = []string{"TESTNET.md", "COMPANION.md", "DEPLOYMENT.md", "WALLET.md", "EXPLORER.md", "THIRD_PARTY_NOTICES.md", "UPSTREAM.lock.json", "go.mod", "go.sum", "licenses/GodCometBFT-Apache-2.0.txt", "licenses/GodCometBFT-NOTICE.txt", "deploy/nginx-http.conf.template"}
 var operationalText = regexp.MustCompile(`(?i)0x[0-9a-f]{40}\b|(?:god1|godvaloper1|godvalcons1)[023456789acdefghjklmnpqrstuvwxyz]{20,}|BEGIN [A-Z ]*PRIVATE KEY|(?:privateKey|apiKey|password|secret)\s*[:=]\s*["']?[A-Za-z0-9_-]{8,}`)
@@ -54,6 +55,10 @@ type Manifest struct {
 type Report struct {
 	Created                      bool   `json:"created"`
 	Verified                     bool   `json:"verified"`
+	Unpacked                     bool   `json:"unpacked"`
+	DirectoryVerified            bool   `json:"directoryVerified"`
+	ServicesInstalled            bool   `json:"servicesInstalled"`
+	NodeStarted                  bool   `json:"nodeStarted"`
 	Target                       string `json:"target"`
 	Files                        int    `json:"files"`
 	SHA256                       string `json:"sha256"`
@@ -83,6 +88,11 @@ func root(path string, private bool) (*os.Root, error) {
 	}
 	r, err := os.OpenRoot(path)
 	if err != nil {
+		return nil, ErrPackage
+	}
+	opened, err := r.Stat(".")
+	if err != nil || !os.SameFile(s, opened) {
+		_ = r.Close()
 		return nil, ErrPackage
 	}
 	return r, nil
@@ -279,27 +289,42 @@ func Create(o Options) (Report, error) {
 // without extracting or executing any archive content. The supplied digest
 // must come from a trusted review; a digest is not a publisher signature.
 func Verify(path, expected string) (Report, error) {
-	if !digestOK(expected) || !filepath.IsAbs(path) {
+	raw, err := reviewedArchive(path, expected)
+	if err != nil {
 		return Report{}, ErrPackage
+	}
+	return verifyArchive(raw, expected)
+}
+
+// The digest and parser see one bounded snapshot. Never reopen an archive
+// after verification or seek a mutable file to extract different bytes.
+func reviewedArchive(path, expected string) ([]byte, error) {
+	if !digestOK(expected) || !filepath.IsAbs(path) {
+		return nil, ErrPackage
 	}
 	r, err := root(filepath.Dir(path), true)
 	if err != nil {
-		return Report{}, ErrPackage
+		return nil, ErrPackage
 	}
 	defer r.Close()
-	f, _, err := regular(r, filepath.Base(path), maxBinary+32*maxText, true)
+	f, size, err := regular(r, filepath.Base(path), maxArchive, true)
 	if err != nil {
-		return Report{}, ErrPackage
+		return nil, ErrPackage
 	}
 	defer f.Close()
-	sha, _, err := hashReader(io.LimitReader(f, maxBinary+32*maxText+1))
-	if err != nil || sha != expected {
-		return Report{}, ErrPackage
+	raw, err := io.ReadAll(io.LimitReader(f, maxArchive+1))
+	if err != nil || int64(len(raw)) != size || len(raw) > maxArchive {
+		return nil, ErrPackage
 	}
-	if _, err := f.Seek(0, io.SeekStart); err != nil {
-		return Report{}, ErrPackage
+	h := sha256.Sum256(raw)
+	if hex.EncodeToString(h[:]) != expected {
+		return nil, ErrPackage
 	}
-	buffer := bufio.NewReader(f)
+	return raw, nil
+}
+
+func verifyArchive(snapshot []byte, expected string) (Report, error) {
+	buffer := bufio.NewReader(bytes.NewReader(snapshot))
 	gz, err := gzip.NewReader(buffer)
 	if err != nil {
 		return Report{}, ErrPackage
@@ -424,6 +449,9 @@ The participant companion is embedded in the node binary and binds loopback only
 
 Review DEPLOYMENT.md, TESTNET.md and COMPANION.md before use. Compare the archive
 digest through a trusted channel and run the non-extracting godpack verifier.
+The separately reviewed godpack unpack command can stage the fixed inventory
+in a new owner-only directory. It never starts a node or installs a service.
+Use check-unpacked for a read-only recheck; never use a failed partial directory.
 Initialize each operator independently on its own machine; never copy validator
 keys or signing progress from a developer cluster. Keep real assets and RH off.
 

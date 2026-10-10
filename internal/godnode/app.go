@@ -80,9 +80,17 @@ type Config struct {
 	// charges this gas per quorum signature. Zero keeps ledger-only behavior.
 	// There is no production default or source-observation implementation.
 	BridgeApprovalGas uint64 `json:",omitempty"`
+	// An immutable, explicit new-network opt-in. False preserves legacy runtime
+	// bindings and replay; it must never be toggled on an existing database.
+	RequireValidatorProof bool `json:",omitempty"`
 }
 
 func (c Config) validate() error {
+	// Possession-policy acceptance currently covers only isolated synthetic
+	// networks, not the separately gated bridge/custody runtime.
+	if c.RequireValidatorProof && (c.BridgeGenesis != nil || c.BridgeApprovalGas != 0) {
+		return ErrConfig
+	}
 	if !c.Prototype || len(c.ChainID) == 0 || len(c.ChainID) > 50 || c.EVMChainID == 0 || c.EVMChainID > math.MaxInt64 ||
 		c.Policy.Validate() != nil || c.MaxBlockGas < int64(c.Policy.MaxGas) || c.MaxBlockBytes < int64(c.Policy.MaxTxBytes) ||
 		c.MaxBlockBytes > 64<<20 || c.MaxBlockTxs <= 0 || c.MaxBlockTxs > 10000 || c.GPerSignedBlock.IsNil() ||

@@ -2,6 +2,11 @@ package godnode
 
 import (
 	"context"
+	"crypto/ed25519"
+	"crypto/sha256"
+	"encoding/base64"
+	"encoding/json"
+	"strings"
 
 	sdkmath "cosmossdk.io/math"
 	"github.com/ETKINGDOM/GOD-Chain/internal/godaddress"
@@ -10,7 +15,7 @@ import (
 	"github.com/ETKINGDOM/GOD-Chain/x/godrewards"
 	"github.com/ETKINGDOM/GOD-Chain/x/godrewards/msg"
 	addresscodec "github.com/cosmos/cosmos-sdk/codec/address"
-	"github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
+	sdked "github.com/cosmos/cosmos-sdk/crypto/keys/ed25519"
 	sdk "github.com/cosmos/cosmos-sdk/types"
 	slashingtypes "github.com/cosmos/cosmos-sdk/x/slashing/types"
 	stakingtypes "github.com/cosmos/cosmos-sdk/x/staking/types"
@@ -18,6 +23,68 @@ import (
 
 func minSelfStake() sdkmath.Int     { return godrewards.Unit().MulRaw(1000) }
 func commission() sdkmath.LegacyDec { return sdkmath.LegacyNewDecWithPrec(1, 1) }
+
+const validatorProofPrefix = "god-chain-consensus-possession-v1:"
+
+// ValidatorProofBytes is the deterministic, domain-separated node-key intent.
+// It binds the immutable runtime and every registration field except the proof
+// carrier itself. Account signatures separately bind transaction fees/sequence.
+// This is not a consensus vote, proposal, ownership grant or signing-state reset.
+func ValidatorProofBytes(c Config, m *stakingtypes.MsgCreateValidator) ([]byte, error) {
+	if c.validate() != nil || !c.RequireValidatorProof || validateNativeMessage(m) != nil {
+		return nil, godtx.ErrPolicy
+	}
+	if _, err := m.Description.EnsureLength(); err != nil {
+		return nil, godtx.ErrPolicy
+	}
+	config, err := json.Marshal(c)
+	if err != nil {
+		return nil, godtx.ErrPolicy
+	}
+	digest := sha256.Sum256(config)
+	description := m.Description
+	description.Details = ""
+	pub := m.Pubkey.GetCachedValue().(*sdked.PubKey)
+	raw, err := json.Marshal(struct {
+		RuntimeSHA256 [32]byte
+		Operator      string
+		PublicKey     []byte
+		Value         sdk.Coin
+		Minimum       string
+		Commission    stakingtypes.CommissionRates
+		Description   stakingtypes.Description
+	}{digest, m.ValidatorAddress, pub.Key, m.Value, m.MinSelfDelegation.String(), m.Commission, description})
+	if err != nil {
+		return nil, godtx.ErrPolicy
+	}
+	return append([]byte("GOD Chain synthetic validator possession v1\n"), raw...), nil
+}
+
+// AttachValidatorProof verifies before filling the bounded standard staking
+// description carrier. No new protobuf route or public gateway action is added.
+func AttachValidatorProof(c Config, m *stakingtypes.MsgCreateValidator, signature []byte) error {
+	raw, err := ValidatorProofBytes(c, m)
+	if err != nil || len(signature) != ed25519.SignatureSize || !ed25519.Verify(m.Pubkey.GetCachedValue().(*sdked.PubKey).Key, raw, signature) {
+		return godtx.ErrPolicy
+	}
+	m.Description.Details = validatorProofPrefix + base64.RawURLEncoding.EncodeToString(signature)
+	return nil
+}
+
+// ValidateValidatorProof fails closed for every authenticated registration on
+// a proof-enabled network. Genesis remains a separately reviewed launch input.
+func ValidateValidatorProof(c Config, m *stakingtypes.MsgCreateValidator) error {
+	raw, err := ValidatorProofBytes(c, m)
+	if err != nil || len(m.Description.Details) != len(validatorProofPrefix)+86 || !strings.HasPrefix(m.Description.Details, validatorProofPrefix) {
+		return godtx.ErrPolicy
+	}
+	text := strings.TrimPrefix(m.Description.Details, validatorProofPrefix)
+	proof, err := base64.RawURLEncoding.Strict().DecodeString(text)
+	if err != nil || len(proof) != ed25519.SignatureSize || base64.RawURLEncoding.EncodeToString(proof) != text || !ed25519.Verify(m.Pubkey.GetCachedValue().(*sdked.PubKey).Key, raw, proof) {
+		return godtx.ErrPolicy
+	}
+	return nil
+}
 
 func validatorAddress(text string) ([]byte, error) {
 	codec := addresscodec.NewBech32Codec(godaddress.ValidatorOperatorPrefix)
@@ -37,6 +104,9 @@ func stakeCoin(coin sdk.Coin) bool {
 }
 
 func (a *App) validateNativeMessage(message sdk.Msg) error {
+	if m, ok := message.(*stakingtypes.MsgCreateValidator); ok && a.config.RequireValidatorProof {
+		return ValidateValidatorProof(a.config, m)
+	}
 	switch message.(type) {
 	case *bridgemsg.MsgAcceptDeposit, *bridgemsg.MsgRequestWithdrawal, *bridgemsg.MsgAuthorizeWithdrawal,
 		*bridgemsg.MsgResolvePayment, *bridgemsg.MsgCancelWithdrawal, *bridgemsg.MsgPauseBridge:
@@ -60,7 +130,7 @@ func validateNativeMessage(message sdk.Msg) error {
 		if _, err := validatorAddress(m.ValidatorAddress); err != nil {
 			return err
 		}
-		pk, ok := m.Pubkey.GetCachedValue().(*ed25519.PubKey)
+		pk, ok := m.Pubkey.GetCachedValue().(*sdked.PubKey)
 		if !ok || pk == nil || len(pk.Key) != 32 {
 			return godtx.ErrKey
 		}
@@ -102,11 +172,11 @@ type stakingServer struct {
 }
 
 func (s stakingServer) CreateValidator(ctx context.Context, m *stakingtypes.MsgCreateValidator) (*stakingtypes.MsgCreateValidatorResponse, error) {
-	if err := validateNativeMessage(m); err != nil {
+	if err := s.app.validateNativeMessage(m); err != nil {
 		return nil, err
 	}
 	val, _ := validatorAddress(m.ValidatorAddress)
-	pub := m.Pubkey.GetCachedValue().(*ed25519.PubKey)
+	pub := m.Pubkey.GetCachedValue().(*sdked.PubKey)
 	c := sdk.UnwrapSDKContext(ctx)
 	if c.KVStore(s.app.key).Has(penaltyKey(6, val)) || s.app.slashing.IsTombstoned(c, sdk.ConsAddress(pub.Address())) {
 		return nil, godtx.ErrPolicy

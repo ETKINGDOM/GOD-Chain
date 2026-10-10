@@ -1,8 +1,10 @@
 package godnode
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
+	"github.com/ETKINGDOM/GOD-Chain/internal/godaddress"
 	"github.com/ETKINGDOM/GOD-Chain/internal/godtx"
 	"github.com/ETKINGDOM/GOD-Chain/x/godrewards"
 	"log"
@@ -11,6 +13,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	cmtdb "github.com/cometbft/cometbft-db"
@@ -24,6 +27,7 @@ import (
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 	"github.com/cometbft/cometbft/proxy"
 	cmttypes "github.com/cometbft/cometbft/types"
+	sdk "github.com/cosmos/cosmos-sdk/types"
 )
 
 // LocalOptions accepts only explicit loopback peers and a caller-owned private
@@ -41,6 +45,10 @@ type LocalOptions struct {
 	Persistent bool
 	// Observer nodes may replicate and serve RPC but can never sign consensus.
 	Observer bool
+	// CandidateOwner is a canonical locally selected wallet owner. It is not
+	// authority: a candidate signs only after locally replayed committed state
+	// puts this consensus key and operator into the signing set for that height.
+	CandidateOwner string
 }
 
 func loopbackEndpoint(endpoint string) bool {
@@ -97,6 +105,20 @@ func startNode(ctx context.Context, a *App, o LocalOptions, network bool) (*Loca
 		!endpointOK || o.BlockInterval < 100*time.Millisecond || o.BlockInterval > 6*time.Second || o.Genesis == nil ||
 		o.Signer == nil || o.NodeKey == nil || o.NodeKey.PrivKey == nil || len(o.Peers) > 32 {
 		return nil, ErrConfig
+	}
+	if o.CandidateOwner != "" {
+		if _, err := godaddress.FromNative(o.CandidateOwner); err != nil || o.Observer || !o.Persistent || !a.config.RequireValidatorProof || a.config.BridgeGenesis != nil || a.config.BridgeApprovalGas != 0 {
+			return nil, ErrConfig
+		}
+		pub, err := o.Signer.GetPubKey()
+		if err != nil || pub == nil || pub.Type() != "ed25519" || len(pub.Bytes()) != 32 {
+			return nil, ErrConfig
+		}
+		for _, v := range o.Genesis.Validators {
+			if v.PubKey != nil && v.PubKey.Equals(pub) {
+				return nil, ErrConfig
+			}
+		}
 	}
 	seen := map[string]bool{}
 	for _, peer := range o.Peers {
@@ -169,6 +191,8 @@ func startNode(ctx context.Context, a *App, o LocalOptions, network bool) (*Loca
 			}
 		}
 		signer = observerSigner{pub}
+	} else if o.CandidateOwner != "" {
+		signer = &candidateSigner{app: a, signer: signer, owner: o.CandidateOwner}
 	}
 	// Never attach two consensus engines to the same execution state, even
 	// after Stop. A restart must use a fresh process and committed database.
@@ -240,6 +264,81 @@ type observerSigner struct{ pub cmtcrypto.PubKey }
 func (s observerSigner) GetPubKey() (cmtcrypto.PubKey, error)        { return s.pub, nil }
 func (observerSigner) SignVote(string, *cmtproto.Vote) error         { return ErrConfig }
 func (observerSigner) SignProposal(string, *cmtproto.Proposal) error { return ErrConfig }
+
+// This guard uses the committed validator set for the EXACT signing height,
+// including GodCometBFT's two-block update delay. RPC claims, genesis edits,
+// profile approval and current bonded status alone never authorize a signature.
+// The original FilePV still durably enforces its height/round/step protection.
+type candidateSigner struct {
+	mu     sync.Mutex
+	app    *App
+	signer cmttypes.PrivValidator
+	owner  string
+}
+
+func (s *candidateSigner) GetPubKey() (cmtcrypto.PubKey, error) { return s.signer.GetPubKey() }
+
+func (s *candidateSigner) allowed(chain string, height int64) (allowed bool) {
+	defer func() {
+		if recover() != nil {
+			allowed = false
+		}
+	}()
+	a := s.app
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	if !a.usable() || !a.engineRunning || chain != a.config.ChainID || a.base.LastBlockHeight() <= 0 || height != a.base.LastBlockHeight()+1 {
+		return false
+	}
+	ctx, err := a.base.CreateQueryContext(a.base.LastBlockHeight(), false)
+	if err != nil {
+		return false
+	}
+	pub, err := s.signer.GetPubKey()
+	if err != nil || pub == nil {
+		return false
+	}
+	set, err := a.getSet(ctx, height)
+	if err != nil {
+		return false
+	}
+	member := false
+	for _, v := range set.Validators {
+		if bytes.Equal(v.Address, pub.Address()) && v.Power > 0 {
+			member = true
+		}
+	}
+	if !member {
+		return false
+	}
+	v, err := a.staking.GetValidatorByConsAddr(ctx, sdk.ConsAddress(pub.Address()))
+	if err != nil {
+		return false
+	}
+	operator, err := validatorAddress(v.OperatorAddress)
+	owner, e := godaddress.FromNative(s.owner)
+	registered, f := v.ConsPubKey()
+	return err == nil && e == nil && f == nil && registered != nil && registered.Type() == "ed25519" && bytes.Equal(operator, owner) && bytes.Equal(registered.Bytes(), pub.Bytes())
+}
+
+func (s *candidateSigner) SignVote(chain string, vote *cmtproto.Vote) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	pub, err := s.signer.GetPubKey()
+	if err != nil || pub == nil || vote == nil || vote.Round < 0 || (vote.Type != cmtproto.PrevoteType && vote.Type != cmtproto.PrecommitType) || !bytes.Equal(vote.ValidatorAddress, pub.Address()) || !s.allowed(chain, vote.Height) {
+		return ErrConfig
+	}
+	return s.signer.SignVote(chain, vote)
+}
+
+func (s *candidateSigner) SignProposal(chain string, proposal *cmtproto.Proposal) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if proposal == nil || proposal.Round < 0 || proposal.Type != cmtproto.ProposalType || !s.allowed(chain, proposal.Height) {
+		return ErrConfig
+	}
+	return s.signer.SignProposal(chain, proposal)
+}
 
 // Submit performs one admission attempt. ErrCommitPending means no ante state
 // was touched and the caller may retry after commitment; it is not acceptance.

@@ -9,6 +9,153 @@ real assets. God EVM + God SDK + GodCometBFT pins remain unchanged.
 
 ## Current synthetic participant acceptance
 
+### Local-only wallet recovery candidate
+
+The opt-in Chrome 0.4.0 candidate is not the published 0.3.9 alpha. Its
+address-connection worker shares only explicitly approved public accounts and
+cannot sign, submit, access vaults or read the transaction journal. External
+website signing and arbitrary RPC remain disabled. Browser source and private
+fixtures are not included in this exact core publication.
+
+GOD transfers, restricted NFT mint/send and six native staking/G operations
+share one network/account lock and unresolved record in the same browser
+profile. The record contains the original canonical public review, approval
+digest and verified TX ID, never a password, private key, vault or signed wire.
+An unsigned reservation must commit before crypto; the signed hash must commit
+before one submission. Missing or mismatched results preserve the guard.
+Only matching committed inclusion resolves a signed attempt. Cancellation is
+restricted to an explicitly checked still-unsigned reservation.
+
+Thirty-seven private state-machine checks passed. Original signed unknown
+recovery-file restoration covers all nine operation paths, exact account/network
+pins, empty-store admission, unchanged existing records, contention, storage
+faults and cancellation. It restores only a previously saved public guard,
+never signs or submits, and cannot reconstruct later missing history.
+Actual isolated Chromium
+fixtures exercised local wallet crypto, IndexedDB, Web Locks, mixed-operation
+contention, reload and browser-process restart, exact confirmation and refused
+storage writes. The mixed fixture submitted two NFT and six native operations
+to intercepted synthetic services only. Verified same-account backup
+re-encryption retained the coordinator; expired signed redemption metadata
+remained recoverable without enabling expired new signatures. Gateway deferral
+did not release a signed unknown hash. Default web and older-profile browser
+regressions also passed; those clients do not open the candidate database.
+
+One plain GOD recovery-file browser run passed download, empty-profile import,
+another browser restart and exact committed reconciliation, with no recovery
+worker or request. NFT/native file handling has state-machine coverage only.
+The recovery-file browser gate is not reliably accepted: three earlier reopened
+test Chromium runs closed during download on macOS arm64; a separate empty-JSON
+probe without wallet code also encountered a failure. This does not determine
+the browser defect's cause or establish a production fix, even after a later
+complete pass. No test-browser pin,
+security permission or chain dependency was changed to bypass the gate.
+
+These checks are not live-service or physical-device acceptance, power-loss
+durability, multi-device coordination, comprehensive storage-erasure recovery, authenticated
+receipts or independent audit. Native result replies do not independently
+prove account number/nonce; failed NFT replies do not expose successful
+movement fields. A non-included signed hash can remain blocked indefinitely.
+The distribution command still refuses this candidate. Source/distribution
+review, recovery-file browser acceptance, comprehensive storage-loss handling
+and physical target devices remain release gates.
+This upload changes no service, public ZIP, signing key or real asset.
+
+### Self-service validator-candidate workflow
+
+New synthetic bundles can explicitly opt into chain-enforced consensus-key
+possession with `testnet assemble --require-validator-proof`. The bounded
+versioned Ed25519 proof binds the immutable runtime, operator, key, stake,
+minimum, commission and remaining description fields inside the standard
+staking message. Both authenticated admission and the staking handler verify
+it before writes. Offline preparation retains a separate full-request proof,
+and encrypted wallet review displays the enforced policy. Candidates refuse
+legacy bundles; their observers and runtime serialization remain unchanged.
+The bridge/custody runtime is outside this synthetic opt-in acceptance.
+
+Private macOS arm64 race checks cover proof encoding and owner/key/runtime/terms
+tampering, missing proof despite a freshly re-signed offline request, exact
+wallet approval and legacy refusal without writes. Direct block execution
+bypasses the mempool: invalid registrations change no affected account balance,
+sequence or stake; the valid proof registers once with the exact stake/fee.
+Synthetic commit vote flags in that application check are not signature proof.
+Separate persistent five-process consensus proves actual signatures/G,
+restart, immutable policy refusal and non-signing exit. The possession unit and
+five-process lifecycle also passed on isolated Linux amd64 with a checksum-
+verified executable. Legacy execution/recovery/signer-conflict regressions and
+vet passed. No deployed network was upgraded by these private checks.
+
+Fresh observer/candidate initialization pins the full bundle before creating
+private keys/configuration and never starts or overwrites a node. A candidate's
+guarded FilePV requires locally committed matching operator ownership and the
+actual signing set for the exact height, preserving the two-block delay and
+original anti-double-sign progress. Its expected owner is also storage-bound.
+Local role edits and unsigned remote status cannot grant signing authority.
+
+Registration preparation produces a new private node-proof-bound request; the
+separate offline account signer requires the exact intended wallet. The encrypted
+terminal variant shows the consensus public key, network/genesis, self-stake,
+minimum stake, commission and financial metadata before explicit approval. It
+signs the once-read approved intent in memory without plaintext-key export or
+submission. Private refusal, approval-race and SDK signature/hash checks retain
+the ordinary/browser six-action allowlist and public gateway restrictions.
+
+Private persistent five-process consensus verifies a candidate created after
+earlier blocks, replay without signatures/G, wallet-authenticated registration,
+actual verified commit contribution/G, restart with preserved keys/progress,
+changed-owner storage rejection and continued non-signing replay after normal
+self-undelegation and removal. Fixed GOD supply and the two-block set delay remain;
+the 21-day withdrawal rule is neither elapsed nor bypassed. Scoped race checks
+use the checksum-bound lifecycle build. These private tests are not distributed.
+
+The same lifecycle passed in a new private Linux amd64 VPS fixture directory
+with checksum-verified executables and the reviewed logging-only overlay. Actual
+node/wallet CLI help also ran; existing fourteen service process identities and
+restart counters were unchanged, with both sync timers active. macOS arm64 race
+checks, existing signed-execution/disk-recovery/signer-conflict regressions and
+vet passed. This isolated runtime check is not public candidate activation,
+participant-host coverage, Windows acceptance or sustained load/durability proof.
+
+This is not a deployed registration path, independently operated network,
+target-host/resource/durability acceptance or production release. The separate
+opt-in chain rule rejects public-key-only registration on newly assembled
+synthetic networks. No deployed/legacy network is silently upgraded. Cross-host
+abuse acceptance, stake funding, installers, signed
+configuration delivery, public peering and production economic, governance,
+bridge and acceptance gates remain. Publication activates no service or assets.
+
+### Self-service non-signing join candidate
+
+`godd testnet join-observer` admits a fresh local observer against the exact
+reviewed synthetic bundle without advance launch-profile registration. It
+retains local keys/progress, exact genesis and bounded explicit peers, requires
+loopback RPC and refuses validator roles, launch-key reuse, unsafe/mismatched
+files or existing node/signing state. Ordinary launch `join` retains its exact
+profile requirement. CLI/private race fixtures cover admission, unchanged
+retained bytes and no activation or input disclosure on refusal.
+
+Four persistent loopback validators commit a disposable GOD transfer before
+the new identity exists. The observer then catches up, reads the same committed
+block/balance and fixed supply, follows further blocks and restarts with original
+keys and empty signing progress. No launch bundle, validator set, economics or
+deployed service is changed. This is not intended-host/public peering acceptance,
+installer/configuration delivery, secure state-sync checkpoints, public active-
+validator admission, rewards or decentralized control. The private candidate
+workflow above does not activate those services. Those remain separate gates.
+
+### Keyless operator bundle preview
+
+`godd testnet inspect-bundle` validates a selected private synthetic bundle
+against its independently reviewed complete digest without keys, a node
+workspace, sidecars, joining, writes or peer access. Its bounded review fields
+include exact identities/policies and aggregate topology counts, not participant
+addresses, endpoints, node keys/proofs or paths. Private race checks cover
+bundle-only storage, full-digest binding beyond unchanged genesis, precise large
+integers, canonical IP aliases, invalid proofs/settings, unsafe permissions and
+symlinks. Node/signing/network/activation flags are refused. Declared IPs and
+signed profiles do not prove independent people, machines, geography, routing,
+wallet-owner authentication or production economic/launch approval.
+
 ### Restricted native gateway and durable inventory candidate
 
 Included source now covers the six-action codec and keyless native boundary,
@@ -16,6 +163,20 @@ synchronous blocked-hash storage, offline audit/copy CLI, retained-height code
 lookup and the history CLI's existing offline storage audit. Browser signing,
 other gateways, private tests, configuration and binaries remain excluded.
 The deployed native gateway has not been replaced by this durable candidate.
+
+The offline CLI adds separately supervised page/freelist checks, bounded
+canonical reports and an exact-image verification mode against a separately
+retained checkpoint. Private race fixtures reject duplicate free-page references
+and a checker-goroutine panic without disclosure, repair or destination writes;
+they also cover worker timeout/nonzero exit, oversized/partial/duplicate reports
+and the complete 100,000-record bound. A valid stale whole image passes an
+unpinned inventory audit but fails against the newer approved checksum. Exact
+restore and source/target copy checks retain original bytes and counts. No
+listener, node request, signing progress or public unknown outcome is changed.
+This is not authenticated checkpoint custody/freshness, power-loss certification,
+protection against rollback of both database and checkpoint or live migration.
+The worker timeout/file bound are not hard memory limits; require unprivileged
+OS confinement with resource limits and no network or node/signing-data access.
 
 Private race checks cover all six actions, exact signature/wire rebuilding,
 coherent snapshots and disjoint fixed-supply/G buckets, acknowledged/unknown/
@@ -35,12 +196,16 @@ These are process boundaries around completed commits, not power cuts during
 fsync. Persistent local validators and an observer also exercised gateway
 reopen after successful and failed execution without clearing guards.
 
-A private equivalent logging-only build passed eight isolated Linux offline-
-tool cases under the existing unprivileged account, write/execute-memory denial
-and network denial, with consensus storage inaccessible. It initialized 1,000
-fixture hashes and copied at capacity 2,000 without replacing live processes.
-That evidence concerns offline tools, not public HTTP migration. The public
-Go build helper adds an explicitly selectable checksum-bound logging overlay;
+The current candidate built through the Go logging helper passed eighteen
+isolated Linux offline cases under the existing unprivileged account with a
+768-MiB hard memory limit, disabled core dumps, write/execute-memory and network
+denial, and inaccessible consensus storage. It verifies/copies 1,000 fixture
+hashes at capacity 2,000, refuses a valid 999-record image against the retained
+latest pin, accepts exact restore and rejects both freelist faults with static
+refusal and no repair or target writes. All sixteen services/timers, existing
+service PIDs and listening sockets stayed unchanged. This concerns offline
+tools, not public HTTP migration. The public Go build helper retains an
+explicitly selectable checksum-bound logging overlay;
 private race tests verify deterministic edits, original-cache preservation,
 exact mirror scope, missing compiler/pin failures and symlink-output refusal.
 Public compilation is a separate requirement, not rerunning private tests.
@@ -357,7 +522,7 @@ A deterministic private negative control bypassing only the wrapper reproduced t
 
 ## Public source checks
 
-The public snapshot contains exactly 126 reviewed files: the previously reviewed core and history source, fifteen additional fixed production/guide paths for the native gateway and dependency completion, and the unchanged public whitepaper. This includes the keyless native codec/gateway, bounded durable reservations, offline maintenance and optional logging build helper, not browser signers or other gateways. Private tests, fixtures, operational scripts, populated configuration, genesis, addresses, keys, runtime data, dependency folders, logs and binaries are excluded. The nginx template is not an enabled service. Private application or source-review ancestry must not become a public parent.
+The public snapshot contains exactly 133 reviewed files: 132 fixed production/guide paths and the unchanged public whitepaper. This includes the keyless native codec/gateway, bounded durable reservations, offline maintenance and optional logging build helper. Seven dependency-completion paths add the existing bundle-download/watch CLI and implementations, archive unpacking, bounded history backfill and single-host guide. Browser signers and other gateways remain excluded. Private tests, fixtures, operational scripts, populated configuration, genesis, addresses, keys, runtime data, dependency folders, logs and binaries are excluded. The nginx template is not an enabled service. Private application or source-review ancestry must not become a public parent.
 
 `make check` verifies the pinned lifecycle compiler input, then runs vet, module checksum verification and compilation. `make build` compiles the node/tool and packager commands; `make build-history-index` separately builds the local history CLI. Neither build starts a node or a history sync. `make status` runs the diagnostic without starting consensus or bridge operations. Public commands do not reproduce the private tests, fuzz windows or custody-bytecode checks. Publication screening checks exact file scopes, both commit identities, file bytes, commit messages and every reachable public ancestor. It is not a comprehensive secret audit or independent code review.
 

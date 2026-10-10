@@ -18,11 +18,11 @@ import (
 // The private terminal is separate from stdout's redacted machine reports.
 func runWallet(args []string, out io.Writer) error {
 	if len(args) == 0 || len(args) == 1 && args[0] == "help" {
-		_, err := fmt.Fprintln(out, "GOD Chain synthetic encrypted test wallet\nCommands: create, address, sign\nAll commands require --wallet <private-file> --bundle <private-file> --expected-bundle <reviewed-digest>. Address and sign require --output <new-private-file>; sign also requires --request <reviewed-private-file>.\nPasswords and signing approval are read only from a private interactive terminal. No real assets, key import, mnemonic recovery, browser signer or automatic submission.")
+		_, err := fmt.Fprintln(out, "GOD Chain synthetic encrypted test wallet\nCommands: create, address, sign, sign-registration\nAll commands require --wallet <private-file> --bundle <private-file> --expected-bundle <reviewed-digest>. Address and signing require --output <new-private-file>; signing also requires --request <reviewed-private-file>.\nSign-registration is a separate offline operator action; it does not expand browser/gateway signing permissions. Passwords and signing approval are read only from a private interactive terminal. No real assets, key import, mnemonic recovery, browser signer or automatic submission.")
 		return err
 	}
 	command := args[0]
-	if command != "create" && command != "address" && command != "sign" {
+	if command != "create" && command != "address" && command != "sign" && command != "sign-registration" {
 		return godtestnet.ErrWallet
 	}
 	flags := flag.NewFlagSet("wallet", flag.ContinueOnError)
@@ -34,7 +34,7 @@ func runWallet(args []string, out io.Writer) error {
 	if command != "create" {
 		output = flags.String("output", "", "")
 	}
-	if command == "sign" {
+	if command == "sign" || command == "sign-registration" {
 		request = flags.String("request", "", "")
 	}
 	if flags.Parse(args[1:]) != nil || flags.NArg() != 0 || *wallet == "" || *bundle == "" || *pin == "" || !term.IsTerminal(int(os.Stdin.Fd())) || !term.IsTerminal(int(os.Stderr.Fd())) {
@@ -85,7 +85,7 @@ func runWallet(args []string, out io.Writer) error {
 		}
 		return json.NewEncoder(out).Encode(map[string]bool{"synthetic": true, "realAssets": false, "privateAddressFileCreated": true, "submitted": false})
 	}
-	report, err := godtestnet.WalletSign(*wallet, *request, *output, *bundle, *pin, password, func(review godtestnet.WalletReview) bool {
+	approve := func(review godtestnet.WalletReview) bool {
 		fmt.Fprintln(os.Stderr, "\nReview the derived sender, network, exact smallest-unit amounts and maximum fee. Signing does not submit:")
 		encoder := json.NewEncoder(os.Stderr)
 		encoder.SetIndent("", "  ")
@@ -96,7 +96,13 @@ func runWallet(args []string, out io.Writer) error {
 		approval, err := term.ReadPassword(int(os.Stdin.Fd()))
 		defer clear(approval)
 		return err == nil && bytes.Equal(approval, []byte("SIGN"))
-	})
+	}
+	var report godtestnet.SignReport
+	if command == "sign-registration" {
+		report, err = godtestnet.WalletSignRegistration(*wallet, *request, *output, *bundle, *pin, password, approve)
+	} else {
+		report, err = godtestnet.WalletSign(*wallet, *request, *output, *bundle, *pin, password, approve)
+	}
 	if err != nil {
 		return godtestnet.ErrWallet
 	}

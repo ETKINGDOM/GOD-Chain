@@ -22,6 +22,16 @@ the production transition gates in [ROADMAP.md](ROADMAP.md) remain incomplete.
 
 This source snapshot does not include all separately deployed pilot services. GitHub publication and public build commands do not deploy or activate a chain. Operational endpoints, populated addresses and private configuration are deliberately excluded.
 
+The local-only Chrome 0.4.0 candidate adds explicit, revocable public-address
+sharing and same-profile recovery guards for GOD transfers, restricted NFT
+mint/send and six staking/G actions. It saves the original public review and
+verified TX ID before one submission; uncertain outcomes block replacement
+signatures across reload and browser-process restart. Website signing stays
+disabled. The existing downloadable alpha is unchanged. Candidate browser
+source, fixtures and distribution files remain outside this exact core scope;
+the private developer checks and remaining gates are summarized in
+[VERIFICATION.md](VERIFICATION.md#local-only-wallet-recovery-candidate).
+
 See the [Implementation Status and Roadmap](ROADMAP.md) for verified capabilities, six remaining core workstreams, ten supporting modules and the proposed delivery sequence. The plan distinguishes prototype and pilot checks from production acceptance; it does not authorize further deployment or real assets.
 
 ## Execution and validators
@@ -29,6 +39,15 @@ See the [Implementation Status and Roadmap](ROADMAP.md) for verified capabilitie
 `internal/godnode` assembles accounts, bank storage, staking, execution and the local consensus adapter. It accepts bounded legacy, access-list and dynamic-fee Ethereum transactions, including contract deployment and storage. Native direct-signature transactions share account sequences with the Ethereum path. Explicit synthetic-testnet commands provide a restricted JSON-RPC adapter and an offline terminal wallet; no public service is activated by a build or upload.
 
 Signed validator creation requires 1,000 GOD self-stake and a fixed 10 percent commission. Delegation requires 1 GOD; unbonding takes 21 days. The prototype selects up to 32 active validators and bounds delegators per validator to 256 for local resource control, not as a finalized worldwide limit. G allocation uses the preceding verified commit and stake captured before that block's transactions. Missed signatures receive no allocation. The per-block budget must be explicitly configured; no mainnet emission rule is selected.
+
+New synthetic bundles can opt into consensus-key possession checks with
+`testnet assemble --require-validator-proof`. A bounded proof inside the
+standard staking message binds the immutable runtime, intended operator, key
+and registration terms. The chain verifies it before authenticated admission
+and staking writes. Candidate tools require this policy; legacy bundles retain
+their existing behavior and non-signing observer path. This is not an in-place
+upgrade, bridge-enabled runtime approval, audit or public activation. Never
+reset a signer/database or edit a live runtime to enable it.
 
 The balance adapter transfers existing GOD instead of granting mint or burn permission. Fees remaining after Ethereum gas refunds enter pending rewards. Native signed fees retain their full-requested-fee rule. Value otherwise discarded by self-destruction-to-self is quarantined, an intentional native-value difference. Default inflation and burning penalties are not imported as economic rules.
 
@@ -59,6 +78,25 @@ The account G fields exclude application locks and must not be labeled total G. 
 
 `godd testnet create`, `identity`, `assemble`, `join`, `check` and `start` provide private synthetic setup and persistent operation. Independent initialization keeps consensus and P2P keys with each operator. Earlier private checks exercised four validators and a non-signing observer; they did not establish independent cross-host operation. The public synthetic pilot runs under separate deployment authorization. Validators keep RPC on loopback and the observer is exposed only through a restricted gateway. Mainnet, RH bridge startup and real assets remain disabled. See [TESTNET.md](TESTNET.md).
 
+The `join-observer` candidate also permits a fresh non-signing local identity
+without advance inclusion in the exact reviewed synthetic launch bundle. It
+preserves original keys/genesis, uses bounded pinned peers and requires loopback
+RPC and empty node/signing state. Private persistent tests cover joining after
+a committed transfer, catch-up and restart without votes. This does not change
+the validator set, earn G or open public peering. A fresh `testnet init` now also
+supports a distinct validator-candidate role. Candidate registration is prepared
+offline with a node-key proof and signed by the exact separately held wallet;
+`wallet sign-registration` offers encrypted interactive review without plaintext
+key export. The guarded FilePV signs only when locally committed ownership and
+the exact-height signing set match, preserving the two-block delay and durable
+progress. Private persistent checks cover post-genesis catch-up, authenticated
+registration, actual commit contributions/G, restart, changed-owner refusal and
+non-signing replication after exit. This candidate path is not publicly activated
+and does not expand the six-action gateway. Installers, configuration delivery,
+target-host/abuse acceptance, stake funding and chain-wide consensus-key collision
+policy remain separate work. Founder-operated bootstrap is not decentralized
+control. Publication is not a new public node or mainnet activation.
+
 The basic Ethereum RPC subset supports external signing, bounded call/gas simulation, raw submission and actual success or revert receipts. Native direct-signature submission shares the same account sequence. Admission is not commitment. Only the explicit commit-pending response permits a post-commit retry; an unknown submission outcome requires checking the known hash before retrying. There is no full historical API, subscription service or unrestricted debug RPC.
 
 `godd companion --listen <explicit-loopback>` serves eight embedded English resources for read-only account, staking, block and receipt views, unsigned requests and local feedback downloads. It starts no chain, handles no wallet password and contains no browser signer, automatic broadcaster, analytics or automatic faucet. Manual test funding moves existing synthetic GOD rather than minting. See [COMPANION.md](COMPANION.md).
@@ -87,6 +125,10 @@ Unknown outcomes are never automatically resent or replaced. A bounded disk
 inventory survives reopen independently of its 1,000-entry RAM cache. Explicit
 offline audit/copy can preserve all hashes at an equal/larger reviewed capacity,
 up to 100,000 records, without changing the source or activating the copy.
+The offline CLI checks page/freelist invariants in a supervised process and
+verifies a selected exact image against a separately retained reviewed checksum.
+This can reject a stale valid backup against a current approved pin; an unpinned
+audit cannot establish freshness or reconstruct missing unknown records.
 The deployed pilot still uses its earlier volatile reservation map; this source
 publication is not its migration. Complete legacy inventory, controlled drain,
 intended-host cutover and physical-durability acceptance remain required.

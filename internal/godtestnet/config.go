@@ -39,6 +39,7 @@ type Document struct {
 	Version             uint32         `json:"version"`
 	Mode                string         `json:"mode"`
 	Role                string         `json:"role"`
+	CandidateOwner      string         `json:"candidateOwner,omitempty"`
 	Runtime             godnode.Config `json:"runtime"`
 	GenesisSHA256       string         `json:"genesisSha256"`
 	ConsensusPublicKey  []byte         `json:"consensusPublicKey"`
@@ -97,9 +98,16 @@ func Load(home string) (*Loaded, error) {
 		return nil, err
 	}
 	var d Document
-	if decode(raw, &d) != nil || d.Version != 1 || d.Mode != "synthetic" || (d.Role != "validator" && d.Role != "observer") || !strings.HasPrefix(d.Runtime.ChainID, "god-test-") ||
+	if decode(raw, &d) != nil || d.Version != 1 || d.Mode != "synthetic" || (d.Role != "validator" && d.Role != "observer" && d.Role != "candidate") || !strings.HasPrefix(d.Runtime.ChainID, "god-test-") ||
 		!d.Runtime.Prototype || d.Runtime.BridgeGenesis != nil || d.Runtime.BridgeApprovalGas != 0 ||
 		d.BlockIntervalMillis < 100 || d.BlockIntervalMillis > 6000 || len(d.Peers) > 32 || len(d.GenesisSHA256) != 64 {
+		return nil, ErrConfig
+	}
+	if d.Role == "candidate" {
+		if _, err := godaddress.FromNative(d.CandidateOwner); err != nil || !d.Runtime.RequireValidatorProof || !loopbackRPC(d.RPCListen) {
+			return nil, ErrConfig
+		}
+	} else if d.CandidateOwner != "" {
 		return nil, ErrConfig
 	}
 	if godnode.ValidateRPCOptions(godnode.RPCOptions{Hosts: d.RPCHosts, Origins: d.RPCOrigins}) != nil {
@@ -161,6 +169,15 @@ func Load(home string) (*Loaded, error) {
 	}
 	if member != (d.Role == "validator") {
 		return nil, ErrConfig
+	}
+	if d.Role == "candidate" {
+		var id identity
+		raw, err := readPrivate(r, identityFile, 32<<10)
+		if err != nil || decode(raw, &id) != nil || !validProfile(id.Profile) || id.Profile.Role != "validator" ||
+			id.Profile.Owner != d.CandidateOwner || id.Options.Role != id.Profile.Role || id.Options.Owner != id.Profile.Owner ||
+			!bytes.Equal(id.Profile.ConsensusPublicKey, d.ConsensusPublicKey) || !bytes.Equal(id.Profile.PeerPublicKey, d.PeerPublicKey) {
+			return nil, ErrConfig
+		}
 	}
 	pv := privval.NewFilePV(kp, filepath.Join(home, keyFile), filepath.Join(home, stateFile))
 	stateRaw, err := readPrivate(r, stateFile, 16<<10)

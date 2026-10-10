@@ -66,10 +66,31 @@ func run(args []string, out io.Writer) error {
 
 func runTestnet(args []string, out io.Writer) error {
 	if len(args) == 0 || args[0] == "help" {
+		if _, err := fmt.Fprintln(out, "Explicit configuration download: fetch-bundle --source <reviewed-HTTPS-bundle-URL> --expected-bundle <independently-reviewed-digest> --output <new-private-testnet-bundle.json>\nOne bounded request, no redirects, cookies, proxies or TLS bypass. Verifies before writing; never initializes or starts a node. Downloading a checksum from the same server is not authentication."); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintln(out, "New synthetic network policy: assemble --home <new-private-bundle> --profiles <reviewed-private-profiles> --require-validator-proof\nExplicitly enables on-chain consensus-key possession checks. Candidate setup/signing requires this policy; legacy bundles remain unchanged. Never toggle an existing runtime/database or reset signing state to enable it."); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintln(out, "Fresh self-service setup: init --home <new-private-node> --role <observer|candidate> [--owner <separately-held-wallet>] --endpoint <advertised-ip:port> --p2p <tcp-listen> --rpc <loopback-listen> --hosts <exact-hosts> --bundle <private-file> --expected-bundle <independently-reviewed-digest>\nDoes not start, submit or overwrite. Candidate signing requires locally replayed committed operator ownership and the actual signing set for that height."); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintln(out, "Candidate registration: join-candidate --home <fresh-private-validator-identity> --bundle <private-file> --expected-bundle <reviewed-digest>; prepare-registration --home <private-candidate> --bundle <private-file> --expected-bundle <reviewed-digest> --output <new-private-request> --account-number <fresh-number> --sequence <fresh-sequence> --gas <reviewed-limit> --fee <agod> --stake <agod>; sign-registration --request <private-request> --key <separate-private-test-wallet> --output <new-private-transaction> --bundle <private-file> --expected-bundle <reviewed-digest>\nRegistration signing is offline and separate from the six browser/gateway actions. No automatic funding, submission or production activation."); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintln(out, "Self-service non-signing join: join-observer --home <fresh-private-observer> --bundle <private-file> --expected-bundle <independently-reviewed-digest>\nKeeps local keys and pinned genesis/peers without launch-profile registration. Requires loopback RPC and empty signing/data state; it does not start, submit, earn rewards or authorize validation."); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintln(out, "Offline configuration preview: inspect-bundle --bundle <private-file> --expected-bundle <independently-reviewed-digest>\nValidates a synthetic bundle without node keys, joining, writes or network access. Distinct profiles or IPs are not independent ownership or launch approval."); err != nil {
+			return err
+		}
 		if _, err := fmt.Fprintln(out, "Read-only host/service checks: host-check --data-dir <existing-private-directory> --minimum-free-bytes <reviewed-budget> --minimum-open-files <reviewed-budget>; smoke --bundle <private-file> --expected-bundle <reviewed-digest> --rpc <reviewed-url> --companion <reviewed-url> [--samples <2..10>] [--interval-seconds <1..10>] [--minimum-peers <0..32>]\nThese checks do not install, restart, sign, submit or authorize public deployment."); err != nil {
 			return err
 		}
 		if _, err := fmt.Fprintln(out, "Read-only health: health --bundle <private-file> --expected-bundle <reviewed-digest> --rpc <reviewed-url> [--max-block-age-seconds <10..600>] [--minimum-peers <0..32>]\nA passed sample is not public acceptance, quorum or authenticated state."); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintln(out, "Finite read-only observation: watch-health --bundle <private-file> --expected-bundle <reviewed-digest> --rpc <reviewed-url> --samples <2..10080> --interval-seconds <1..600> [--max-block-age-seconds <10..600>] [--maximum-no-progress-seconds <10..600>] [--minimum-peers <0..32>]\nRequires an explicit count and interval, bounded to seven days including request budgets. Emits redacted JSON lines and stops on the first fault. Never retries, restarts, repairs, signs, submits or sends external notifications; an observed run is not an uptime SLA or public acceptance."); err != nil {
 			return err
 		}
 		if _, err := fmt.Fprintln(out, "Offline funding: sign-funding --request <private-file> --key <private-test-wallet> --output <new-private-file> --bundle <private-file> --expected-bundle <reviewed-digest> --nonce <fresh-sequence> --gas-price <smallest-units>\nFunding requests require manual review. Signing never submits, mints or releases reserve."); err != nil {
@@ -82,7 +103,13 @@ func runTestnet(args []string, out io.Writer) error {
 	if command == "host-check" || command == "smoke" {
 		return runAcceptance(command, args[1:], out)
 	}
-	if command != "create" && command != "check" && command != "start" && command != "identity" && command != "assemble" && command != "join" && command != "sign" && command != "sign-funding" && command != "health" {
+	if command == "fetch-bundle" {
+		return runBundleFetch(args[1:], out)
+	}
+	if command == "watch-health" {
+		return runWatch(args[1:], out)
+	}
+	if command != "create" && command != "check" && command != "start" && command != "identity" && command != "init" && command != "assemble" && command != "join" && command != "join-observer" && command != "join-candidate" && command != "prepare-registration" && command != "sign-registration" && command != "sign" && command != "sign-funding" && command != "health" && command != "inspect-bundle" {
 		return godtestnet.ErrConfig
 	}
 	flags := flag.NewFlagSet("testnet", flag.ContinueOnError)
@@ -90,13 +117,15 @@ func runTestnet(args []string, out io.Writer) error {
 	home := flags.String("home", "", "")
 	var count, port *int
 	var network *bool
+	var requireProof *bool
 	var role, owner, endpoint, p2pListen, rpcListen, hosts, origins, profiles, bundle, expected *string
 	var request, key, output *string
 	var nonce, price *string
+	var number, sequence, gas, fee, stake *string
 	var rpc *string
 	var maxAge, minPeers *int
-	offline := command == "sign" || command == "sign-funding"
-	noHome := offline || command == "health"
+	offline := command == "sign" || command == "sign-funding" || command == "sign-registration"
+	noHome := offline || command == "health" || command == "inspect-bundle"
 	if command == "create" {
 		count = flags.Int("validators", 4, "")
 		port = flags.Int("first-port", 0, "")
@@ -104,8 +133,11 @@ func runTestnet(args []string, out io.Writer) error {
 	if command == "start" {
 		network = flags.Bool("allow-network", false, "")
 	}
-	if command == "identity" {
+	if command == "identity" || command == "init" {
 		role = flags.String("role", "validator", "")
+		if command == "init" {
+			*role = "observer"
+		}
 		owner = flags.String("owner", "", "")
 		endpoint = flags.String("endpoint", "", "")
 		p2pListen = flags.String("p2p", "", "")
@@ -115,8 +147,9 @@ func runTestnet(args []string, out io.Writer) error {
 	}
 	if command == "assemble" {
 		profiles = flags.String("profiles", "", "")
+		requireProof = flags.Bool("require-validator-proof", false, "")
 	}
-	if command == "join" || noHome {
+	if command == "join" || command == "join-observer" || command == "join-candidate" || command == "init" || command == "prepare-registration" || noHome {
 		bundle = flags.String("bundle", "", "")
 		expected = flags.String("expected-bundle", "", "")
 	}
@@ -129,6 +162,14 @@ func runTestnet(args []string, out io.Writer) error {
 		nonce = flags.String("nonce", "", "")
 		price = flags.String("gas-price", "", "")
 	}
+	if command == "prepare-registration" {
+		output = flags.String("output", "", "")
+		number = flags.String("account-number", "", "")
+		sequence = flags.String("sequence", "", "")
+		gas = flags.String("gas", "", "")
+		fee = flags.String("fee", "", "")
+		stake = flags.String("stake", "", "")
+	}
 	if command == "health" {
 		rpc = flags.String("rpc", "", "")
 		maxAge = flags.Int("max-block-age-seconds", 30, "")
@@ -138,6 +179,24 @@ func runTestnet(args []string, out io.Writer) error {
 		return godtestnet.ErrConfig
 	}
 	switch command {
+	case "prepare-registration":
+		report, err := godtestnet.PrepareRegistration(*home, *bundle, *expected, *output, godtestnet.RegistrationRequest{AccountNumber: *number, Sequence: *sequence, Gas: *gas, Fee: *fee, Stake: *stake})
+		if err != nil {
+			return err
+		}
+		return json.NewEncoder(out).Encode(report)
+	case "sign-registration":
+		report, err := godtestnet.SignRegistration(*request, *key, *output, *bundle, *expected)
+		if err != nil {
+			return err
+		}
+		return json.NewEncoder(out).Encode(report)
+	case "inspect-bundle":
+		report, err := godtestnet.InspectBundle(*bundle, *expected)
+		if err != nil {
+			return err
+		}
+		return json.NewEncoder(out).Encode(report)
 	case "health":
 		if *maxAge < 10 || *maxAge > 600 {
 			return godtestnet.ErrHealth
@@ -161,24 +220,47 @@ func runTestnet(args []string, out io.Writer) error {
 			return err
 		}
 		return json.NewEncoder(out).Encode(report)
-	case "identity":
+	case "identity", "init":
 		allowedOrigins := []string{}
 		if *origins != "" {
 			allowedOrigins = strings.Split(*origins, ",")
 		}
-		report, err := godtestnet.CreateIdentity(*home, godtestnet.IdentityOptions{Role: *role, Owner: *owner, Endpoint: *endpoint, P2PListen: *p2pListen, RPCListen: *rpcListen, RPCHosts: strings.Split(*hosts, ","), RPCOrigins: allowedOrigins})
+		options := godtestnet.IdentityOptions{Role: *role, Owner: *owner, Endpoint: *endpoint, P2PListen: *p2pListen, RPCListen: *rpcListen, RPCHosts: strings.Split(*hosts, ","), RPCOrigins: allowedOrigins}
+		var report godtestnet.Report
+		var err error
+		if command == "init" {
+			report, err = godtestnet.InitParticipant(*home, *bundle, *expected, options)
+		} else {
+			report, err = godtestnet.CreateIdentity(*home, options)
+		}
 		if err != nil {
 			return err
 		}
 		return json.NewEncoder(out).Encode(report)
 	case "assemble":
-		report, err := godtestnet.Assemble(*home, strings.Split(*profiles, ","))
+		assemble := godtestnet.Assemble
+		if *requireProof {
+			assemble = godtestnet.AssembleWithValidatorProof
+		}
+		report, err := assemble(*home, strings.Split(*profiles, ","))
 		if err != nil {
 			return err
 		}
 		return json.NewEncoder(out).Encode(report)
 	case "join":
 		report, err := godtestnet.Join(*home, *bundle, *expected)
+		if err != nil {
+			return err
+		}
+		return json.NewEncoder(out).Encode(report)
+	case "join-observer":
+		report, err := godtestnet.JoinObserver(*home, *bundle, *expected)
+		if err != nil {
+			return err
+		}
+		return json.NewEncoder(out).Encode(report)
+	case "join-candidate":
+		report, err := godtestnet.JoinCandidate(*home, *bundle, *expected)
 		if err != nil {
 			return err
 		}

@@ -233,8 +233,11 @@ func (x *Index) Status() (s State, err error) {
 }
 func readPage(ctx context.Context, source Source, h int64, offset int) (blockPage, error) {
 	var p blockPage
+	if ctx == nil || ctx.Err() != nil {
+		return p, ErrHistory
+	}
 	raw, e := source.Read(ctx, "god_block", []string{strconv.FormatInt(h, 10), strconv.Itoa(offset), "20"})
-	if e != nil || exact(raw, &p) != nil || p.Height != strconv.FormatInt(h, 10) || p.Offset != strconv.Itoa(offset) || !p.Synthetic || p.RealAssets || !hash(p.Hash) || p.Count < 0 || p.Count > BlockLimit || offset > p.Count || p.Parent == "0x" && h != 1 || p.Parent != "0x" && !hash(p.Parent) || p.Transactions == nil {
+	if e != nil || ctx.Err() != nil || exact(raw, &p) != nil || p.Height != strconv.FormatInt(h, 10) || p.Offset != strconv.Itoa(offset) || !p.Synthetic || p.RealAssets || !hash(p.Hash) || p.Count < 0 || p.Count > BlockLimit || offset > p.Count || p.Parent == "0x" && h != 1 || p.Parent != "0x" && !hash(p.Parent) || p.Transactions == nil {
 		return p, ErrHistory
 	}
 	if _, e := stamp(p.Time); e != nil {
@@ -306,17 +309,31 @@ type SyncReport struct {
 func (x *Index) Sync(ctx context.Context, source Source, limit int) (report SyncReport, err error) {
 	x.mu.Lock()
 	defer x.mu.Unlock()
+	return x.syncLocked(ctx, source, limit, 0, "", nil)
+}
+
+type backfillAnchor struct {
+	Hash, Parent, Time string
+	Count              int
+}
+
+// A nonzero through bound is used only by explicit fixed-target backfill.
+// Ordinary Sync retains its existing append-to-observed-tip semantics.
+func (x *Index) syncLocked(ctx context.Context, source Source, limit int, through int64, targetHash string, anchor *backfillAnchor) (report SyncReport, err error) {
 	defer func() {
 		if recover() != nil {
 			report = SyncReport{}
 			err = ErrHistory
 		}
 	}()
-	if x.readOnly || source == nil || limit < 1 || limit > BatchLimit {
+	if ctx == nil || ctx.Err() != nil || x.readOnly || source == nil || limit < 1 || limit > BatchLimit || through < 0 || through > 0 && !hash(targetHash) {
 		return report, ErrHistory
 	}
 	var s State
 	if x.db.View(func(tx *bolt.Tx) error { var e error; s, e = x.state(tx); return e }) != nil {
+		return report, ErrHistory
+	}
+	if through > 0 && s.Height > through {
 		return report, ErrHistory
 	}
 	// An interrupted or rejected refresh must not leave the earlier verified
@@ -327,14 +344,33 @@ func (x *Index) Sync(ctx context.Context, source Source, limit int) (report Sync
 	}
 	raw, e := source.Read(ctx, "god_network", []string{})
 	n, tip, f := parseNetwork(raw, x.config)
-	if e != nil || f != nil || tip < s.Height || tip < x.config.FirstHeight {
+	if e != nil || ctx.Err() != nil || f != nil || tip < s.Height || tip < x.config.FirstHeight || through > tip {
 		return report, ErrHistory
+	}
+	var target blockPage
+	if through > 0 {
+		target, e = readPage(ctx, source, through, 0)
+		targetTime, targetTimeErr := stamp(target.Time)
+		tipTime, _ := stamp(n.Commit.Time)
+		if e != nil || target.Hash != targetHash || targetTimeErr != nil || targetTime.After(tipTime) {
+			return report, ErrHistory
+		}
+		if anchor != nil {
+			selected := backfillAnchor{target.Hash, target.Parent, target.Time, target.Count}
+			if anchor.Hash != "" && *anchor != selected {
+				return report, ErrHistory
+			}
+			*anchor = selected
+		}
 	}
 	if s.Height > 0 {
 		p, e := readPage(ctx, source, s.Height, 0)
 		var b Block
 		local := x.db.View(func(tx *bolt.Tx) error { var e error; b, e = storedBlock(tx, s.Height); return e })
 		if e != nil || local != nil || p.Hash != s.Hash || p.Time != s.Time || p.Count != b.Transactions || p.Parent != b.Parent {
+			return report, ErrHistory
+		}
+		if s.Height == through && (p.Hash != target.Hash || p.Time != target.Time || p.Count != target.Count || p.Parent != target.Parent) {
 			return report, ErrHistory
 		}
 	}
@@ -346,12 +382,19 @@ func (x *Index) Sync(ctx context.Context, source Source, limit int) (report Sync
 		start = s.Height + 1
 	}
 	report = SyncReport{From: strconv.FormatInt(x.config.FirstHeight, 10), IndexedThrough: strconv.FormatInt(s.Height, 10), ObservedTip: strconv.FormatInt(tip, 10), Synthetic: true}
-	for h := start; h <= tip && report.Blocks < limit; h++ {
+	end := tip
+	if through > 0 && through < end {
+		end = through
+	}
+	for h := start; h <= end && report.Blocks < limit; h++ {
 		if ctx.Err() != nil {
 			return report, ErrHistory
 		}
 		b, records, e := readBlock(ctx, source, h)
 		if e != nil {
+			return report, ErrHistory
+		}
+		if h == through && (b.Hash != target.Hash || b.Time != target.Time || b.Parent != target.Parent || b.Transactions != target.Count) {
 			return report, ErrHistory
 		}
 		blockTime, e := stamp(b.Time)
@@ -371,7 +414,7 @@ func (x *Index) Sync(ctx context.Context, source Source, limit int) (report Sync
 		headroom := int64(4<<20) + int64(rows)*(512<<10)
 		e = x.db.Update(func(tx *bolt.Tx) error {
 			current, e := x.state(tx)
-			if e != nil || current != s || tx.Size()+headroom > maxFile {
+			if e != nil || ctx.Err() != nil || current != s || tx.Size()+headroom > maxFile {
 				return ErrHistory
 			}
 			// Conservative remaining-space guard. Allocation stays in 1 MiB
@@ -430,7 +473,7 @@ func (x *Index) Sync(ctx context.Context, source Source, limit int) (report Sync
 	}
 	lastRaw, e := source.Read(ctx, "god_network", []string{})
 	last, lastTip, f := parseNetwork(lastRaw, x.config)
-	if e != nil || f != nil || lastTip < tip || lastTip == tip && last.Commit != n.Commit {
+	if e != nil || ctx.Err() != nil || f != nil || lastTip < tip || lastTip == tip && last.Commit != n.Commit {
 		return report, ErrHistory
 	}
 	firstTime, _ := stamp(n.Commit.Time)
@@ -448,9 +491,20 @@ func (x *Index) Sync(ctx context.Context, source Source, limit int) (report Sync
 			return report, ErrHistory
 		}
 	}
+	if through > 0 {
+		p, e := readPage(ctx, source, through, 0)
+		if e != nil || p.Hash != target.Hash || p.Time != target.Time || p.Parent != target.Parent || p.Count != target.Count {
+			return report, ErrHistory
+		}
+	}
 	s.Verified = true
 	s.CheckedAt = time.Now().UTC().Format(time.RFC3339Nano)
-	if x.db.Update(func(tx *bolt.Tx) error { return putState(tx, s) }) != nil {
+	if x.db.Update(func(tx *bolt.Tx) error {
+		if ctx.Err() != nil {
+			return ErrHistory
+		}
+		return putState(tx, s)
+	}) != nil {
 		return report, ErrHistory
 	}
 	report.ObservedTip = strconv.FormatInt(lastTip, 10)

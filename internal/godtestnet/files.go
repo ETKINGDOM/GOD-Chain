@@ -36,6 +36,11 @@ func openPrivate(home string) (*os.Root, error) {
 	if err != nil {
 		return nil, ErrPrivate
 	}
+	opened, err := r.Stat(".")
+	if err != nil || !os.SameFile(s, opened) || opened.Mode().Perm()&0077 != 0 {
+		_ = r.Close()
+		return nil, ErrPrivate
+	}
 	return r, nil
 }
 

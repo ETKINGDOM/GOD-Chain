@@ -22,6 +22,31 @@ checked all four current records. This directory is not historical indexing,
 the actual consensus signing set, an uptime ranking or independent ownership
 or geographic proof. The configured lookup remains a separate unsigned helper.
 
+## Local-only recovery candidate
+
+The separate opt-in Chrome 0.4.0 candidate is not installed or activated by
+this core upload. Explicit website consent shares only a public account, never
+a signature. Locally reviewed GOD, restricted NFT and six native actions share
+a same-profile durable unknown-attempt guard. Original public review and TX ID
+are retained before submission, without a vault, password or signed bytes.
+Reload and browser restart restore the review for manual result checking;
+missing/mismatched results block new signatures. An expired signed redemption
+does not erase its unresolved record. Verified backup re-encryption preserves
+the same account and coordinator. Nothing is automatically resent.
+
+Storage deletion, extension removal or another device can bypass this local
+guard and do not prove transaction rejection. Save known TX IDs separately.
+Local recovery-file code can restore a previously saved signed unknown guard
+into an empty matching account journal without signing, submission or overwrite.
+It is public lookup metadata, not payment or signature proof, and cannot recover
+later missing attempts. One plain GOD browser-file recovery run passed, but
+earlier reopened Chromium downloads crashed and the gate is not reliably
+accepted. NFT/native file handling has state-machine coverage only. Physical devices,
+comprehensive storage-loss recovery, source/distribution review and
+independent review remain incomplete. The current distribution command refuses
+the candidate, and the public 0.3.9 package is unchanged. See the developer
+checks and limitations in [VERIFICATION.md](VERIFICATION.md#local-only-wallet-recovery-candidate).
+
 ## Included terminal signer
 
 Use the checksum-bound build and a macOS or Linux terminal. Windows private-file
@@ -61,6 +86,18 @@ The six native scopes are delegation, start-unbonding, settled-G claim,
 spendable-G transfer, voluntary GOD pool contribution and G redemption. Plain
 GOD transfers use a chain-bound compatible signature with 21,000 gas and no
 calldata. Arbitrary contract calls and real-asset operations are not supported.
+
+The distinct operator-only `wallet sign-registration` command reviews and signs
+a private synthetic candidate request. It validates the node-key proof and exact
+wallet owner on an explicitly proof-enabled synthetic bundle, then displays
+the consensus public key, chain/genesis, self-stake,
+minimum stake, commission, enforced consensus-proof policy, fresh account
+metadata and fee before hidden `SIGN`. A compact proof travels on-chain inside
+the standard staking transaction and is checked by the proof-enabled chain.
+It uses the encrypted wallet in memory and writes a new private transaction;
+there is no plaintext-key export, network access or automatic submission. This
+does not expand `wallet sign`, web/Chrome actions or the public six-action gateway.
+See [candidate setup](TESTNET.md#fresh-participant-and-validator-candidate-workflow).
 
 The terminal signer never contacts RPC. Anyone holding signed bytes can submit
 them; keep signed files private and use only a separately reviewed synthetic

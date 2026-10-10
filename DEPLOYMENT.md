@@ -1,8 +1,16 @@
 # GOD Chain private host testing tools
 
-The deployment tools prepare a private Linux acceptance candidate for God EVM + God SDK + GodCometBFT. They package reviewed binaries, preserve the existing dependency notices and provide a bounded read-only health check. They do not install services, initialize wallets, distribute validator keys, authorize public deployment or connect real assets. A target machine is still required to establish Linux runtime behavior.
+The deployment tools prepare a private Linux acceptance candidate for God EVM + God SDK + GodCometBFT. They package reviewed binaries, safely unpack a fixed inventory into a new private staging directory, retain dependency notices and provide read-only staging and health checks. They do not install services, initialize wallets, distribute validator keys, authorize public deployment or connect real assets. A target machine is still required to establish Linux runtime behavior.
 
 Use [TESTNET.md](TESTNET.md) for independent initialization and recovery, and [COMPANION.md](COMPANION.md) for participant testing. Test GOD and G have no monetary value or guaranteed mainnet conversion. Keep RH routes and real-asset commands disabled.
+
+The selected initial topology is [one founder-operated host with multiple
+services](SINGLE_HOST.md). Separate validator/observer processes, gateway
+boundaries and private stores share that machine; they are not separate physical
+servers. Measure their aggregate resources and preserve quorum/signing safety.
+Additional validator machines are a later expansion, not a requirement to
+continue local development. Whole-host failure, independent backup custody and
+out-of-host outage detection still require an explicit recovery review.
 
 ## Build and review
 
@@ -12,7 +20,9 @@ Use Go 1.26.8 and the checksum-bound lifecycle build with unchanged module pins:
 make check build compile-targets
 ```
 
-The native `build/godpack` command prepares or verifies archives without network access. Linux amd64 and arm64 builds contain separate `godd` and `godpack` executables. Only an intended host can validate those executables' runtime behavior. Windows private node operations remain disabled pending ACL support; cross-compilation is not runtime acceptance.
+The native `build/godpack` command prepares, verifies or safely stages archives without network access. Linux amd64 and arm64 builds contain separate `godd` and `godpack` executables. Only an intended host can validate those executables' runtime behavior. Windows private node operations remain disabled pending ACL support; cross-compilation is not runtime acceptance.
+
+For a package-tool-only check and build, use `make test-node-package check-node-package build-node-package compile-node-package`. These targets retain the checksum-bound lifecycle review and unchanged dependency pins. The native tool is written to `build/node-package/godpack`; diagnostic foreign builds stay under `build/node-package/`. This neither rebuilds a running node nor distributes an installer. The examples below use the ordinary full-build tool path.
 
 Review the exact candidate source and binary digest before packaging. The builder checks the Linux ELF target, Go version, command/module identity, static build settings, critical dependency pins and the expected private lifecycle-module replacement. Binary metadata cannot independently prove every compiler input or patch. The expected binary digest must identify a separately reviewed checksum-bound build; a hash copied from an untrusted download is not authentication.
 
@@ -37,13 +47,30 @@ The target architecture is `amd64` or `arm64`. Output is a new mode-0600 tar.gz 
 
 The exact sixteen archive members are a manifest, one node binary, placeholder service and HTTPS gateway templates, a private-use README, five operational guides, dependency notices, unchanged lock/module files and the two existing GodCometBFT license/notice files. No application source/history, tests, dependency directory, wallet, node key, genesis, profile, endpoint or populated configuration is included. The interface is embedded in `godd` and still binds loopback only.
 
-Verification checks the trusted archive digest, canonical manifest, fixed inventory, file hashes and sizes, target ELF header, permissions and absence of links, duplicate paths, traversal, extra members and trailing data. It neither extracts nor executes content. It is not a publisher signature or source audit. Identical inputs produce an identical archive.
+Verification checks the trusted archive digest, canonical manifest, fixed inventory, file hashes and sizes, target ELF header, permissions and absence of links, duplicate paths, traversal, extra members and trailing data. It neither extracts nor executes content. Digest verification and parsing use one immutable bounded snapshot rather than reopening a mutable file. The compressed archive limit is 288 MiB; snapshot allocation and parser overhead need an operator-reviewed memory budget. This is a tool bound, not a measured node hardware requirement. Verification is not a publisher signature or source audit. Identical inputs produce an identical archive.
 
 These files remain private and ignored. They are not a GitHub binary release. The manifest explicitly retains `runtimeVerified: false` and `binaryRedistributionReviewed: false`. Existing notices are preserved, but complete dependency-license and source obligations require separate review before public binary distribution.
 
 ## Prepare the target machine
 
-Transfer only the reviewed acceptance archive and an independently reviewed verifier for the matching host architecture through a private operational channel. Compare their digests over a trusted channel before execution. Verify the archive before manual extraction into a new private staging directory; the tools do not install or unpack it automatically.
+Transfer only the reviewed acceptance archive and an independently reviewed package tool for the matching host architecture through a private operational channel. Compare their digests over a trusted channel before execution. On Linux or macOS, use the explicit safe staging command after review. It is not a service installer or an automatic node launcher.
+
+```sh
+./build/godpack unpack \
+  --archive "$GOD_PRIVATE_ARCHIVE" \
+  --expected-archive "$GOD_REVIEWED_ARCHIVE_SHA256" \
+  --destination "$GOD_NEW_PRIVATE_STAGING_DIR"
+./build/godpack check-unpacked \
+  --archive "$GOD_PRIVATE_ARCHIVE" \
+  --expected-archive "$GOD_REVIEWED_ARCHIVE_SHA256" \
+  --destination "$GOD_PRIVATE_STAGING_DIR"
+```
+
+The staging destination must be a new, absolute, clean path beneath an existing owner-only parent. Do not pre-create it or point at an existing node, wallet or home directory. The unpack command verifies the complete archive before creating that directory and writes only its fixed inventory through a confined filesystem root. It refuses existing destinations, symlinks and unsafe parents. Directories and `bin/godd` are mode 0700; other files are mode 0600. Files and directories are synchronized and rechecked before success. Archive bytes and dependency notices remain unchanged; executable permission does not mean execution approval.
+
+This is not an atomic whole-directory installation or physical power-loss certification. An interrupted or failed write leaves a new private partial directory for manual review; no success report is returned, nothing is removed and retrying into that same path is refused. Never start a node from a failed directory. The read-only `check-unpacked` command compares the exact archive pin, bytes, inventory and permissions, rejecting missing, altered or additional material and special privilege bits. It neither repairs files nor refreshes the trusted pin.
+
+Successful staging reports `unpacked: true` and `directoryVerified: true`; a successful later read-only check sets only the latter. Both retain `servicesInstalled: false`, `nodeStarted: false`, `runtimeVerified: false` and `binaryRedistributionReviewed: false`. Checks are point-in-time evidence on trusted owner-controlled storage, not protection against subsequent writes by the same owner, authenticated configuration delivery or permission to activate a public peer. Windows private staging remains disabled pending ACL support.
 
 Use a dedicated unprivileged service account. Place the reviewed executable in a directory that the running node cannot modify. Keep node data in a separate owner-only directory outside the source checkout and wallet workspaces. Supply no consensus keys from a developer-created cluster. Each validator initializes its own identity, reviews the complete bundle digest and joins independently.
 
@@ -135,8 +162,55 @@ The JSON report contains only fixed reason labels, height, age, peer count and c
 
 Use an operator-reviewed scheduler for repeated sampling and an incident channel for persistent failures. No recurring task, alert destination or automatic recovery action is configured here. Track CPU, memory, disk growth and bandwidth on the target host separately; the health report does not invent resource measurements.
 
+## Finite read only observation and fault reports
+
+Use `watch-health` for an explicitly bounded foreground run against one reviewed
+synthetic RPC. A sample reads only `god_liveness` and `god_network` after the
+complete private bundle has been verified. It uses the same TLS, request-size,
+fixed-supply, freshness and peer checks as `health`. No account or node key is
+required, and no process, file, chain clock or service is changed.
+
+```sh
+./build/godd testnet watch-health \
+  --bundle "$GOD_BUNDLE_FILE" \
+  --expected-bundle "$GOD_REVIEWED_BUNDLE_SHA256" \
+  --rpc "$GOD_REVIEWED_RPC_URL" \
+  --samples 60 --interval-seconds 5 \
+  --max-block-age-seconds 60 \
+  --maximum-no-progress-seconds 120 \
+  --minimum-peers "$GOD_REVIEWED_MINIMUM_PEERS"
+```
+
+Count and interval are mandatory. Counts are 2 through 10,080, intervals are 1
+through 600 seconds, and the conservative total interval plus eight-second
+per-sample budget must fit within seven days. The no-progress threshold is 10
+through 600 seconds and must be at least the interval. The interval is a pause
+after each completed sample, not a promise of an exact wall-clock schedule.
+Actual elapsed seconds are recorded; no clock acceleration or synthetic uptime
+is used by the command. Cancellation interrupts waits and in-flight requests.
+
+Each output JSON line is a redacted `sample`, followed by one `summary` for the
+run. The first unavailable, stale, mismatched or regressing view stops the run
+with a nonzero exit code. Repeated heights cannot change their reported time or
+application hash. No advancing height within the selected threshold fails;
+even a shorter run with no observed progress fails its final summary. A health
+sample may pass while the separate continuity check fails, so inspect
+`observationPassed`, `reason` and the summary rather than `health.healthy` alone.
+Output failure also fails the run. Fixed reasons are suitable for a separately
+reviewed alert adapter; raw provider errors, account data, keys, URLs and hashes
+are not copied into the report.
+
+This is a first-fault observation tool, not a continuous alerting service. It
+never retries, changes providers, sends notifications, repairs databases,
+restarts validators or resets signing progress. An incident destination and
+schedule require their own review. Point-in-time provider continuity is not
+authenticated finality, quorum, operator independence, a resource benchmark or
+an uptime SLA. Real sustained runs, CPU/memory/disk/network measurements,
+independent-node comparison and signer-safe backup/recovery remain acceptance
+gates. No such long run or external alert is activated by the local tests.
+
 ## Host acceptance before public testing
 
-Complete native Linux startup, database locking, graceful stop/restart and reboot checks. Then exercise independently controlled hosts, observer propagation, validator outage, loss of quorum and catch-up without resetting signatures. Check actual disposable-wallet submission, receipts, manual test funding and participant entry through the intended secured gateway.
+Complete native Linux startup, database locking, graceful stop/restart and reboot checks on the selected single host. Exercise observer propagation, individual validator process outage, lost quorum and whole-group restart/catch-up without resetting signatures. Check all services' aggregate resource limits and actual disposable-wallet receipts/funding/entry through secured gateways. Independently controlled hosts and remote admission/routing remain later distributed-stage acceptance, not evidence supplied by this single-host drill.
 
 Run through a real UTC-day boundary to verify pending-G settlement, claim, transfer, empty-liquidity preservation and voluntary redemption. Measure ordinary-computer resources and define funding budgets, incident contacts and signer-safe recovery. Short local tests and a valid package do not satisfy these gates. Public deployment, binary publication and real-asset activation require their own explicit approval.

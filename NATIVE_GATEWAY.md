@@ -115,8 +115,26 @@ Version-two metadata binds the exact serving capacity. Version-one stores retain
 their original 1,000 capacity without rewrite. Full storage refuses admission;
 there is no pruning or disk expiry.
 
-`--audit-attempts` exclusively opens an existing store and emits only aggregate
-schema/count/capacity/remaining/file-size fields and logical/physical digests.
+`--audit-attempts` exclusively opens an existing store in a supervised child,
+checks every logical record and the pinned database's page/freelist invariants,
+then emits only aggregate schema/count/capacity/remaining/file-size fields,
+`pagesChecked` and logical/file digests. The parent discards worker stderr,
+rejects more than 4 KiB of stdout or noncanonical/partial reports and kills a
+worker exceeding twenty seconds. Panic, failed exit and timeout return a static
+refusal, never diagnostics or a partial certificate. Run offline tools as an
+unprivileged OS-sandboxed account with hard memory/process limits, no network
+access and no access to node/signing data. File bounds/timeouts are not a sandbox.
+The internal worker flag is not an operator entry point; `CheckAttempts` must
+only run in a supervised offline process, never a node/gateway. The package's
+logical-only `AuditAttempts`/`CopyAttempts` APIs report `pagesChecked: false`.
+
+`--verify-attempts` additionally requires `--expected-source-sha256` from an
+independently retained reviewed checkpoint and accepts only the exact image.
+A valid older image is refused against the latest approved checkpoint. Do not
+compute that pin from the backup being verified or overwrite the current pin
+with a backup's value. An unpinned audit cannot establish freshness. Checkpoint
+authenticity/completeness/custody remain operator gates, not automatic restore
+or rollback-proof storage.
 `--copy-attempts-to` requires an existing empty owner-only destination, equal/
 larger `--copy-attempt-capacity`, and the reviewed source file digest through
 `--expected-source-sha256`. Supply the same private policy flags; these modes
@@ -125,7 +143,8 @@ are mutually exclusive with serving and initialization.
 All source hashes and target metadata enter the first initialization transaction
 atomically. Source before/after file audits must match; target count and logical
 inventory digest must match. Logical digests exclude capacity/schema; physical
-digests are separate. No mode starts a listener, signs, submits, repairs, shrinks,
+digests are separate. The CLI checks source pages before target creation and
+target pages before reporting success. No mode starts a listener, signs, submits, repairs, shrinks,
 overwrites or activates a copy. Failed copies may leave unaccepted private
 diagnostic artifacts; retain the original and review separately.
 
@@ -137,8 +156,14 @@ inventory, ingress drain, preservation of every unknown ID, matching private
 policy/ownership/service paths and accepted recovery. A few known IDs cannot
 prove that the old process's complete inventory was captured.
 
-Private crash/atomic-copy fixtures and isolated non-root Linux offline checks
-passed without replacing services. They are not public HTTP migration, power
-loss during fsync, physical restoration, valid-image rollback detection,
-sustained capacity or independent security review. Mainnet, RH bridging and
+Private crash/atomic-copy fixtures and eighteen isolated non-root Linux offline
+cases passed with memory/network/signing-storage confinement, including exact
+restore, stale-image refusal and static rejection of both page faults. All
+sixteen existing services/timers, service PIDs and listening sockets remained
+unchanged. These checks are not public HTTP migration, power
+loss during fsync, physical-storage certification, authenticated checkpoint custody,
+sustained capacity or independent security review. The new pinned-image check
+can reject a stale valid backup against an independently retained current pin;
+it cannot detect rollback of both database and pin or recover omitted records.
+Mainnet, RH bridging and
 real assets stay disabled. See [ROADMAP.md](ROADMAP.md).

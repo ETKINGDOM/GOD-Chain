@@ -69,7 +69,7 @@ func Run(ctx context.Context, home string, allowNetwork bool, out io.Writer) (re
 		}
 	}()
 	n, err := godnode.StartTestnet(ctx, app, godnode.LocalOptions{Directory: home, Listen: loaded.Document.P2PListen, Peers: loaded.Document.Peers,
-		BlockInterval: time.Duration(loaded.Document.BlockIntervalMillis) * time.Millisecond, Genesis: loaded.Genesis, Signer: loaded.Signer, NodeKey: loaded.NodeKey, Persistent: true, Observer: loaded.Document.Role == "observer"})
+		BlockInterval: time.Duration(loaded.Document.BlockIntervalMillis) * time.Millisecond, Genesis: loaded.Genesis, Signer: loaded.Signer, NodeKey: loaded.NodeKey, Persistent: true, Observer: loaded.Document.Role == "observer", CandidateOwner: loaded.Document.CandidateOwner})
 	if err != nil {
 		return startFailure("consensus-start", err)
 	}
