@@ -26,10 +26,11 @@ var ErrSource = errors.New("RH read-only source request rejected")
 // HTTPSource has only bounded reads. It has no signer, transaction submission,
 // provider default, redirect following, ambient proxy or logging facility.
 type HTTPSource struct {
-	endpoint string
-	client   *http.Client
-	nextID   atomic.Uint64
-	rawReads bool // enabled only by the explicit complete-material constructor
+	endpoint   string
+	client     *http.Client
+	nextID     atomic.Uint64
+	rawReads   bool // enabled only by the explicit complete-material constructor
+	tokenReads bool // narrows the pre-custody adapter to four methods
 }
 
 func (*HTTPSource) String() string     { return "GOD Chain RH read-only source (redacted)" }
@@ -42,6 +43,11 @@ func NewHTTPSource(c Config) (*HTTPSource, error) {
 	if !c.Report().ConfigurationReady {
 		return nil, ErrConfig
 	}
+	return newHTTPSource(c.private.RPCEndpoint)
+}
+
+// Callers must validate configuration before constructing this private client.
+func newHTTPSource(endpoint string) (*HTTPSource, error) {
 	base, ok := http.DefaultTransport.(*http.Transport)
 	if !ok || base == nil {
 		return nil, ErrSource
@@ -50,7 +56,7 @@ func NewHTTPSource(c Config) (*HTTPSource, error) {
 	transport.Proxy = nil
 	transport.MaxResponseHeaderBytes = 16 << 10
 	transport.ResponseHeaderTimeout = 10 * time.Second
-	return &HTTPSource{endpoint: c.private.RPCEndpoint, client: &http.Client{
+	return &HTTPSource{endpoint: endpoint, client: &http.Client{
 		Transport: transport, Timeout: 10 * time.Second,
 		CheckRedirect: func(*http.Request, []*http.Request) error { return ErrSource },
 	}}, nil
@@ -68,9 +74,13 @@ func (s *HTTPSource) rpc(ctx context.Context, method string, params any) (json.R
 	}
 	limit := maxRPCBytes
 	switch method {
-	case "eth_chainId", "eth_getBlockByNumber", "eth_getCode", "eth_call", "eth_getTransactionReceipt", "eth_getLogs":
+	case "eth_chainId", "eth_getBlockByNumber", "eth_getCode", "eth_call":
+	case "eth_getTransactionReceipt", "eth_getLogs":
+		if s.tokenReads {
+			return nil, ErrSource
+		}
 	case "debug_getRawBlock", "debug_getRawReceipts":
-		if !s.rawReads {
+		if !s.rawReads || s.tokenReads {
 			return nil, ErrSource
 		}
 		limit = maxMaterialRPCBytes

@@ -177,6 +177,18 @@ Read-only authorization, resolution and pause digest helpers build unsigned revi
 
 ## Private receipt proofs and material reads
 
+The [offline custody candidate](BRIDGE.md#offline-bounded-custody-call-construction)
+adds four exact unsigned calls, independently pinned private file tools,
+immutable unsigned records and exact signed-envelope review. A bounded shared
+simulation sender book retains consecutive nonce/execution-Gas reservations and
+unknown before one local-fixture handoff. Local receipt reconciliation can retain
+one immutable success/revert observation without releasing unknown reservations.
+Explicit read-only fetching checks complete block material, every selected log
+and pre/post provider references without a write or automatic retry. Production
+nonce/fees, authenticated finality, signing/broadcasting, native-state truth and
+real-asset backing are not established. No production relayer or dispatch/fetch
+activation command is provided. See the [fetch trust boundary](BRIDGE.md#explicit-read-only-custody-receipt-fetching).
+
 `VerifyReceiptInclusion` checks bounded transaction and receipt paths against a caller-pinned binary header. `PrepareReceiptInclusion` constructs them from a complete set; `RelayJournal.PrepareTaskReceiptInclusion` also matches the original task, global position, event ABI and any unsigned cache. The selected paths alone cannot certify counts in preceding receipts or a transferable global log index. These APIs do not authenticate source finality or authorize transfers.
 
 `TaskReceiptProofStore` separately retains one immutable private slot containing complete material and its witness. Reopen and `Read` regenerate and compare the proof; uncertain saves stop the instance until verified reopen. Local retention is neither authenticated evidence, encryption nor anti-rollback protection. Windows private-disk use stays disabled. Raw operational bytes must never be published or logged.

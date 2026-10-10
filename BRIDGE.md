@@ -24,6 +24,149 @@ The detached `Proposal()` output contains a private deposit, its existing protoc
 
 `ObserveResolution` checks an exact `Paid` or `Cancelled` receipt against the full expected native withdrawal, recomputing its ID and validating its unresolved shape. The shared receipt checker requires successful execution, canonical provider block/checkpoint agreement and both reviewed code pins. Paid events must match sequence, ID, recipient and amount; cancelled events require the sequence/ID and no data. The custody terminal view at that receipt block must match the expected outcome. Original receipt/checkpoint identities and the network are rechecked before returning a detached unsigned proposal. These checks do not authenticate native committed state, acknowledge payment, refund funds or establish source inclusion/finality.
 
+## Token inspection before custody exists
+
+The separate token inspector requires only explicitly supplied private source
+identity, token and a previously reviewed runtime pin. It checks bounded reads
+for network identity, runtime, decimals and fixed supply at one provider
+checkpoint, then rechecks the references. A missing custody deployment does not
+prevent this diagnostic, but cannot make the bridge ready. Consistent provider
+views do not establish issuer permissions, immutability, ownership or finality.
+
+An independently pinned private source-material capsule can bind the declared
+compiler, bounded inert source inventory, settings and exact compiled runtime to
+the retained token observation. Integrity checking does not execute a compiler
+or approve token permissions. `recompile-rh-token` separately executes an
+explicitly selected, independently pinned local Node binary and known compiler
+file, with the embedded bounded worker and no downloads or external imports.
+Exact runtime reproduction is not toolchain authentication, source authenticity,
+complete permission review or activation. No source capsule, toolchain, runtime
+bytecode or configured token address is distributed in this snapshot.
+
+## Offline bounded custody-call construction
+
+`PrepareCustodyCall` constructs only four exact methods: deposit, payment,
+cancellation and restrictive pause. It checks explicit private configuration,
+canonical request shape, action-specific quorum signatures where required and
+the exact ABI payload. Requests do not prove native withdrawal state, source
+eligibility, elapsed delay or a current fee/account policy. No source reads,
+signing, submission or real-asset authority are supplied by construction.
+
+The offline CLI checks independently retained configuration/request file pins,
+creates only new owner-only unsigned call files and reconstructs existing files
+for exact comparison. Operational inputs and payloads remain private; ordinary
+reports are redacted. Linux/macOS file operations anchor the trusted private
+leaf directory and refuse unsafe permissions, symlinks, shared links and changed
+file identity. Windows private-disk operations fail closed pending ACL support.
+
+## Persistent offline unsigned request record
+
+An explicit immutable private record reserves one original request and output
+path before unsigned export. Complete original files can be checked or recovered
+after interruption without overwrite, signing or submission. Store errors and
+panics are uncertain outcomes, not permission to replace records. The exclusive
+lease and independently retained latest checksum fence cooperating users of the
+same record only; they do not provide a global semantic-operation registry,
+authenticated native/source state or protection from rollback of both file and
+trusted pin by a hostile owner. Record initialization is an explicit local
+action, not a financial retry command.
+
+## Offline signed-envelope review and simulation dispatch recovery
+
+The signed-envelope checker binds canonical dynamic-fee transaction bytes to
+separately pinned private configuration, request and fee plan. It verifies the
+recovered sender, chain, nonce, zero value, exact custody target/calldata, empty
+access list and bounded execution-Gas reservation. It neither signs nor verifies
+the live account nonce, solvency, fee market, full intrinsic Gas or RH/L1 costs.
+
+A simulation-only attempt can retain unknown before handing those exact signed
+bytes to an explicitly supplied local fixture once. Intact unknown records refuse
+another handoff after reopen; there is no retry, refund or release transition.
+The offline CLI does not expose a dispatch command. A reviewed envelope and
+local checksum are not approval to send a real transaction.
+
+## Shared simulation sender nonce and execution-Gas reservation
+
+`CustodyNonceBook` binds one simulation configuration and separately pinned
+private account plan. Up to 64 exact reviewed envelopes reserve consecutive
+nonce strings and their aggregate `gasLimit * maxFeePerGas` cost under one
+immutable uint256 budget. Exact repeats are idempotent; gaps, conflicting
+requests, changed inputs, excess budget and capacity are refused. Unknown
+outcomes never refund or reprice a reservation. Ordered unknown retention
+precedes one signed-byte handoff; later envelopes cannot bypass earlier stages.
+
+The disk adapter retains bounded immutable hash-linked snapshots under an
+exclusive lease, owner-only permissions, synchronous writes and post-save
+rereads. Reopen requires an independently retained exact latest-head checksum.
+An uncertain save stops the instance. The optional receipt observations below
+extend the existing canonical v1 schema without changing old no-review bytes:
+at most 193 states and 64 KiB per snapshot. No reset, pruning, repair or
+automatic retry is supplied.
+
+This coordinates only callers using the same book. Other tools, books, signers
+or hosts are not fenced. The supplied starting nonce is not authenticated source
+state, and an earlier unknown transaction can stall later ones. Production
+account ownership, authenticated nonce/solvency, full fees and safe uncertain-
+broadcast reconciliation remain separate requirements.
+
+## Local simulation receipt reconciliation
+
+`ReconcileForSimulation` checks complete canonical ordered binary header,
+transactions and receipts against supplied roots, blooms and status/type rules.
+The selected transaction must be the exact original unknown signed envelope.
+Selected cumulative-Gas difference, base fee and effective execution-Gas cost
+must fit the original reservation. Success requires one exact request-bound
+custody event for deposit, payment, cancellation or pause; revert has no logs.
+
+One immutable material digest and success flag may be retained for each unknown
+envelope. Exact repeats revalidate without a write. A different valid observation
+is not overwritten and makes reconciliation on that instance unusable. Retained
+success and failure both remain dispatch unknown: neither authorizes payment
+acknowledgment, refund, nonce release, fee release or another handoff.
+
+Matching roots are conditional on caller-supplied headers, not authentic header
+origin, ancestry, RH settlement or finality. This does not execute the entire
+block, verify every unselected signature or prove source code/state, token
+permissions, native withdrawals or full RH/L1 fees. Private material and local
+checksums are not transferable financial authority or rollback-proof custody.
+
+## Explicit read-only custody receipt fetching
+
+`FetchReceiptForSimulation` accepts an explicit `CustodyReceiptSource` for one
+exact already-unknown envelope. It rechecks the retained private files and head,
+source chain/checkpoint and receipt block, reads complete material, detaches the
+provider buffers immediately and repeats the reconciliation checks. Every
+selected normalized log, including unrelated token logs, must match the material
+and its block-wide index counted across preceding receipts.
+
+The receipt, event block, original checkpoint and chain are checked again before
+return. A later checkpoint may advance but cannot retreat or change hash at the
+same height. All provider callbacks finish before the private head and inputs
+are rechecked. Pending receipts, missing raw methods, contradictions, failed
+reads, cancellation or provider panics return no partial result. No code/view
+query, log fallback, retry, endpoint fallback or background poller is installed.
+
+Fetch is ephemeral: it changes no stored bytes, review, stage, reservation or
+latest pin. Its detached private material can be passed explicitly to separate
+local reconciliation; successful fetching never implies automatic retention or
+financial resolution. A retained conflicting observation is rejected without
+replacement. Active reads have a 30-second context ceiling or earlier caller
+deadline; mutex wait is not context-interruptible. Adapters must honor context
+and not reenter book APIs while its lock is held.
+
+The temporary loopback HTTP acceptance used exactly five existing read methods:
+`eth_chainId`, `eth_getBlockByNumber`, `eth_getTransactionReceipt`,
+`debug_getRawBlock` and `debug_getRawReceipts`, with fifteen requests in each
+successful one-shot flow. No server debug namespace is enabled by this library.
+Actual RH raw-method availability and fork support were not tested. Consistent
+provider replies can still describe a fabricated fork; code/state truth,
+ancestry, source finality, full fees, production signing/broadcasting and backing
+remain unaccepted. All financial activation flags stay false.
+
+The private test/fuzz suites and compiled synthetic assets are intentionally
+excluded. Public build commands do not reproduce those checks; see
+[VERIFICATION.md](VERIFICATION.md#local-custody-candidate-acceptance).
+
 ## Persistent simulation observation journal
 
 `RelayJournal` binds canonical private source/native configuration, asset, signers and both code pins. It operates only in simulation mode and retains at most 256 immutable tasks, with at most eight lifetime observation attempts each. Identical requests keep one ticket; changed payloads and competing withdrawal outcomes conflict. Attempts are saved before a bounded 30-second read; conservative retry eligibility persists across reopen. Interrupted attempts consume the same budget. Cached data is unsigned historical evidence and requires explicit refresh for another source read. No pruning, reset, automatic loop or financial acknowledgement is supplied.

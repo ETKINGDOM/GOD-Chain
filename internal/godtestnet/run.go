@@ -26,6 +26,18 @@ func Run(ctx context.Context, home string, allowNetwork bool, out io.Writer) (re
 	if ctx == nil || out == nil {
 		return ErrConfig
 	}
+	r, err := openPrivate(home)
+	if err != nil {
+		return err
+	}
+	defer r.Close()
+	lease, err := acquireNodeLease(r)
+	if err != nil {
+		return err
+	}
+	// Registered before the application/engine defers: release only after their
+	// shutdown and storage close. A refused duplicate never opens node databases.
+	defer lease.Close()
 	loaded, err := Load(home)
 	if err != nil {
 		return err
@@ -33,11 +45,6 @@ func Run(ctx context.Context, home string, allowNetwork bool, out io.Writer) (re
 	if loaded.Report.NetworkExposure && !allowNetwork {
 		return ErrConfig
 	}
-	r, err := openPrivate(home)
-	if err != nil {
-		return err
-	}
-	defer r.Close()
 	for _, name := range []string{"data", "data/sdk"} {
 		if r.MkdirAll(name, 0700) != nil {
 			return ErrPrivate

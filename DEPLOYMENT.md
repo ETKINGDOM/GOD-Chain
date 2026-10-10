@@ -14,6 +14,32 @@ out-of-host outage detection still require an explicit recovery review.
 
 ## Build and review
 
+### Cooperating-process node workspace lease
+
+The local `godd testnet start` candidate acquires an exclusive, nonblocking
+advisory lease before loading node identities, opening databases or binding
+listeners. The empty owner-only `.god-node-lease` file remains at its original
+inode across normal exits. Never delete, replace, truncate or copy an active
+lease to bypass refusal. The descriptor stays held through consensus stop/join
+and application-storage close. Duplicate startup refuses rather than resetting
+a signer or reopening the same working data.
+
+Linux/macOS candidates reject linked, shared, populated and wrong-owner lease
+files; other platforms have no unverified fallback. `make test-node-lease
+check-node-lease` covers unsafe-file refusal, reacquisition and an actual private
+daemon duplicate/refusal/restart with retained identities and advancing signing
+progress. This work remains local and does not upgrade the deployed pilot.
+
+This is one same-home cooperating-process guard, not a complete immutable
+release/migration/rollback workflow. Older executables and direct internal
+runtime users do not take this lease. It cannot fence copied identities on
+another host, resist the host owner, establish backup freshness or make an old
+signing-state restore safe. Linux target execution, retained-state upgrade
+compatibility, external fencing and independently retained checkpoints remain
+separate gates. Do not restore chain or signer state when rolling back software.
+
+### Checksum-bound candidate build
+
 Use Go 1.26.8 and the checksum-bound lifecycle build with unchanged module pins:
 
 ```sh
@@ -95,6 +121,107 @@ The report contains OS/architecture, logical CPU count, exact decimal-string qua
 
 `preflightPassed` only means those budgets passed at that moment. `writeAccessVerified` and `publicAcceptance` remain false. It does not test filesystem writes, quotas, CPU capacity, memory, throughput, clock synchronization, disk durability or sustained growth. OS filesystem calls depend on the selected mount; use reviewed local storage. Complete those checks during native host acceptance rather than turning these snapshots into an ordinary-computer specification.
 
+## Finite Linux resource observation
+
+`godd testnet host-observe` samples only explicitly reviewed same-user process
+leaders and an existing owner-only data directory. Run it as the selected
+unprivileged service user, not root. Select PIDs locally from reviewed service
+metadata; the command has no discovery, shell or service-manager integration.
+Do not run it against another operator's processes. Separate service users need
+separate observations; this is not an all-service/cgroup inventory.
+
+```sh
+./build/godd testnet host-observe \
+  --data-dir "$GOD_PRIVATE_DATA_PARENT" \
+  --pids "$GOD_REVIEWED_PROCESS_LEADERS" \
+  --samples "$GOD_REVIEWED_SAMPLE_COUNT" \
+  --interval-ms "$GOD_REVIEWED_SAMPLE_INTERVAL_MS" \
+  --budget-seconds "$GOD_REVIEWED_OBSERVATION_BUDGET_SECONDS" \
+  --minimum-free-bytes "$GOD_REVIEWED_FREE_SPACE_BUDGET" \
+  --minimum-memory-bytes "$GOD_REVIEWED_MEMORY_HEADROOM_BYTES" \
+  --maximum-rss-bytes "$GOD_REVIEWED_AGGREGATE_RSS_BYTES" \
+  --maximum-open-files "$GOD_REVIEWED_AGGREGATE_FILE_COUNT"
+```
+
+Every flag is required exactly once. Select 1–32 distinct process leaders,
+2–60 samples, intervals of 250–5,000 milliseconds and a 2–180-second overall
+budget. The requested intervals plus one second must fit the budget. Disk,
+available-memory and approximate aggregate-RSS budgets each accept 1 MiB–1 PiB;
+aggregate open descriptors accept 64–65,536. These are tool limits, not
+recommended service sizing, measured hardware requirements or user capacity.
+One baseline plus the requested samples is the maximum; there are no retries.
+
+The fixed Linux procfs reader checks ownership, leader identity and start time,
+directory identity and permissions, bounded input sizes and checked arithmetic.
+It stops on a missing process, changed identity/scope, regressing or inconsistent
+counters, insufficient disk/memory, excessive RSS/descriptors, cancellation or
+elapsed budget. Its descriptor reader counts names, never their target contents.
+It does not read keys, node stores, command lines or environments, use the
+network, write files, send process signals, change limits or restart anything.
+SIGINT/SIGTERM cancel the foreground command. Kernel/filesystem calls can block;
+the deadline is cooperative between reads. Use a separately reviewed external
+supervisor when a hard syscall deadline is needed, not an automatic node reset.
+
+JSON lines contain aggregates and fixed reasons, not PIDs, names, start times,
+private paths or raw kernel data. Byte counts use exact decimal strings. The
+CPU ratios are rounded down to permille of the full procfs CPU view, not one
+core: 250 means one quarter of that view. CPU is observed, not budget-tested.
+Guest CPU time is not counted twice. Available memory is a kernel estimate;
+summed process RSS is approximate and can double-count shared pages. The procfs
+view may exceed a container/service limit and does not establish cgroup
+headroom. These semantics follow the [Linux procfs documentation](https://docs.kernel.org/filesystems/proc.html).
+
+`checksPassed` means only that this short series met its explicit budgets.
+`hardwareCapacityVerified`, `publicAcceptance`, `servicesChanged` and
+`realAssets` remain false, even on Linux. macOS/Windows fail with
+`unsupported-runtime` and do not substitute fixture metrics. Sustained workload,
+disk growth/bandwidth, actual ingress, cgroup limits, backup/restore and physical
+host acceptance remain separate. Never publish private operational reports or
+turn a passing short series into a participant/TPS promise.
+
+`make test-host-observe check-host-observe fuzz-host-observe` runs portable
+policy/parser and CLI checks. `make build-host-observe` prepares a private native
+binary. `make compile-host-observe-linux` compiles Linux amd64/arm64 binaries and
+kernel-adapter test executables without executing or releasing them. Linux
+adapter runtime checks must still run as the intended user on the intended host;
+foreign compilation alone is not acceptance. All build artifacts stay ignored,
+and these targets neither install services nor update the public website.
+
+## Private stopped-observer cold-copy drill
+
+`make test-cold-observer-copy check-cold-observer-copy` uses only disposable
+synthetic workspaces, the checksum-bound lifecycle/logging build and numeric
+loopback processes. It is a private acceptance fixture, **not an operator
+snapshot/restore command**, a public archive or an automatic backup service.
+Four validators and one non-signing observer run on one computer.
+
+The fixture commits a signed GOD payment, joins the stopped observer's process
+and closes its stores before inspecting any database. It records a bounded
+file/size/digest inventory and copies that closed workspace into a new private
+directory without changing the original. Validator/candidate roles are refused;
+source changes, symbolic links and existing destinations fail rather than being
+overwritten. The fixture limits depth, directories, file count and read bytes;
+its caller establishes quiescence, not an inferred PID or a filesystem checksum.
+
+While the original observer stays stopped, the four validators commit another
+reviewed synthetic payment. Only the good retained observer copy is then
+started. Checks require both real receipts, the exact recipient balance and
+sender sequence, the old checkpoint block and a later block matching all four
+validators. Consensus/peer identities, genesis/configuration and zero observer
+signing progress remain unchanged. A separate disposable copy receives logical
+configuration corruption; inspection must reject it without repair. This is
+not physical disk/page corruption or fault injection into live storage.
+
+These are cold-file-copy and local consensus checks, not proof of secure
+off-host backup custody, authenticated retained checkpoints, power-loss
+durability, storage encryption, adversarial local filesystem safety, target
+Linux restoration or protocol upgrade/rollback. The fixture copies only its own
+synthetic observer identity. Never copy a running node or use this test helper
+on operator directories. Never resume a validator from an older backup: lost
+uncommitted signatures and rollback require a separately reviewed fencing and
+signer-state recovery policy. There is no validator restore, database reset,
+automatic repair, public service change or real-asset operation in this target.
+
 ## Read only service smoke checks
 
 After manual foreground startup of the reviewed observer and companion, run the bounded service check from the intended participant access location. Choose distinct root URLs: both reviewed HTTPS gateways, or both numeric-loopback HTTP services for local verification.
@@ -161,6 +288,169 @@ Checks include exact chain binding, fixed GOD supply, synthetic flags, positive 
 The JSON report contains only fixed reason labels, height, age, peer count and commit phase. A failed check returns a nonzero exit code and a static error without copying endpoints, paths, identities, hashes or response material into logs. `healthy: true` means that sample passed, not authenticated state, quorum, bridge backing or public-launch acceptance. `publicAcceptance` and `realAssets` remain false.
 
 Use an operator-reviewed scheduler for repeated sampling and an incident channel for persistent failures. No recurring task, alert destination or automatic recovery action is configured here. Track CPU, memory, disk growth and bandwidth on the target host separately; the health report does not invent resource measurements.
+
+## Bounded concurrent read checks
+
+Use `read-load` for a short, explicit load on a reviewed **synthetic operator
+RPC**, not as a continuous benchmark or an unrestricted public traffic source.
+The complete private bundle digest is verified before any network request. The
+only methods are `god_liveness` and `god_network`; an operator endpoint must
+already permit those diagnostics. This command does not expand the public
+gateway's method allowlist or expose validator RPC.
+
+```sh
+./build/godd testnet read-load \
+  --bundle "$GOD_BUNDLE_FILE" \
+  --expected-bundle "$GOD_REVIEWED_BUNDLE_SHA256" \
+  --rpc "$GOD_REVIEWED_OPERATOR_RPC_URL" \
+  --samples 16 --concurrency 2 --interval-ms 200 \
+  --maximum-latency-ms 2000 --budget-seconds 30 \
+  --max-block-age-seconds 60 \
+  --minimum-peers "$GOD_REVIEWED_MINIMUM_PEERS"
+```
+
+Sample count, concurrency, interval, maximum sample latency and overall budget
+are mandatory. Their bounds are 2–64 samples, 1–8 concurrent samples (no more
+than the sample count), 50–2,000 milliseconds between dispatches,
+1–8,000 milliseconds per measured pair and 10–180 seconds overall. The nominal
+dispatch intervals must fit strictly inside the budget; controls and request
+time can still exhaust it. The interval is a pause between dispatches. Waiting
+for a concurrency slot can extend it; there are no queued catch-up bursts. The
+overall monotonic-time deadline and per-sample deadlines cancel pending reads.
+Freshness and peer bounds/defaults match `health`.
+
+One unmeasured baseline precedes the samples and one unmeasured final control
+follows them. Each control has an eight-second request-pair deadline within the
+overall budget. Total RPC attempts are at most `2 × (samples + 2)`, or 132 at
+the maximum count. Redirects, environment proxies, cookies, compression and
+retries remain disabled; standard TLS validation and the health response-size
+and schema limits remain enabled. No wallet, key, signing, transaction, faucet,
+contract action, node-management operation or configuration write is involved.
+
+Every pair must pass synthetic flags, exact chain binding, fixed GOD supply,
+freshness, overlap, usable state and peer checks. Concurrent replies may arrive
+out of height order, but must be consistent with the baseline and reported
+height/time ordering. Repeated heights must retain the entire network snapshot,
+not only a matching hash. The final control cannot regress behind any measured
+view, and must show height progress beyond the baseline. First failure stops
+new dispatch, cancels in-flight reads, joins them and returns a nonzero status;
+there is no automatic retry, failover, repair or restart.
+
+The single redacted JSON summary includes started/completed/passed samples,
+maximum in-flight pairs, RPC **attempts**, actual elapsed milliseconds, endpoint-
+reported height progress and minimum/P50/P95/maximum pair latency. RPC attempts
+are not a count of requests delivered or transactions. Latencies include every
+completed measurement, including failed/canceled partial pairs, but not controls
+or time waiting for a slot. Percentiles use nearest rank, rounded up to whole
+milliseconds. A small or failed series is not a capacity estimate. No URL,
+bundle identity, path, account, state hash or raw provider error is reported.
+
+`checksPassed` establishes only this bounded provider-reported read check.
+`realAssets`, `publicAcceptance`, `transactionsSubmitted` and
+`hardwareCapacityVerified` remain false. TLS and consistency checks do not
+authenticate consensus proofs. The command does not measure CPU/RAM, disk growth,
+bandwidth, gateway queues, full wallet/NFT write traffic, long-run uptime or
+physical recovery; those intended-host release gates remain separate. Run
+`make test-read-load check-read-load` for the private loopback acceptance and
+unchanged checksum-bound build, without contacting a public service.
+
+## Bounded local mixed-wallet acceptance
+
+`make test-mixed-wallet-load check-mixed-wallet-load` exercises disposable
+synthetic consensus and the existing independent plain-transfer, NFT, read-only
+and automatic-faucet boundaries on numeric loopback. It requires the retained
+private `build/nft/GodTestNFT.json` from the reviewed `compile-nft` workflow.
+The fixture checks compiler/library metadata, locked dependency sources and the
+current collection/receiver source digests. Missing or mismatched artifacts
+fail; there is no automatic download, compilation, public collection deployment
+or configured-token use. The checksum-bound consensus build remains required.
+
+Four validators and one non-signing observer run on one computer. Disposable
+accounts and the compiled collection are funded/deployed only inside that
+private synthetic fixture. Twelve mutation-boundary requests start together:
+four copies each of one signed GOD transfer, one signed NFT mint and one claim
+ID. Four network reads follow at a controlled 600-millisecond offset. A local
+relay caps upstream connections at three; setup and later phases wait for real
+budget replenishment. These controls do not change production quotas, block
+intervals, chain time, gateway allowlists or the intended public ingress.
+
+The fixture loses only acknowledgments of actual admitted submissions, keeping
+the original hashes and obtaining genuine committed receipts. It checks one
+GOD payment, one mint, one faucet payment and a separately reviewed NFT owner
+send; final ownership and the mint's original recipient remain distinct. A
+reopened private faucet journal and its HTTP claim lookup must recover the same
+confirmed claim. The original ID stays idempotent and a new ID cannot bypass the
+account cooldown. Exactly four transactions cross the relay, once each.
+
+Keyless-gateway recreation is tested **after committed inclusion**: old intents
+must fail preflight without another broadcast. This does not establish durable
+gateway reservations across a pre-inclusion crash. Only reads may retry during
+lookup recovery; there is no automatic wallet/NFT re-signing, replacement or
+resubmission. The observer then restarts, preserving committed balances,
+receipts and NFT ownership. All nodes retain their original keys, genesis and
+signer roles/progress; no live data directory is opened or reset.
+
+Rate/capacity refusal is not payment. Read-side temporary unavailability is an
+explicit failed read, not a fabricated successful network result. The redacted
+summary records controlled request counts, limit/unavailability counts, exact
+forward counts and recovery checks. `publicAcceptance`, `realAssets` and
+`hardwareCapacityVerified` remain false. This short correctness drill is not a
+concurrent-user limit, production throughput measurement, browser/device test,
+native staking/G workflow or target-Linux acceptance. Full simultaneous traffic,
+intended-host resource sizing, sustained settlement, storage/power failure and
+safe upgrade/restore gates remain separate. No public service, repository,
+binary release or real bridge is activated by this target.
+
+## Bounded local native concurrency and unknown recovery
+
+`make test-native-concurrency check-native-concurrency` uses the checksum-bound
+native-gateway build and five disposable persistent loopback processes: four
+validators and one non-signing observer on one computer. The fixture funds two
+ordinary accounts only with worthless synthetic GOD. It does not contact a
+configured public endpoint or change quorum, quotas, fees, settlement clocks,
+unbonding delays, keys, live data directories or service configuration.
+
+Stopping two validators genuinely pauses commits. Eight identical signed
+delegation requests start together; exactly one reaches node submission and
+seven are limited. A relay discards only that node's actual successful admission
+acknowledgment. The committed transaction lookup must still be empty, so the
+result is genuinely **unknown before inclusion**, not a fabricated receipt or
+post-inclusion gateway test. The relay allows at most three upstream connections
+and only fixed reads and individually reviewed signed wires.
+
+After draining/closing the gateway, an exclusive offline audit and checksum-pinned
+copy retain its unknown hash. A gateway opened on that fresh private copy refuses
+the original intent without another submission; status remains unknown while
+commits are paused. Restoring three-validator quorum produces a real matching
+receipt through read-only lookup. Never turn an unknown write into an automatic
+retry, replacement or re-signature. This tests identical-hash protection, not a
+cross-hash account/nonce reservation or complete crash-safe wallet coordination.
+
+Separately signed GOD donation and undelegation commit once each. Checks retain
+the exact offered fees, balances and pending principal with the unchanged
+21-day unbonding delay. A never-delegated account with zero settled/pending G
+then attempts claim, transfer and redemption. All three enter real committed-state
+preflight with successful upstream reads and fail without a node submission,
+fee or sequence change. The full committed network snapshot, including GOD
+pool/supply and G totals, stays unchanged; RPC failure is not counted as a
+successful negative control. The pending exit's HTTP view matches its actual
+committed query. This is
+negative G-state acceptance, **not positive G settlement or completed payout**.
+
+Closed-store audits retain exactly three attempted hashes and leave the original
+one-record source unchanged. A deliberately malformed logical record in a
+separate disposable copy makes gateway open and offline audit fail without
+repair; the good copy remains usable. No physical pages, node databases or
+original stores are damaged. This does not certify filesystem/power-loss
+durability, authenticated checkpoint retention or rollback detection.
+
+All five nodes retain consensus/peer identities and genesis; validators retain
+positive signing progress and the observer retains none. Race regressions,
+scoped vet and native-wallet client checks complement the new fixture.
+`publicAcceptance`, `realAssets` and `hardwareCapacityVerified` remain false.
+Full mixed intended-ingress load, target-host resources, sustained real elapsed
+G settlement, physical devices, signer-safe upgrade/restore and real bridge
+acceptance remain separate. No public service, repository or binary is updated.
 
 ## Finite read only observation and fault reports
 

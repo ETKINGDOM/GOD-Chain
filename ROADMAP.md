@@ -6,6 +6,47 @@ The current implementation is a synthetic-asset prototype, not a live mainnet or
 
 Detailed local evidence and limitations are in [VERIFICATION.md](VERIFICATION.md), [NODE_RUNTIME.md](NODE_RUNTIME.md) and [BRIDGE.md](BRIDGE.md). The synthetic deployment workflow and public-test gates are in [TESTNET.md](TESTNET.md). No production economic parameter or release date is selected here.
 
+The local candidate additionally protects cooperating node starts with an
+exclusive retained-workspace lease and offers a bounded offline constructor for
+four exact source-custody methods. The offline CLI additionally checks separately
+pinned private requests, creates only new unsigned call files and reconstructs
+retained files without source reads, signing or submission.
+An optional immutable unsigned record reserves the original request/output
+before export and supports explicit complete-file recovery after interruption;
+it is not a financial retry journal or global duplicate fence.
+An offline signed-envelope check additionally binds exact sender, nonce, gas,
+fees and custody data to separately reviewed private inputs. A simulation-only
+single-dispatch record retains unknown before exposing bytes to a local fixture;
+intact unknown records refuse re-dispatch after restart. It is not an
+authenticated latest head, sender-wide nonce allocator, live source broadcaster
+or finality/payment verifier, and has no retry or release transition.
+A separate bounded shared simulation account journal now serializes consecutive
+nonce reservations across exact reviewed envelopes and retains their aggregate
+maximum execution-Gas cost. It persists ordered unknown handoffs, immutable
+hash-linked history and independently pinned recovery without refunds/retries.
+Local receipt reconciliation additionally binds complete supplied block material
+to exact unknown envelope bytes, validates execution-Gas arithmetic and exact
+successful custody effects, and retains one immutable success/revert observation.
+Exact repeats do not write; conflicting observations stop without replacement.
+Neither outcome authenticates finality or resolves payment, fees or nonce reuse.
+An explicit bounded read-only fetch additionally locates the exact unknown
+envelope, obtains complete raw material, matches every selected normalized log
+and rechecks provider references and private inputs before returning an owned
+snapshot. It does not poll, sign, dispatch, retain a review or resolve unknown;
+explicit local retention remains separate. Provider consistency is not source
+finality, code/state truth or a live financial relayer. See
+[read-only fetch controls](BRIDGE.md#explicit-read-only-custody-receipt-fetching).
+This fences the same book only, not other tools/journals/hosts; a supplied starting
+nonce is not authenticated state and earlier unknown transactions may stall later
+ones. Complete RH fees, enforced production account ownership, source finality,
+safe signing and uncertain-broadcast reconciliation are still required. See
+[shared-journal controls](BRIDGE.md#shared-simulation-sender-nonce-and-execution-gas-reservation).
+Private daemon/compiled-custody checks do not
+complete software upgrade/rollback, source-finality verification or financial
+relaying. No live service, real asset or production gate is activated. See
+[DEPLOYMENT.md](DEPLOYMENT.md#cooperating-process-node-workspace-lease) and
+[BRIDGE.md](BRIDGE.md#persistent-offline-unsigned-request-record).
+
 ## Status definitions
 
 - **Implemented and locally tested** means code exists and the recorded private checks exercised it with synthetic inputs. It does not mean production acceptance, independent audit or live operation.
@@ -32,7 +73,7 @@ authorized by these checks. The requested five deliverables remain partial:
 | Single-host node operation | Persistent five-process loopback join, catch-up, guarded candidate admission and process/quorum/whole-group restart checks | Intended-host isolation, resource limits, reboot and signing-safe storage/upgrade drills; external-host admission and routing become later distributed-stage gates |
 | Staking and G lifecycle | Signed application settlement, claim, transfer, redemption, empty-pool preservation and disk recovery; unchanged synthetic 21-day boundary | Positive workflows over sustained consensus and real elapsed-period payout evidence; no accelerated public clock or invented funding |
 | Explorer and wallets | Fixed-target bounded summary backfill with retained progress, history/query/recovery foundations, web/Chrome local cryptography, an opt-in address-only connection candidate and shared same-profile GOD/NFT/native attempt recovery across reload/browser restart | Public range acquisition/coverage, complete participant/NFT semantics, storage-loss and multi-device handling, safe resolution of non-included signed attempts, website transaction authorization/review, public connection activation, and physical target devices |
-| Long-run operations | Finite first-fault read-only observation, private attempt/history audit-copy checks and bounded health/host helpers | Sustained stress/resource/storage measurements, reviewed external alert delivery, signer-safe backup/restore and safe-upgrade drills |
+| Long-run operations | Finite first-fault read-only observation, bounded same-user Linux resource collector with portable policy/parser fault checks and foreign compilation only, bounded synthetic read checks, controlled local claim/transfer/NFT concurrency with committed lost-acknowledgment and observer-restart recovery, identical-native-request concurrency with actual pre-inclusion unknown/offline-copy recovery and zero-G refusal, private attempt/history audit-copy checks, stopped disposable observer cold-copy retention/catch-up with zero signing progress, and bounded health/host helpers | Native Linux collector/runtime acceptance, full simultaneous intended-host wallet/native/write load and sustained stress/resource/storage measurements, reviewed external alert delivery, authenticated independently retained backups, validator fencing/signer-safe restore and safe-upgrade drills |
 
 ## Implemented and locally tested capabilities
 
@@ -45,7 +86,7 @@ authorized by these checks. The requested five deliverables remain partial:
 | Committed state queries | Latest-committed network, account, G, individual delegation and bounded pending-unbonding views; restricted synthetic HTTP/Ethereum RPC and indexed transaction receipts. | No historical application queries, light-client proofs, full explorer API or accepted wallet product. G fields exclude locks and are not total G. Unbonding timestamps/absence are not payout proofs. |
 | G rewards and GOD redemption | Commit-based contribution accounting, bounded prototype G issuance, daily settlement, transfers and locks, and voluntary pool-based redemption. | Production emission approval and scalable settlement remain required. No guaranteed return is implied. |
 | Bridge ledger and custody | Synthetic one-for-one accounting, quorum approvals, replay protection, segregated withdrawals, delayed authorization, cancellation rules and opt-in authenticated node routes. | No production backing, independent source verification, live signer operation or financial relayer. Successful delayed payments were direct synthetic checks, not a delayed four-node transfer. |
-| Read-only RH evidence interfaces | Private configuration, compatibility probes, deposit and resolution observations, simulation journals, receipt-set checks, proof preparation and retention, and combined task evidence review. | Matching provider data and header commitments are not authenticated finality or contract/native-state proofs. Results remain unsigned. |
+| Read-only RH evidence interfaces | Private configuration, separate pre-custody token inspection, offline source-material integrity, explicit known-compiler local runtime reproduction and exact retained-runtime comparison, full-binding compatibility probes, deposit and resolution observations, simulation journals, receipt-set checks, proof preparation and retention, and combined task evidence review. | Material integrity alone is not compiler execution; local reproduction is not toolchain authentication or token-permission approval. Matching provider data and header commitments are not authenticated finality or contract/native-state proofs. Original source and authenticated state remain required. Results remain unsigned; real assets remain disabled. |
 | Verification and build tooling | Developer-run regression checks, a checksum-bound lifecycle build, diagnostic compilation for five targets and deployed Linux amd64 pilot services. | Other target runtimes and full cross-platform node acceptance remain unverified; foreign compilation is not runtime support. Private tests and generated material are not distributed. |
 
 These capabilities share a fixed GOD supply of 1,000,000,000 in the prototype. Equal bank supply does not establish external backing. G has no fixed lifetime cap at this stage; its prototype issuance bounds are not a finalized mainnet schedule. Empty redemption liquidity preserves G, and only successful redemption burns the offered G.
@@ -181,7 +222,7 @@ All six remain incomplete for production, even where local foundations exist.
 | 5. Blockchain explorer | Partial | A read-only test explorer displays paginated committed blocks and native/EVM details with actual execution outcomes. The public portal provides checksum-checked, identity-matched account lookup/share links, manual five-block sender/recipient activity scans, observer diagnostics and a redacted local report. A separate opt-in keyless address-index CLI passes complete-block pagination, atomic checkpoints, anchored address pages, process interruption and persistent local-node recovery checks; bounded Linux acceptance read ten committed pilot blocks without changing services. Its production source and English usage guide are in the reviewed core scope, not a public route, complete backfill or NFT index. Full public indexing, a complete historical validator index, proofs and sustained acceptance remain required. |
 | 6. Staking and rewards interface | Partial | Connected web/Chrome preparation, six-action explicit signing, restricted native admission, known-hash recovery and bounded committed unbonding progress plus locked single-operator validator lookup are deployed. The browser signatures pass independent pinned SDK byte/signature checks. The portal's separate delegation/pool views remain watch-only. Public disposable-account delegation and start-unbonding produced matching committed receipts and a real pending entry. Locked web/Chrome recovery passed; the progress lookup does not imply payout. Full delayed withdrawal completion, positive settled-G claim/transfer/redemption, fuller validator discovery and sustained public acceptance remain required. This can be part of the wallet or APP. |
 | 7. Bridge website | Pending | RH to GOD Chain and return-transfer workflows, progress, limits and explicit failure or cancellation states. Live operations remain gated. |
-| 8. Bridge relay and signer tools | Partial | Independently reviewed approvals, safe submission, recovery, reconciliation and duplicate prevention. Existing read-only simulation helpers are not an operating financial service. |
+| 8. Bridge relay and signer tools | Partial | Independently reviewed approvals, safe submission, recovery, reconciliation and duplicate prevention remain required. Local tools now check pinned private requests, create exclusive unsigned custody call files and recheck exact retained bytes; they neither sign nor submit. Existing read-only simulation helpers and offline construction are not an operating financial service. |
 | 9. ETERNAL KINGDOM integration | Pending for GOD Chain | A replaceable chain adapter, wallet connection, GOD and G operations, and submission and retrieval of client-encrypted faith content. This status does not describe unrelated existing APP features. |
 | 10. Monitoring and operator documentation | Partial | Synthetic deployment/recovery guides, bundle-pinned health, finite first-fault observation, short service checks, explicit host budget snapshots, redacted diagnostics and a Linux supervision template exist. Target-host verification, external alerting, sustained resource measurements and reviewed incident recovery remain required. |
 
@@ -195,6 +236,17 @@ revocation, worker termination and document navigation. It is not the current
 public ZIP or a deployed website provider. Public scope/activation review,
 durable unknown-attempt preservation before any website signature, independent
 review and physical browser/device acceptance remain required.
+
+The private connection/recovery candidate now has retained-source reproduction
+and a separate fifteen-file deterministic review archive. Exact source/build/
+archive pins and fixed inventory must match before fresh private unpacking.
+Actual isolated browser fixtures load that package for website consent and
+GOD/NFT/native recovery, using real saved backups/recovery files and directly
+observed normal owned-process exits. Recovery never signs or resubmits.
+Adapter-fault injection is separate from the untouched package. This is a local
+release-integrity foundation, not approved distribution, live-service/device
+acceptance, an independent audit or production readiness. The public 0.3.9 alpha,
+source publication allowlist and real-asset gates remain unchanged.
 
 ## Implementation sequence and acceptance
 

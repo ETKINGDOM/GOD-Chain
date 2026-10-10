@@ -9,6 +9,80 @@ real assets. God EVM + God SDK + GodCometBFT pins remain unchanged.
 
 ## Current synthetic participant acceptance
 
+### Local custody candidate acceptance
+
+The explicit read-only custody-fetch candidate passed 27 source-bound private
+local acceptance phases with no skipped checks. Independently replayed evidence
+matched source inventories before/after, phase-log digests, retained compiler,
+module/overlay inputs and compiled synthetic-custody artifacts. The related
+race run passed 341 named tests (1,852 including subtests); the compiled-custody
+race run passed 89 named tests (616 including subtests). These counts overlap
+earlier checks and are not additive safety scores or an independent audit.
+
+Seven finite five-second requested fuzz windows exercised bounded request,
+record, signed-envelope, attempt, nonce/review and receipt-metadata handling.
+Static analysis, native command build, diagnostic Linux amd64/arm64 and Windows
+amd64 compilation, Windows test compilation and disabled-command checks passed.
+Foreign binaries were not run. Diagnostic status retained `nodeReady: false`,
+`realAssets: false` and `rhSourceFinalityImplemented: false`.
+
+The shared simulation book reserves consecutive nonce strings and aggregate
+execution-Gas cost for at most 64 exact envelopes. Race/fault/disk checks cover
+competing reservations and takes, exact-budget/capacity boundaries, private
+input changes, errors/panics with old/new save outcomes, post-save corruption,
+independent latest-head pins and unchanged reservations. Codec acceptance covers
+64 retained observations in 193 bounded monotonic states and unchanged old
+no-review v1 bytes. Original nonces and costs cannot be overwritten or repriced.
+Disposable child-process termination and latest-pinned disk reopen retain
+unknown without another signed-byte handoff. These are local process checks,
+not power-loss, hostile-owner rollback or production nonce-state acceptance.
+
+Local receipt review covers all four custody actions with success and revert,
+exact signed bytes, canonical complete roots, selected Gas/base-fee arithmetic,
+forged events even under self-consistent supplied roots, malformed selected and
+unselected material, immutable observation conflicts and concurrent idempotence.
+Retained compiled custody fixtures assert actual synthetic signed execution,
+nonce/EOA checks, sender Gas debit and execution-generated logs before review.
+All observations remain dispatch unknown, never payment acknowledgments,
+refunds, fee releases or retry permissions.
+
+Explicit fetch covers reserved/unbound/closed refusal, provider errors and
+panics before/after material reads, cancellation and an actual short deadline,
+all selected normalized logs/global indexes, changed private inputs/head,
+detached borrowed buffers, serialized concurrent reads and ordinary checkpoint
+progress. It changes no stored bytes or latest pin. Separate explicit
+reconciliation can retain its owned material after reopen. Temporary loopback
+HTTP fixtures verify exactly five existing read methods and fifteen requests per
+successful one-shot fetch; pending receipts, missing raw methods, wrong chain,
+aliased fields, late receipt changes, inconsistent raw receipts and postflight
+forks yield no partial result or write. Actual RH endpoints and method support
+were not tested.
+
+The source includes earlier offline unsigned call/file/record tools, exact signed
+envelope review, pre-custody token inspection and bounded private source-material
+integrity/local recompilation. Those local checks do not authenticate source
+code provenance, compiler/host trust, issuer permissions, live account state,
+full intrinsic/RH/L1 fees or native withdrawal truth. The latest scoped custody
+run does not certify every unrelated browser, deployment or token-tool path.
+Production account ownership, signing/broadcast recovery, authentic RH
+ancestry/finality, backing and explicit activation remain separate release gates.
+Private fixtures, artifacts and evidence are not distributed; public build
+commands do not rerun these tests. See [BRIDGE.md](BRIDGE.md).
+
+### Cooperating workspace and finite read tools
+
+The included node-start lease refuses duplicate cooperating processes using the
+same private workspace before identity/database/listener startup. It preserves
+original signing progress and is not remote-signer fencing, backup restore or
+two-version safe-upgrade certification. Finite `read-load` is an explicit
+bounded liveness/network read tool, not wallet-write capacity acceptance.
+`host-observe` reads fixed same-user Linux procfs/filesystem aggregates and never
+reads keys, argv or environment, signals processes, restarts services or opens a
+network connection. Native Linux runtime/resource acceptance remains incomplete;
+foreign compilation and short samples do not prove server capacity. These tools
+are opt-in and source publication runs none of their configured operational
+reads. Original protocol/economic pins and activation gates are unchanged.
+
 ### Local-only wallet recovery candidate
 
 The opt-in Chrome 0.4.0 candidate is not the published 0.3.9 alpha. Its
@@ -43,13 +117,115 @@ regressions also passed; those clients do not open the candidate database.
 
 One plain GOD recovery-file browser run passed download, empty-profile import,
 another browser restart and exact committed reconciliation, with no recovery
-worker or request. NFT/native file handling has state-machine coverage only.
+worker or request. Separate import-only Chromium fixtures restore an original
+signed NFT mint and expired G redemption into fresh disposable profiles with
+the same encrypted wallet and pins, retaining the full review/TX ID through
+another browser restart. Changed bundle pins, duplicate fields and oversized
+files leave the empty journal unchanged without a worker or request. Exact
+reconciliation resolves without resubmission. These fixtures construct input
+from the original canonical record, not a successful browser export, and cannot
+accept the download gate. The ordinary full UI command still requires actual
+downloads and has no import-only fallback.
 The recovery-file browser gate is not reliably accepted: three earlier reopened
-test Chromium runs closed during download on macOS arm64; a separate empty-JSON
+plain-GOD test Chromium runs and the full NFT-mint export fixture closed during
+download on macOS arm64; a separate empty-JSON
 probe without wallet code also encountered a failure. This does not determine
 the browser defect's cause or establish a production fix, even after a later
 complete pass. No test-browser pin,
 security permission or chain dependency was changed to bypass the gate.
+
+Private wallet-free controls reproduce a restart download failure with both
+ordinary managed downloads and an otherwise same-launch CDP-managed browser.
+Two native-download controls save exact real files across three process
+launches with normal exit and retained history, using the unchanged browser.
+This is consistent with an upstream browser download-history regression, not
+proof of an installed fix or general stability. A separate explicit native
+wallet fixture passed actual NFT-mint and expired-G-redemption exports,
+malformed-file refusals, empty-profile import, further process restart and
+exact reconciliation without resubmission. It restores only ordinary page-focus
+emulation and requires normal owned-process exit. Failed teardown rounds remain
+failures; plain-GOD native teardown and repeated full-target acceptance remain
+under validation. The original managed gate is not replaced or automatically
+retried with another mode. These private diagnostics change no application
+code, public package, pin, permission, chain or live service.
+
+A distinct explicit crash fixture passes plain GOD recovery after terminating
+only the owned temporary browser process with `SIGKILL`. Actual saved files
+restore the original guard into empty storage without a signer/request and
+survive another process interruption; only exact committed reconciliation
+resolves it, with no resubmission. Evidence explicitly refuses a graceful-close
+claim. This is not a fallback for failed normal shutdown or managed downloads,
+physical power-loss proof, storage-erasure recovery or production acceptance.
+A separate mixed crash fixture passes actual NFT-mint and expired-G-redemption
+exports, malformed-file refusal, empty-profile import, further interrupted
+restart and exact committed reconciliation, without a recovery worker/request
+or resubmission. Both crash fixtures are local macOS arm64 checks only.
+Three private launch guards reject non-fixture/private-path and symlink misuse
+without starting a browser or editing linked targets.
+
+A separate explicit fixed-browser comparison uses official Chrome for Testing
+155.0.8059.39 on local macOS arm64. Official HTTPS metadata/object integrity and
+retained archive/source/full-tree pins are verified before execution; the exact
+source tag includes the upstream download-history fix. This ad-hoc-signed test
+artifact is not accepted Developer ID/notarization or publisher-signature
+authentication. Two complete managed-download comparisons in fresh disposable
+fixtures each passed three retained-profile launches and full GOD/NFT/native
+actual-file recovery, empty-profile refusal/import, further process relaunch
+and exact reconciliation,
+without recovery signing, requests or resubmission. Ordinary Playwright context
+teardown completed, not the separate native helper's direct zero-exit-status
+assertion. Both full-target commands exited successfully; eighty-one associated
+unit/build/packaging/publication-policy checks passed. Five further private
+guards refuse
+unreviewed selection, changed self-updated pins, signature claims, linked/shared
+paths and changed or escaping resources. Existing bundled-runtime failures
+remain failures. No default browser/dependency pin, wallet source, ZIP,
+permission, chain or live service changed; distribution and physical-device/
+independent-review gates remain closed.
+
+A stricter separate target passed twice in fresh fixtures, each with three
+retained-history managed-download launches and a full GOD/NFT/native round
+while directly observing zero-status,
+unsignaled exit of only its owned test-browser main process after every close.
+Forced cleanup fails this target. All actual-file recovery and no-resubmission
+assertions remain required. Both full-target commands exited successfully;
+this is not physical power-loss or cross-device acceptance.
+
+A separate private retained-input reproduction check rebuilds all thirteen
+candidate assets in memory and compares them with the reviewed build pins.
+Its private source record binds compiler-loaded source, copied UI assets,
+package descriptors/lockfile, licenses, build/review scripts and the installed
+compiler implementation/binary; no profile values or endpoints are included.
+Six named tests cover actual reproduction, a separate matching rebuild,
+self-updated asset hashes, altered/incomplete input records, unsafe record
+paths, wrong pins and unsupported overrides. Capturing a checksum is not
+approval; checking requires the retained record pin. This is not a hermetic or
+authenticated toolchain, whole-source behavior review or independent audit.
+No ZIP, public package, permission or live service changes. Version-three
+distribution remains refused; publication and real-asset flags remain false.
+
+A separate private candidate bundle adds a fixed fifteen-file stored ZIP:
+thirteen reproduced runtime assets, an English private-review warning and an
+asset checksum list. Full independently retained profile/build/source/archive
+pins, fixed metadata and exact contents are checked before fresh owner-only
+unpacking. Private inputs, reports, fixtures, keys and browser data are excluded.
+Compiled runtime configuration is not an address-free public-source snapshot.
+Eight archive/staging/argument guards and the ninety-five-check combined local
+regression pass. This tool does not broaden this core snapshot's exact scope;
+candidate assets and private tooling are not included here.
+
+Explicit isolated reviewed-browser fixtures load the actual checked package for
+public-address consent and GOD/NFT/native recovery. Actual saved encrypted
+backups and original signed-attempt files restore the same TX IDs/reviews into
+empty profiles and survive further restarts without recovery signing, requests
+or resubmission. Bad imports and mismatched results remain blocked. Each round
+has one initial GOD, two NFT and six native submissions to intercepted services.
+Every owned main process must exit normally with zero status and no signal;
+package/source/archive pins are rechecked before acceptance. Adapter-fault
+injection is a separately identified copy, not an edit to the participant package.
+This is local integrity/recovery evidence, not physical-device/live-service,
+authenticated publisher, audit or mainnet acceptance. Public 0.3.9 and the
+version-three public packaging refusal remain unchanged.
 
 These checks are not live-service or physical-device acceptance, power-loss
 durability, multi-device coordination, comprehensive storage-erasure recovery, authenticated
@@ -57,7 +233,7 @@ receipts or independent audit. Native result replies do not independently
 prove account number/nonce; failed NFT replies do not expose successful
 movement fields. A non-included signed hash can remain blocked indefinitely.
 The distribution command still refuses this candidate. Source/distribution
-review, recovery-file browser acceptance, comprehensive storage-loss handling
+review, required-browser/device recovery acceptance, comprehensive storage-loss handling
 and physical target devices remain release gates.
 This upload changes no service, public ZIP, signing key or real asset.
 
@@ -522,7 +698,7 @@ A deterministic private negative control bypassing only the wrapper reproduced t
 
 ## Public source checks
 
-The public snapshot contains exactly 133 reviewed files: 132 fixed production/guide paths and the unchanged public whitepaper. This includes the keyless native codec/gateway, bounded durable reservations, offline maintenance and optional logging build helper. Seven dependency-completion paths add the existing bundle-download/watch CLI and implementations, archive unpacking, bounded history backfill and single-host guide. Browser signers and other gateways remain excluded. Private tests, fixtures, operational scripts, populated configuration, genesis, addresses, keys, runtime data, dependency folders, logs and binaries are excluded. The nginx template is not an enabled service. Private application or source-review ancestry must not become a public parent.
+The public snapshot contains exactly 169 reviewed files: 168 fixed production/guide paths and the unchanged public whitepaper. This includes the keyless native codec/gateway, bounded durable reservations, offline maintenance and optional logging build helper; bundle-download/watch tools, archive unpacking, bounded history backfill and single-host guide; and the custody/token candidate with its exact embedded compiler and existing CLI dependencies. Browser signers, other gateways and the standalone history HTTP service remain excluded. Private tests, fixtures, operational scripts, populated configuration, genesis, addresses, keys, runtime data, evidence, dependency folders, logs and binaries are excluded. The nginx template is not an enabled service. Private application or source-review ancestry must not become a public parent.
 
 `make check` verifies the pinned lifecycle compiler input, then runs vet, module checksum verification and compilation. `make build` compiles the node/tool and packager commands; `make build-history-index` separately builds the local history CLI. Neither build starts a node or a history sync. `make status` runs the diagnostic without starting consensus or bridge operations. Public commands do not reproduce the private tests, fuzz windows or custody-bytecode checks. Publication screening checks exact file scopes, both commit identities, file bytes, commit messages and every reachable public ancestor. It is not a comprehensive secret audit or independent code review.
 

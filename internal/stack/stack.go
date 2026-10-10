@@ -30,6 +30,9 @@ type Status struct {
 	IndependentOperatorSetup bool              `json:"syntheticIndependentOperatorSetupImplemented"`
 	RHPrivateConfig          bool              `json:"rhPrivateConfigurationImplemented"`
 	RHReadOnlyProbe          bool              `json:"rhReadOnlyProbeImplemented"`
+	RHTokenInspection        bool              `json:"rhReadOnlyTokenInspectionImplemented"`
+	RHTokenSourceMaterials   bool              `json:"rhOfflineTokenSourceMaterialsImplemented"`
+	RHTokenRecompilation     bool              `json:"rhOfflineTokenRecompilationImplemented"`
 	RHDepositObserver        bool              `json:"rhDepositObservationImplemented"`
 	RHResolutionObserver     bool              `json:"rhResolutionObservationImplemented"`
 	RHReadOnlyJournal        bool              `json:"rhReadOnlyJournalImplemented"`
@@ -55,7 +58,7 @@ func BuildStatus() Status {
 		SDK: "God SDK", Consensus: "GodCometBFT", Execution: "God EVM",
 		NativeDenom: "agod", RealAssets: false, NodeReady: false, LocalPrototype: true, CommittedQueries: true,
 		SyntheticNodeCommands: true, RestrictedTestnetRPC: true, IndependentOperatorSetup: true,
-		RHPrivateConfig: true, RHReadOnlyProbe: true, RHDepositObserver: true, RHResolutionObserver: true, RHReadOnlyJournal: true, RHEventDiscovery: true, RHReceiptSets: true, RHReceiptInclusion: true, RHProofPreparation: true, RHRelayProofPreparation: true, RHProofPersistence: true, RHMaterialHTTP: true, RHTaskProofFetch: true, RHRetainedProofSource: true, RHTaskEvidenceReview: true, RHSourceFinality: false,
+		RHPrivateConfig: true, RHReadOnlyProbe: true, RHTokenInspection: true, RHTokenSourceMaterials: true, RHTokenRecompilation: true, RHDepositObserver: true, RHResolutionObserver: true, RHReadOnlyJournal: true, RHEventDiscovery: true, RHReceiptSets: true, RHReceiptInclusion: true, RHProofPreparation: true, RHRelayProofPreparation: true, RHProofPersistence: true, RHMaterialHTTP: true, RHTaskProofFetch: true, RHRetainedProofSource: true, RHTaskEvidenceReview: true, RHSourceFinality: false,
 		AccountPrefix: godaddress.AccountPrefix, NativeAddressFormat: "Bech32 lowercase", EVMAddressFormat: "0x EIP-55 hex",
 		Dependencies: map[string]string{},
 	}

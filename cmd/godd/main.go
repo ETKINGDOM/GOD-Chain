@@ -22,6 +22,15 @@ import (
 )
 
 func run(args []string, out io.Writer) error {
+	if len(args) > 0 && (args[0] == "rh-custody-transaction-template" || args[0] == "check-rh-custody-transaction") {
+		return runRHCustodyTransaction(args[0], args[1:], out)
+	}
+	if len(args) > 0 && (args[0] == "init-rh-custody-record" || args[0] == "export-rh-custody-record" || args[0] == "recover-rh-custody-record" || args[0] == "check-rh-custody-record") {
+		return runRHCustodyRecord(args[0], args[1:], out)
+	}
+	if len(args) > 0 && (args[0] == "rh-custody-request-template" || args[0] == "check-rh-custody-request" || args[0] == "prepare-rh-custody-call" || args[0] == "check-rh-custody-call") {
+		return runRHCustody(args[0], args[1:], out)
+	}
 	if len(args) > 0 && args[0] == "wallet" {
 		return runWallet(args[1:], out)
 	}
@@ -40,11 +49,35 @@ func run(args []string, out io.Writer) error {
 		return runTestnet(args[1:], out)
 	}
 	if len(args) == 0 || (len(args) == 1 && args[0] == "help") {
-		_, err := fmt.Fprintln(out, "GOD Chain core prototype\nCommands: status, version, rh-template, check-rh <private-file>, probe-rh <private-file>, testnet, wallet, companion --listen <explicit-loopback>\nRH checks are read-only and do not authorize activation.\nTestnet and wallet commands use synthetic assets only. Mainnet and real-asset operations are not enabled.")
+		if _, err := fmt.Fprintln(out, "Offline signed custody envelope review: rh-custody-transaction-template; check-rh-custody-transaction <private-config> <config-SHA256> <private-request> <request-SHA256> <private-fee-plan> <plan-SHA256> <private-signed-envelope> <envelope-SHA256>\nChecks exact dynamic-fee sender, chain, nonce, target, calldata and supplied fee budget. No signing, dispatch command, nonce allocation, source state or real-asset activation."); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintln(out, "Offline unsigned custody record: init-rh-custody-record, export-rh-custody-record, recover-rh-custody-record, check-rh-custody-record\nEach requires <private-config> <retained-config-SHA256> <private-request> <retained-request-SHA256> <fixed-private-call-file> <private-record-directory>. Init reserves one immutable request/path in an existing empty owner-only directory; recovery checks only its exact file. No signing, submission, global duplicate prevention or automatic repair."); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintln(out, "Offline custody call files: rh-custody-request-template <deposit|pay|cancel|pause>; check-rh-custody-request <private-config> <retained-config-SHA256> <private-request> <retained-request-SHA256>; prepare-rh-custody-call <private-config> <retained-config-SHA256> <private-request> <retained-request-SHA256> <new-private-call-file>; check-rh-custody-call <private-config> <retained-config-SHA256> <private-request> <retained-request-SHA256> <private-call-file> <retained-call-SHA256>\nConstruction only: no source/native truth, finality, signing, broadcasting or activation. Linux/macOS owner-only storage; existing files are never overwritten. Pins must be reviewed independently, not obtained from the same unreviewed file."); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintln(out, "Explicit offline token recompilation: recompile-rh-token <private-config> <private-bundle> <retained-bundle-SHA256> <absolute-node-binary> <retained-node-SHA256> <absolute-known-soljson-file> <retained-compiler-SHA256>\nExecutes only independently pinned local runtime/compiler inputs. No download, external import, signing, permission verdict, pin update or activation. Use a reviewed quiescent host; reproduction is not toolchain authentication."); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintln(out, "Offline token source material: rh-token-source-template; check-rh-token-source <private-config> <private-bundle> <retained-bundle-SHA256> <retained-compiler-SHA256>\nIntegrity only: no compiler execution, permission verdict, network reads or activation. Do not obtain review pins from the same unreviewed bundle."); err != nil {
+			return err
+		}
+		_, err := fmt.Fprintln(out, "GOD Chain core prototype\nCommands: status, version, rh-template, inspect-rh-token <private-file>, check-rh <private-file>, probe-rh <private-file>, testnet, wallet, companion --listen <explicit-loopback>\nRH checks are read-only and do not authorize activation. Token inspection requires a previously reviewed runtime pin for a successful exit.\nTestnet and wallet commands use synthetic assets only. Mainnet and real-asset operations are not enabled.")
 		return err
 	}
 	if len(args) == 2 && (args[0] == "check-rh" || args[0] == "probe-rh") {
 		return checkRH(args[0], args[1], out)
+	}
+	if len(args) == 2 && args[0] == "inspect-rh-token" {
+		return inspectRHToken(args[1], out)
+	}
+	if len(args) == 5 && args[0] == "check-rh-token-source" {
+		return checkRHTokenSources(args[1], args[2], args[3], args[4], out)
+	}
+	if len(args) > 0 && args[0] == "recompile-rh-token" {
+		return recompileRHToken(args[1:], out)
 	}
 	if len(args) != 1 {
 		return fmt.Errorf("expected one command")
@@ -57,6 +90,9 @@ func run(args []string, out io.Writer) error {
 	case "rh-template":
 		_, err := out.Write(godrh.Template())
 		return err
+	case "rh-token-source-template":
+		_, err := out.Write(godrh.TokenSourceTemplate())
+		return err
 	case "start", "init", "bridge", "mint":
 		return fmt.Errorf("not enabled: only isolated synthetic node tests are available; public activation and real-asset release gates are not verified")
 	default:
@@ -66,6 +102,9 @@ func run(args []string, out io.Writer) error {
 
 func runTestnet(args []string, out io.Writer) error {
 	if len(args) == 0 || args[0] == "help" {
+		if _, err := fmt.Fprintln(out, "Finite Linux resource observation: host-observe --data-dir <existing-private-directory> --pids <reviewed-comma-separated-process-leaders> --samples <2..60> --interval-ms <250..5000> --budget-seconds <2..180> --minimum-free-bytes <reviewed-budget> --minimum-memory-bytes <reviewed-budget> --maximum-rss-bytes <reviewed-budget> --maximum-open-files <64..65536>\nSame-user processes only, no root or automatic discovery. Fixed procfs reads and filesystem space, no keys/argv/environment, signals, writes, restart or network. Stops on first fault; approximate counters are not server capacity or cgroup headroom. Use an external supervisor for a hard syscall deadline."); err != nil {
+			return err
+		}
 		if _, err := fmt.Fprintln(out, "Explicit configuration download: fetch-bundle --source <reviewed-HTTPS-bundle-URL> --expected-bundle <independently-reviewed-digest> --output <new-private-testnet-bundle.json>\nOne bounded request, no redirects, cookies, proxies or TLS bypass. Verifies before writing; never initializes or starts a node. Downloading a checksum from the same server is not authentication."); err != nil {
 			return err
 		}
@@ -90,6 +129,9 @@ func runTestnet(args []string, out io.Writer) error {
 		if _, err := fmt.Fprintln(out, "Read-only health: health --bundle <private-file> --expected-bundle <reviewed-digest> --rpc <reviewed-url> [--max-block-age-seconds <10..600>] [--minimum-peers <0..32>]\nA passed sample is not public acceptance, quorum or authenticated state."); err != nil {
 			return err
 		}
+		if _, err := fmt.Fprintln(out, "Bounded read-only load check: read-load --bundle <private-file> --expected-bundle <reviewed-digest> --rpc <reviewed-operator-RPC> --samples <2..64> --concurrency <1..8> --interval-ms <50..2000> --maximum-latency-ms <1..8000> --budget-seconds <10..180> [--max-block-age-seconds <10..600>] [--minimum-peers <0..32>]\nFixed liveness/network reads only, at most 132 RPC attempts including controls. Stops dispatch on the first fault and drains canceled reads; no retries, signatures, submissions or restart. Short read latency is not server capacity, wallet-write acceptance or sustained uptime."); err != nil {
+			return err
+		}
 		if _, err := fmt.Fprintln(out, "Finite read-only observation: watch-health --bundle <private-file> --expected-bundle <reviewed-digest> --rpc <reviewed-url> --samples <2..10080> --interval-seconds <1..600> [--max-block-age-seconds <10..600>] [--maximum-no-progress-seconds <10..600>] [--minimum-peers <0..32>]\nRequires an explicit count and interval, bounded to seven days including request budgets. Emits redacted JSON lines and stops on the first fault. Never retries, restarts, repairs, signs, submits or sends external notifications; an observed run is not an uptime SLA or public acceptance."); err != nil {
 			return err
 		}
@@ -108,6 +150,12 @@ func runTestnet(args []string, out io.Writer) error {
 	}
 	if command == "watch-health" {
 		return runWatch(args[1:], out)
+	}
+	if command == "host-observe" {
+		return runHostObserve(args[1:], out)
+	}
+	if command == "read-load" {
+		return runReadLoad(args[1:], out)
 	}
 	if command != "create" && command != "check" && command != "start" && command != "identity" && command != "init" && command != "assemble" && command != "join" && command != "join-observer" && command != "join-candidate" && command != "prepare-registration" && command != "sign-registration" && command != "sign" && command != "sign-funding" && command != "health" && command != "inspect-bundle" {
 		return godtestnet.ErrConfig
@@ -307,6 +355,33 @@ func checkRH(command, path string, out io.Writer) error {
 	}
 	if !report.ConfigurationReady || command == "probe-rh" && !report.ReadOnlyProbePassed {
 		return fmt.Errorf("RH read-only readiness checks did not pass; activation remains disabled")
+	}
+	return nil
+}
+
+func inspectRHToken(path string, out io.Writer) error {
+	config, err := godrh.LoadPrivate(path)
+	if err != nil {
+		return err
+	}
+	report := config.TokenReport()
+	if report.ConnectionReady {
+		source, err := godrh.NewHTTPTokenSource(config)
+		if err != nil {
+			return err
+		}
+		defer source.Close()
+		ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+		defer cancel()
+		report = godrh.InspectToken(ctx, config, source).Report()
+	}
+	encoder := json.NewEncoder(out)
+	encoder.SetIndent("", "  ")
+	if err := encoder.Encode(report); err != nil {
+		return err
+	}
+	if !report.PinnedTokenProbePassed {
+		return fmt.Errorf("RH token inspection requires compatible pinned reads and a previously reviewed runtime pin; activation remains disabled")
 	}
 	return nil
 }

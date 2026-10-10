@@ -60,7 +60,7 @@ need all four returned cursor fields: `--snapshot-height`, `--snapshot-hash`,
 `--before-height`, `--before-index`. Page output intentionally contains public
 identifiers, never signing material.
 
-## Offline retained-snapshot audit
+## Offline retained-snapshot storage audit
 
 `audit` scans a trusted owner-only copy read-only, checking declared blocks,
 transactions and both reverse indexes. Unknown buckets, missing/extra/orphan

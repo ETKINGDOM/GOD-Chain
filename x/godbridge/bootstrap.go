@@ -247,6 +247,16 @@ func AuthorizationAttestationDigest(config Config, withdrawal Withdrawal) ([32]b
 	return k.AuthorizationDigest(withdrawal)
 }
 
+// CancellationRequestAttestationDigest is for the source-custody tombstone
+// request only. It is never a finalized cancellation receipt or refund proof.
+func CancellationRequestAttestationDigest(config Config, withdrawal Withdrawal) ([32]byte, error) {
+	k, err := bootstrapVerifier(config)
+	if err != nil {
+		return [32]byte{}, err
+	}
+	return k.CancellationRequestDigest(withdrawal)
+}
+
 // ResolutionAttestationDigest builds a paid/cancelled receipt proposal, not
 // proof that such a receipt exists or is final. A cancellation request is a
 // different action and cannot authorize a refund through this helper.

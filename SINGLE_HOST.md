@@ -49,8 +49,49 @@ committed blocks/balances and
 a non-signing observer. All processes run on one computer. This is not physical
 power loss, damaged-disk, Linux reboot or independent-machine acceptance.
 
+The bounded `godd testnet read-load` helper in [DEPLOYMENT.md](DEPLOYMENT.md)
+checks concurrent liveness/network reads, deadlines, consistent snapshots and
+short height progress. Its loopback fixtures and disposable local consensus
+test do not establish aggregate host capacity or wallet/write-load acceptance.
+Do not use its small latency series as a concurrent-user or throughput promise.
+
+`make test-mixed-wallet-load` adds a controlled private correctness drill for
+concurrent claim/transfer/NFT requests, delayed reads, actual committed results,
+lost-acknowledgment recovery and observer restart. It keeps existing quotas and
+uses a three-connection relay, not the public ingress. Twelve mutation requests
+start together; four reads follow after 600 milliseconds. It does not complete
+intended-host aggregate load acceptance, native-action concurrency, physical
+browser testing or pre-inclusion keyless-gateway crash durability. See
+[DEPLOYMENT.md](DEPLOYMENT.md#bounded-local-mixed-wallet-acceptance).
+
+`make test-native-concurrency` separately checks eight identical native requests,
+genuine pre-inclusion unknown recovery through a checksum-pinned offline attempt
+copy, one-time committed donation/undelegation and three no-attempt zero-G
+rejections. Two stopped validators cause an actual quorum pause; the fixture
+never advances the settlement clock or shortens the 21-day wait. A malformed
+logical record is injected only into a disposable closed copy, not physical
+pages or node storage. These are bounded native correctness/recovery checks,
+not full mixed intended-host load, positive elapsed-day G settlement, power-loss
+durability or public acceptance. See
+[DEPLOYMENT.md](DEPLOYMENT.md#bounded-local-native-concurrency-and-unknown-recovery).
+
 Before a proposed single-host release, measure and exercise the intended host
 with worthless test assets:
+
+The finite [`host-observe` helper](DEPLOYMENT.md#finite-linux-resource-observation)
+adds explicit same-user process RSS/descriptor aggregates, procfs CPU ratios,
+estimated available memory and filesystem space. Its portable fault checks and
+private Linux compilation do not complete host acceptance. Separate service
+users require separate observations; approximate RSS and a short procfs series
+do not establish all-service or cgroup headroom, sustained load or a participant
+limit. Keep the intended-host measurements below as release gates.
+
+The private [stopped-observer cold-copy drill](DEPLOYMENT.md#private-stopped-observer-cold-copy-drill)
+checks a new retained copy of a genuinely closed synthetic observer workspace,
+committed state/receipt retention, subsequent catch-up and unchanged nonsigning
+identity. It refuses validator copies and does not provide an operator restore
+command. Independent private custody, authenticated checkpoints, physical
+durability, validator fencing and safe upgrades remain unaccepted.
 
 1. Total/per-service peak CPU and RAM during catch-up and normal public traffic.
    Choose host headroom and service limits from measurements, not service count.
