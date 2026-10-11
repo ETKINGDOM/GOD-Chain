@@ -15,7 +15,25 @@ An optional immutable unsigned record reserves the original request/output
 before export and supports explicit complete-file recovery after interruption;
 it is not a financial retry journal or global duplicate fence.
 An offline signed-envelope check additionally binds exact sender, nonce, gas,
-fees and custody data to separately reviewed private inputs. A simulation-only
+fees and custody data to separately reviewed private inputs. It also refuses
+Gas limits below the pinned London calldata admission cost before any new
+attempt/nonce reservation. This is not an execution estimate or verified RH
+fork policy; exact-minimum contract failures still retain unknown without retry
+or fee release. See [intrinsic Gas admission](BRIDGE.md#pinned-london-intrinsic-gas-admission).
+A separate offline sender account proof now validates inclusion, nonce equality,
+execution-Gas budget fit and empty code hash relative to a caller-pinned header's
+state root. Original private files are rechecked before returning only redacted
+conditional facts. It does not authenticate source chain/finality/current state,
+check pending transactions or authorize dispatch. Existing book/attempt state
+is unchanged. See [account-proof limits](BRIDGE.md#conditional-sender-account-state-proof).
+A separate simulation-only one-shot fetch now reads that proof against an
+explicit historical block pin, compares all RPC metadata to the root-proven
+account and rechecks provider references and original private files. The optional
+HTTP adapter is narrowed to four read methods without default endpoints,
+latest/pending fallback, retry, persistence, signing or broadcast. Matching
+provider references still does not authenticate headers, ancestry, source fees
+or current account availability. See [account fetch limits](BRIDGE.md#simulation-only-read-only-account-proof-fetch).
+A simulation-only
 single-dispatch record retains unknown before exposing bytes to a local fixture;
 intact unknown records refuse re-dispatch after restart. It is not an
 authenticated latest head, sender-wide nonce allocator, live source broadcaster
@@ -448,6 +466,15 @@ not completed by version 0.3.9 or a passing developer regression suite.
 No mainnet date, guaranteed return, public safety certification or test-to-mainnet
 asset conversion is selected here. Development can continue on open gates without
 buying infrastructure, moving real assets or weakening the existing test rules.
+
+The first bridge/source-trust workstream now includes a bounded offline
+parent-finality verifier rooted in explicit caller-retained trust. It checks
+single-period Deneb/Electra committee signatures and finalized execution-header
+hash inclusion, but cannot authenticate its own checkpoint/fork/clock inputs or
+bind an RH batch/execution result. Transitions, actual source identity and
+token/custody permissions remain release requirements. This is local conditional
+cryptographic progress, not production finality or activation. See
+[PARENT_FINALITY.md](PARENT_FINALITY.md).
 
 ## Reuse and publication requirements
 

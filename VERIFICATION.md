@@ -11,16 +11,21 @@ real assets. God EVM + God SDK + GodCometBFT pins remain unchanged.
 
 ### Local custody candidate acceptance
 
-The explicit read-only custody-fetch candidate passed 27 source-bound private
+The custody/account and conditional parent-finality candidate passed 35 source-bound private
 local acceptance phases with no skipped checks. Independently replayed evidence
 matched source inventories before/after, phase-log digests, retained compiler,
 module/overlay inputs and compiled synthetic-custody artifacts. The related
-race run passed 341 named tests (1,852 including subtests); the compiled-custody
-race run passed 89 named tests (616 including subtests). These counts overlap
+race run passed 370 named tests (2,179 including subtests); the compiled-custody/parent
+race run passed 117 named tests (938 including subtests). These counts overlap
 earlier checks and are not additive safety scores or an independent audit.
 
-Seven finite five-second requested fuzz windows exercised bounded request,
-record, signed-envelope, attempt, nonce/review and receipt-metadata handling.
+Eleven finite fuzz checks exercised bounded requests, records, signed envelopes,
+attempts, nonce/review, receipt metadata, intrinsic Gas, account proofs/RPC and
+parent proofs. Ten requested five-second windows and one fixed 30,000-execution
+Gas budget passed; Go workers reported 30,007 executions for the fixed budget.
+An earlier timed Gas fuzz run ended with `context deadline exceeded` and remains
+a retained failure. An identical isolated timed run passed before the fresh full
+fixed-budget acceptance. No Gas assertion, rule or dependency was relaxed.
 Static analysis, native command build, diagnostic Linux amd64/arm64 and Windows
 amd64 compilation, Windows test compilation and disabled-command checks passed.
 Foreign binaries were not run. Diagnostic status retained `nodeReady: false`,
@@ -61,13 +66,48 @@ were not tested.
 The source includes earlier offline unsigned call/file/record tools, exact signed
 envelope review, pre-custody token inspection and bounded private source-material
 integrity/local recompilation. Those local checks do not authenticate source
-code provenance, compiler/host trust, issuer permissions, live account state,
-full intrinsic/RH/L1 fees or native withdrawal truth. The latest scoped custody
+code provenance, compiler/host trust, issuer permissions, authenticated live account state,
+full source-fork/RH/L1 fees or native withdrawal truth. The latest scoped custody
 run does not certify every unrelated browser, deployment or token-tool path.
 Production account ownership, signing/broadcast recovery, authentic RH
 ancestry/finality, backing and explicit activation remain separate release gates.
 Private fixtures, artifacts and evidence are not distributed; public build
 commands do not rerun these tests. See [BRIDGE.md](BRIDGE.md).
+
+### Conditional account and parent-proof verification
+
+The exact signed custody calldata now passes a London intrinsic-Gas baseline
+before new attempt/book reservations. Compiled synthetic execution distinguishes
+below-minimum rejection from exact-minimum contract out-of-Gas, paid execution
+fees and consumed nonce. This baseline is not a verified RH fork schedule,
+contract execution estimate or complete source/L1 fee budget.
+
+Offline sender account inclusion checks an ordered canonical secure-trie proof
+against an explicit caller-pinned full header. Tests cover precise large nonces,
+balance equality/insufficiency, empty-code-only admission, 65-node paths,
+malformed/reordered/unused material, detached ownership, private-input changes,
+redaction and cancellation. Compiled state proofs show that a later transaction
+can consume the nonce while an old proof still matches its old pin. The explicit
+simulation fetch and four-method HTTP adapter check pre/post provider references
+and exact proof-derived RPC metadata without persistence, pending/latest
+fallback, retries or production reads. Self-consistent fabricated headers still
+pass conditional checks; no authentic account freshness is claimed.
+
+The parent verifier checks one explicitly allowed Deneb/Electra fork and one
+committee period under supplied checkpoint/genesis/fork/clock trust. Private
+fastssz fixtures independently build roots/branches; blst signs/verifies fixtures
+instead of the production gnark verifier. Both supported fork layouts exercise
+341-position refusal and 342/343/511/512 acceptance, positional multiplicity,
+canonical subgroup checks, non-subgroup/infinity refusal, trust/domain/branch/
+slot/header tampering, complete canonical execution-hash binding, detachment,
+cancellation, concurrency and bounded fuzzing. These are synthetic cryptographic
+containers, not real parent/RH execution or independent operators.
+
+No independently authenticated checkpoint, fork/clock policy, transition,
+RH batch/execution binding or token/custody backing is supplied. Successful
+parent checks leave source-chain identity, RH finality, execution replay,
+signing, broadcast and real-asset authority false. Windows builds do not execute
+the CGO-only independent fixture tests. See [PARENT_FINALITY.md](PARENT_FINALITY.md).
 
 ### Cooperating workspace and finite read tools
 
@@ -698,7 +738,7 @@ A deterministic private negative control bypassing only the wrapper reproduced t
 
 ## Public source checks
 
-The public snapshot contains exactly 169 reviewed files: 168 fixed production/guide paths and the unchanged public whitepaper. This includes the keyless native codec/gateway, bounded durable reservations, offline maintenance and optional logging build helper; bundle-download/watch tools, archive unpacking, bounded history backfill and single-host guide; and the custody/token candidate with its exact embedded compiler and existing CLI dependencies. Browser signers, other gateways and the standalone history HTTP service remain excluded. Private tests, fixtures, operational scripts, populated configuration, genesis, addresses, keys, runtime data, evidence, dependency folders, logs and binaries are excluded. The nginx template is not an enabled service. Private application or source-review ancestry must not become a public parent.
+The public snapshot contains exactly 174 reviewed files: 173 fixed production/guide paths and the unchanged public whitepaper. This includes the keyless native codec/gateway, bounded durable reservations, offline maintenance and optional logging build helper; bundle-download/watch tools, archive unpacking, bounded history backfill and single-host guide; the custody/token candidate with its exact embedded compiler and existing CLI dependencies; and conditional account/parent verification with its English trust guide. Browser signers, other gateways and the standalone history HTTP service remain excluded. Private tests, fixtures, operational scripts, populated configuration, genesis, addresses, keys, runtime data, evidence, dependency folders, logs and binaries are excluded. The nginx template is not an enabled service. Private application or source-review ancestry must not become a public parent.
 
 `make check` verifies the pinned lifecycle compiler input, then runs vet, module checksum verification and compilation. `make build` compiles the node/tool and packager commands; `make build-history-index` separately builds the local history CLI. Neither build starts a node or a history sync. `make status` runs the diagnostic without starting consensus or bridge operations. Public commands do not reproduce the private tests, fuzz windows or custody-bytecode checks. Publication screening checks exact file scopes, both commit identities, file bytes, commit messages and every reachable public ancestor. It is not a comprehensive secret audit or independent code review.
 

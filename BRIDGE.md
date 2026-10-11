@@ -1,12 +1,22 @@
 # GOD Chain bridge prototype
 
-`x/godbridge` and `contracts/GodBridgeEscrow.sol` are ledger and custody components for one-for-one GOD transfer accounting. Explicit synthetic node genesis mounts and initializes the ledger atomically before staking. A separate positive approval-gas policy enables six authenticated participant routes in the local node prototype. Ordinary and ledger-only configurations leave them disabled. Read-only source observers, a simulation journal, event discovery and complete receipt-set checks are supplied without configured RH access. Separate synthetic-testnet/RPC and terminal-wallet tools do not activate these bridge routes. No bridge deployment, independent finality verifier, financial relayer, populated signer configuration or real assets are supplied.
+`x/godbridge` and `contracts/GodBridgeEscrow.sol` are ledger and custody components for one-for-one GOD transfer accounting. Explicit synthetic node genesis mounts and initializes the ledger atomically before staking. A separate positive approval-gas policy enables six authenticated participant routes in the local node prototype. Ordinary and ledger-only configurations leave them disabled. Read-only source observers, a simulation journal, event discovery and complete receipt-set checks are supplied without configured RH access. Separate synthetic-testnet/RPC and terminal-wallet tools do not activate these bridge routes. Conditional account/parent proof components grant no independent RH finality or asset authority. No bridge deployment, financial relayer, populated signer configuration or real assets are supplied.
 
 ## Trust and backing
 
 RH means Robinhood Chain. Independent signers must verify successful finalized source execution, not merely wait a timer. Read-only receipt observation does not implement independent source-finality verification.
 
 Five distinct approvals from seven configured signers authorize bridge actions. Signatures are canonical secp256k1 with low S. This is federated custody trust: a dishonest quorum can attest false source events. Limits constrain exposure but do not remove that trust. Seven keys do not prove independent operators.
+
+The offline `VerifyParentFinalityProof` checks committee inclusion, canonical
+prime-subgroup BLS keys and aggregate consistency, at least 342 participating
+positions, the signed attested state, finalized-header inclusion and full
+execution-header hash binding. It supports only one explicit Deneb/Electra fork
+and committee period under supplied checkpoint/genesis/fork/clock trust. It has
+no provider, store, signer, broadcaster or ledger. Independent trust-input
+authentication, transitions, current live-fork compatibility, RH batch/execution
+binding and token/custody backing remain open. Existing RH finality/real-asset
+gates stay false. See [PARENT_FINALITY.md](PARENT_FINALITY.md).
 
 Native supply is fixed at 1,000,000,000 GOD with 18 decimals. The keeper transfers existing reserve funds, never mints or burns. Initialization requires the full supply in restricted reserve and no unresolved withdrawals; synthetic node balances cannot be relabeled as backed genesis. Native GOD outside reserve must equal attested deposits minus attested finalized payments. Pending withdrawals stay segregated from spendable balances and G redemption liquidity.
 
@@ -76,14 +86,54 @@ action, not a financial retry command.
 The signed-envelope checker binds canonical dynamic-fee transaction bytes to
 separately pinned private configuration, request and fee plan. It verifies the
 recovered sender, chain, nonce, zero value, exact custody target/calldata, empty
-access list and bounded execution-Gas reservation. It neither signs nor verifies
-the live account nonce, solvency, fee market, full intrinsic Gas or RH/L1 costs.
+access list and bounded execution-Gas reservation. It also checks the pinned
+London intrinsic cost for that exact calldata; a lower limit is refused before
+new attempt/book reservations. It neither signs nor authenticates the live
+account nonce, solvency, fee market, complete source-fork Gas rules or RH/L1 costs.
+
+### Pinned London intrinsic Gas admission
+
+The exact reconstructed calldata costs 21,000 plus 4 Gas per zero byte and 16
+per nonzero byte under this local baseline. Contract creation, access lists and
+authorization lists are excluded. Checking this minimum never estimates or
+raises Gas, changes a plan or re-signs. Equal-to-minimum admission can still fail
+contract execution; Prague's calldata floor and actual RH/L1 costs are not
+established. `sourceGasScheduleVerified` stays false.
 
 A simulation-only attempt can retain unknown before handing those exact signed
 bytes to an explicitly supplied local fixture once. Intact unknown records refuse
 another handoff after reopen; there is no retry, refund or release transition.
 The offline CLI does not expose a dispatch command. A reviewed envelope and
 local checksum are not approval to send a real transaction.
+
+### Conditional sender account-state proof
+
+`VerifyCustodyAccountProof` separately verifies an ordered canonical account-trie
+proof against a caller-pinned full header, deriving the key from the exact signed
+sender rather than provider metadata. At most 65 nodes, 1 KiB per node, a 4 KiB
+header and 64 KiB combined material are admitted. The canonical account must
+have the original nonce, sufficient balance for that envelope's maximum
+execution-Gas reservation and the empty code hash. All original private file
+pins are rechecked. No values/proof, freshness, independent header authentication
+or financial authority are returned. An old valid proof can match its old pin
+after a newer transaction consumes the nonce; a fabricated consistent trie and
+header can pass. Other reservations, pending state and complete source/L1 fees
+are not established.
+
+### Simulation-only read-only account-proof fetch
+
+`FetchCustodyAccountProofForSimulation` is an explicit one-shot, cooperative
+30-second read against that retained historical block and an injected source.
+It refuses production inputs before reading and checks provider chain/block/
+checkpoint references before/after detached proof validation and original-file
+rechecks. The optional `NewHTTPCustodyAccountSource` permits exactly
+`eth_chainId`, `eth_getBlockByNumber`, `debug_getRawHeader` and `eth_getProof`.
+The exact sender, empty storage-key list and canonical hash object are fixed;
+all RPC account metadata must agree with the root-proven canonical account.
+Existing clients do not gain the new methods. Actual RH method/fork availability
+is unverified. There is no pending/latest fallback, implicit attempt/book
+integration, save, retry, poller or CLI activation command. Source authenticity,
+signing, broadcast and real-asset flags remain false.
 
 ## Shared simulation sender nonce and execution-Gas reservation
 

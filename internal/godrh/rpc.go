@@ -26,11 +26,12 @@ var ErrSource = errors.New("RH read-only source request rejected")
 // HTTPSource has only bounded reads. It has no signer, transaction submission,
 // provider default, redirect following, ambient proxy or logging facility.
 type HTTPSource struct {
-	endpoint   string
-	client     *http.Client
-	nextID     atomic.Uint64
-	rawReads   bool // enabled only by the explicit complete-material constructor
-	tokenReads bool // narrows the pre-custody adapter to four methods
+	endpoint     string
+	client       *http.Client
+	nextID       atomic.Uint64
+	rawReads     bool // enabled only by the explicit complete-material constructor
+	tokenReads   bool // narrows the pre-custody adapter to four methods
+	accountReads bool // narrows the explicit account adapter to four methods
 }
 
 func (*HTTPSource) String() string     { return "GOD Chain RH read-only source (redacted)" }
@@ -73,6 +74,13 @@ func (s *HTTPSource) rpc(ctx context.Context, method string, params any) (json.R
 		return nil, ErrSource
 	}
 	limit := maxRPCBytes
+	if s.accountReads {
+		switch method {
+		case "eth_chainId", "eth_getBlockByNumber", "eth_getProof", "debug_getRawHeader":
+		default:
+			return nil, ErrSource
+		}
+	}
 	switch method {
 	case "eth_chainId", "eth_getBlockByNumber", "eth_getCode", "eth_call":
 	case "eth_getTransactionReceipt", "eth_getLogs":
@@ -84,6 +92,11 @@ func (s *HTTPSource) rpc(ctx context.Context, method string, params any) (json.R
 			return nil, ErrSource
 		}
 		limit = maxMaterialRPCBytes
+	case "eth_getProof", "debug_getRawHeader":
+		if !s.accountReads || s.tokenReads || s.rawReads {
+			return nil, ErrSource
+		}
+		limit = maxCustodyAccountRPCBytes
 	default:
 		return nil, ErrSource
 	}

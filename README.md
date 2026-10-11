@@ -189,6 +189,21 @@ nonce/fees, authenticated finality, signing/broadcasting, native-state truth and
 real-asset backing are not established. No production relayer or dispatch/fetch
 activation command is provided. See the [fetch trust boundary](BRIDGE.md#explicit-read-only-custody-receipt-fetching).
 
+Exact envelope admission also checks the pinned London intrinsic-Gas baseline,
+not a verified RH fork schedule or execution estimate. Separate offline sender
+account proofs conditionally check nonce, execution-Gas balance and empty code
+at an explicitly pinned header. Opt-in simulation-only account reads validate
+proof-derived metadata and provider references without changing reservations or
+unknown outcomes. Fabricated or historical headers can pass these local checks;
+authenticity, current/pending state and complete source/L1 fees remain unaccepted.
+
+The [conditional parent verifier](PARENT_FINALITY.md) checks bounded committee,
+BLS signature, finalized-header and execution-hash proofs under supplied trust
+inputs. Independent anchor/fork/clock authentication, current live-fork support,
+committee transitions, RH batch/execution binding and backing remain separate
+work. No existing report is promoted to independent RH finality; signing,
+broadcast, mainnet and real assets remain disabled.
+
 `VerifyReceiptInclusion` checks bounded transaction and receipt paths against a caller-pinned binary header. `PrepareReceiptInclusion` constructs them from a complete set; `RelayJournal.PrepareTaskReceiptInclusion` also matches the original task, global position, event ABI and any unsigned cache. The selected paths alone cannot certify counts in preceding receipts or a transferable global log index. These APIs do not authenticate source finality or authorize transfers.
 
 `TaskReceiptProofStore` separately retains one immutable private slot containing complete material and its witness. Reopen and `Read` regenerate and compare the proof; uncertain saves stop the instance until verified reopen. Local retention is neither authenticated evidence, encryption nor anti-rollback protection. Windows private-disk use stays disabled. Raw operational bytes must never be published or logged.

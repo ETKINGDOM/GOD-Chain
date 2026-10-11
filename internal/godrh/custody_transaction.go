@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"unicode/utf8"
 
+	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/types"
 )
 
@@ -52,8 +53,10 @@ type CustodyTransactionReport struct {
 	SenderSignatureChecked    bool              `json:"senderSignatureChecked"`
 	ExactNonceAndFeesMatched  bool              `json:"exactNonceAndFeesMatched"`
 	WithinSuppliedFeeBudget   bool              `json:"withinSuppliedFeeBudget"`
+	LondonIntrinsicGasMatched bool              `json:"londonIntrinsicGasMatched"`
 	SimulationConfiguration   bool              `json:"simulationConfiguration"`
 	NonceAvailabilityVerified bool              `json:"nonceAvailabilityVerified"`
+	SourceGasScheduleVerified bool              `json:"sourceGasScheduleVerified"`
 	FeeMarketVerified         bool              `json:"feeMarketVerified"`
 	SourceFinalityVerified    bool              `json:"sourceFinalityVerified"`
 	SigningEnabled            bool              `json:"signingEnabled"`
@@ -118,6 +121,21 @@ func parseCustodyTransactionPlan(raw []byte) (custodyTransactionPlan, error) {
 	return p, nil
 }
 
+// Minimum admission cost for the already restricted London envelope model:
+// non-creation, empty access list, no authorizations, EIP-2028 calldata pricing.
+// This is NOT a contract execution estimate or an RH fork/fee certification.
+// In particular it does not apply Prague's separately activated EIP-7623 floor.
+func custodyLondonIntrinsicGas(data []byte) (uint64, error) {
+	if len(data) > MaxCustodyTransactionBytes {
+		return 0, ErrCustodyTransaction
+	}
+	gas, err := core.IntrinsicGas(data, nil, nil, false, true, true, false)
+	if err != nil {
+		return 0, ErrCustodyTransaction
+	}
+	return gas, nil
+}
+
 // Exact dynamic-fee envelope review with the pinned execution library. No
 // signing, nonce allocation, estimate, fee selection, approval or network call.
 // The supplied plan is a reviewed policy claim, NOT authenticated source state.
@@ -139,6 +157,10 @@ func validateCustodyTransaction(call CustodyCall, p custodyTransactionPlan, raw 
 	if err != nil || !bytes.Equal(raw, canonical) {
 		return checkedCustodyTransaction{}, ErrCustodyTransaction
 	}
+	intrinsic, err := custodyLondonIntrinsicGas(tx.Data())
+	if err != nil || tx.Gas() < intrinsic {
+		return checkedCustodyTransaction{}, ErrCustodyTransaction
+	}
 	sender, err := types.Sender(types.NewLondonSigner(chain), &tx)
 	if err != nil || [20]byte(sender) != p.sender {
 		return checkedCustodyTransaction{}, ErrCustodyTransaction
@@ -147,7 +169,7 @@ func validateCustodyTransaction(call CustodyCall, p custodyTransactionPlan, raw 
 		sender: p.sender, nonce: p.nonce, chain: new(big.Int).Set(chain),
 		maximumGasCost: new(big.Int).Mul(new(big.Int).SetUint64(p.gas), p.fee),
 		report: CustodyTransactionReport{Call: call.Report(), SignedEnvelopeMatched: true, SenderSignatureChecked: true,
-			ExactNonceAndFeesMatched: true, WithinSuppliedFeeBudget: true}}, nil
+			ExactNonceAndFeesMatched: true, WithinSuppliedFeeBudget: true, LondonIntrinsicGasMatched: true}}, nil
 }
 
 func loadCustodyTransaction(inputs CustodyTransactionInputs) (checked checkedCustodyTransaction, err error) {
