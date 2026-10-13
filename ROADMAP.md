@@ -23,6 +23,17 @@ expansion work and must not be claimed as deployed infrastructure.
 
 ### Launch materials compose into a private candidate
 
+The stopped service preflight now checks the original candidate, signing
+witness and exact reviewed Linux executable under both existing leases.
+Private supervisor preparation stages a no-restart, loopback-only unit with
+explicit CPU/memory/task/file budgets and startup/stop deadlines. It installs
+nothing, creates no account/key and refuses active/rolled-back homes or unsafe
+paths. An isolated intended-host hardened four-process fixture now passes
+parser and retained-state checks without changing public services. Actual
+per-node production installation and sustained capacity/recovery acceptance
+remain required; these checks do not turn synthetic funding into backing.
+See [supervisor preparation](NODE_RUNTIME.md#private-candidate-supervisor-preparation).
+
 The economic candidate and bridge genesis no longer have to be reviewed as
 unrelated materials. One private assembly matches validator count, per-block G,
 minimum fee, declared cadence and actual stake/Gas allocations, derives the

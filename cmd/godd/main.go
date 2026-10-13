@@ -22,6 +22,9 @@ import (
 )
 
 func run(args []string, out io.Writer) error {
+	if len(args) > 0 && (args[0] == "check-launch-service" || args[0] == "prepare-launch-supervisor") {
+		return runLaunchSupervisor(args[0], args[1:], out)
+	}
 	if len(args) > 0 && (args[0] == "init-launch-rehearsal" || args[0] == "run-launch-rehearsal" || args[0] == "serve-launch-candidate") {
 		return runLaunchRehearsal(args[0], args[1:], out)
 	}
@@ -67,6 +70,9 @@ func run(args []string, out io.Writer) error {
 		return runTestnet(args[1:], out)
 	}
 	if len(args) == 0 || (len(args) == 1 && args[0] == "help") {
+		if _, err := fmt.Fprintln(out, "Private stopped candidate supervisor: check-launch-service --home <same-home> --signer-guard <retained-separate-witness> --input <original-assembly> --input-pin <reviewed-SHA256> --candidate <original-candidate> --candidate-pin <reviewed-SHA256> --binary <reviewed-static-linux-godd> --binary-pin <reviewed-SHA256> --arch <amd64|arm64>\nprepare-launch-supervisor adds --uid <current-non-root-UID> --gid <current-GID> --report-seconds <1..300> --memory-bytes <explicit-budget> --cpu-percent <explicit-budget> --tasks <explicit-budget> --open-files <explicit-budget> --start-seconds <15..300> --stop-seconds <15..300> --output <new-owner-only-unit-file>\nHolds original stopped home/key-wide leases; rechecks original candidate and exact binary. Stages private no-restart loopback-only resource-limited systemd unit, never installs or starts it. No shell, account creation, key copy/reset, public RPC, production or real-asset activation. Budget choices and supervisor compatibility require intended-host acceptance."); err != nil {
+			return err
+		}
 		if _, err := fmt.Fprintln(out, "Private candidate service: serve-launch-candidate --home <same-retained-private-home> --signer-guard <same-retained-separate-directory> --input <original-signed-assembly> --input-pin <reviewed-SHA256> --candidate <staged-private-candidate> --candidate-pin <reviewed-SHA256> --report-seconds <1..300>\nRuns the exact initialized synthetic candidate until SIGINT/SIGTERM. Periodically rechecks immutable pins/profile and reports actual progress or a non-progress heartbeat. Joins consensus before store/lease release. No time-limit override, public peering, RPC, source client, production mode, real assets, reset, key copy or automatic restart. Resource/shutdown limits require a separately reviewed external supervisor."); err != nil {
 			return err
 		}

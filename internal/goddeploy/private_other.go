@@ -4,5 +4,7 @@ package goddeploy
 
 import "os"
 
+func supervisorBinaryRegular(os.FileInfo) bool { return false }
+
 func privateInfo(os.FileInfo) bool                          { return false }
 func openPrivateRegular(*os.Root, string) (*os.File, error) { return nil, ErrPackage }

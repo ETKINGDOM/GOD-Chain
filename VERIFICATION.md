@@ -9,6 +9,38 @@ real assets. God EVM + God SDK + GodCometBFT pins remain unchanged.
 
 ## Persistent guarded private candidate service
 
+### Stopped service preflight and private supervisor staging
+
+The exact stopped candidate, original key/state/witness and separately pinned
+static Linux node binary are checked under both retained leases, with no DB,
+signature, listener or repair. Private staging creates one new owner-only
+no-restart loopback-only unit with explicit CPU/memory/task/file limits and
+startup/stop timeouts. Unsafe expansion, writable/hard-linked executable,
+nested/aliased writable inputs and hidden temporary/kernel paths are refused.
+Staging applies no limits, installs no service or account and activates no assets.
+
+Scoped final race checks passed (4.271/2.486/4.096 seconds), compiled four-process
+preflight/staging and retained restart checks passed (71.380 seconds), related
+startup/signing/upgrade/observer regression passed (53.156 seconds), and full
+deployment/CLI checks passed (90.939/4.995 seconds). A bounded five-second path
+fuzz run passed 230,003 executions. Vet and Linux compilation passed. These are
+local synthetic checks, not actual supervisor capacity, sustained reliability,
+whole-host restore, authenticated source funding or financial activation.
+See [supervisor preparation](NODE_RUNTIME.md#private-candidate-supervisor-preparation).
+
+An authorized isolated intended-host four-process fixture also passed the
+installed unit parser, exact stopped/active/refused preflight, actual constrained
+execution and retained restart/ledger checks. The temporary boundary applied
+3-GiB memory, 200-percent CPU, 512-task and 1,024-file limits, no new privileges,
+no executable-memory loader, inaccessible original data and loopback-only IP.
+The earlier scalar-path quoting failure was retained and corrected, without
+relaxing protection. The group recorded 271,925,248-byte peak memory and
+40,499,659,000-nanosecond CPU time; these are narrow observations, not whole-pilot
+or sustained capacity. All fifteen public-service PIDs remained unchanged and
+the temporary service was stopped. Generated individual per-node units were
+not installed. Production installation, RH backing/finality, financial relay
+and whole-host signing-safe recovery remain open.
+
 The independently pinned, already initialized private synthetic candidate runs
 continuously under caller cancellation. The CLI maps SIGINT/SIGTERM to joined
 consensus shutdown before stores, witness and home lease close. Original keys,

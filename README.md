@@ -36,6 +36,16 @@ See the [Implementation Status and Roadmap](ROADMAP.md) for the four integrated 
 
 ## Guarded candidate and bridge recovery
 
+Stopped service preflight now holds original home/key-wide leases while
+checking the exact candidate, retained witness and reviewed Linux executable.
+Private supervisor preparation stages one new no-restart, loopback-only systemd
+unit with explicit CPU/memory/task/file limits and startup/stop deadlines.
+It installs/starts nothing, creates no account/key and refuses active or
+rolled-back homes. An isolated hardened four-process Linux fixture now passes
+with the original public services unchanged; individual production installation,
+sustained capacity and signing-safe whole-host recovery remain unverified. See
+[supervisor preparation](NODE_RUNTIME.md#private-candidate-supervisor-preparation).
+
 Private signed launch materials now compose into an exact synthetic candidate.
 The bounded rehearsal and persistent `serve-launch-candidate` command use the
 same retained home, original keys, independently reviewed input pins and separate

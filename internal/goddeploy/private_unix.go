@@ -18,3 +18,10 @@ func privateInfo(info os.FileInfo) bool {
 func openPrivateRegular(root *os.Root, name string) (*os.File, error) {
 	return root.OpenFile(name, os.O_RDONLY|unix.O_NOFOLLOW|unix.O_NONBLOCK, 0)
 }
+
+// Root-owned read/execute binaries are allowed, but a hard-link alias could
+// otherwise bypass the unit's read-only path through a writable home.
+func supervisorBinaryRegular(info os.FileInfo) bool {
+	meta, ok := info.Sys().(*syscall.Stat_t)
+	return ok && meta.Nlink == 1
+}

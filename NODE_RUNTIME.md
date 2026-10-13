@@ -102,6 +102,62 @@ computer and one fixture custodian; they are not independent operators. Linux
 compilation does not install or run this candidate on the VPS. Public testnet
 startup remains bridge-disabled and cannot consume this private profile.
 
+## Private candidate supervisor preparation
+
+The stopped `check-launch-service` command holds the original home lease and
+key-wide signing lease while rechecking the exact independently pinned assembly,
+candidate/profile, original key/state/witness and a separately pinned static
+Linux node executable. It opens no application store or listener, signs nothing
+and creates no missing lease, data or witness. Active homes, wrong pins,
+unsupported binaries and rolled-back signing progress are refused. Original
+inputs and the binary are checked again before success; the report is redacted
+and does not grant later startup permission.
+
+```text
+godd check-launch-service --home <same-private-home> --signer-guard <same-separate-witness> --input <original-signed-assembly> --input-pin <reviewed-SHA256> --candidate <original-candidate> --candidate-pin <reviewed-SHA256> --binary <reviewed-static-linux-godd> --binary-pin <reviewed-SHA256> --arch <amd64|arm64>
+godd prepare-launch-supervisor <same-nine-flag-bindings> --uid <current-non-root-UID> --gid <current-GID> --report-seconds <1..300> --memory-bytes <explicit-budget> --cpu-percent <explicit-budget> --tasks <explicit-budget> --open-files <explicit-budget> --start-seconds <15..300> --stop-seconds <15..300> --output <new-private-unit-file>
+```
+
+Preparation writes one new mode-0600 **private** systemd unit in an existing
+owner-only directory, checks readback and keeps both original leases during
+staging. An existing output is never replaced; interrupted/failed material is
+retained for manual review, not reported as usable. The explicit UID/GID must
+match the current non-root owner; no account or administrative authority is
+created. Installation using the existing root management connection remains a
+separately authorized operation. A generated checksum is byte continuity, not
+independent release authentication.
+
+The unit runs stopped preflight before the same guarded persistent service.
+It has no shell, environment injection, Install section or automatic restart.
+CPU, memory, task/file limits and startup/stop timeouts are explicit. SIGTERM
+requests joined shutdown; expiry may terminate the process, requiring original
+signing-progress checks and manual review, never a reset or automatic retry.
+Only the exact home and separate witness are writable; binary, original assembly
+and candidate are read-only. No capabilities, new privileges, executable-memory
+loader or non-loopback IP access is requested. Four units still share one
+founder-operated host, not independent operators or failure domains.
+
+Argv/list paths are quoted, while the scalar working-directory directive is
+literal; interior spaces remain supported and boundary whitespace is rejected.
+Paths reject systemd expansion, directive injection
+and ambiguous nested/aliased writable inputs. Operational paths in hidden
+temporary/kernel trees are refused; use retained private storage, not `/tmp`.
+Linux fixtures preparing units must select a disposable private `TMPDIR` outside
+those hidden trees. Build metadata and checksum checks do not prove a binary's
+command compatibility, dependency-overlay provenance or trust of the checksum
+source. An isolated intended-host four-process fixture has passed the generated
+unit parser, actual constrained execution and retained restart; the initially
+rejected scalar-path quoting was corrected without relaxing isolation. This
+does not install the four generated per-node units or accept production capacity,
+sustained load, alerts or signing-safe whole-host recovery. Preparation
+applies no limits and installs/starts no service; all production/real-asset
+flags remain false. No existing public service or key is changed.
+
+Private verification targets are `test-launch-supervisor`,
+`test-launch-supervisor-cli`, `check-launch-supervisor` and
+`compile-launch-supervisor-linux`; private fixtures are not part of public
+source snapshots. Linux compilation does not run or install a service.
+
 ## Persistent private candidate service
 
 `serve-launch-candidate` adds a cancellable continuous service path for the same
