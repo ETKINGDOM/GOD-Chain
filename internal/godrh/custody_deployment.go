@@ -53,6 +53,9 @@ type CustodyDeploymentReport struct {
 	CreationArtifactReady            bool `json:"creationArtifactReady"`
 	ConstructorMatched               bool `json:"constructorMatched"`
 	SevenOrderedMembersChecked       bool `json:"sevenOrderedMembersChecked"`
+	SingleCustodianDeclared          bool `json:"singleCustodianDeclared"`
+	DeclaredCustodians               int  `json:"declaredCustodians"`
+	RequiredMemberSignatures         int  `json:"requiredMemberSignatures"`
 	CreateAddressCalculated          bool `json:"createAddressCalculated"`
 	UnsignedTransactionPrepared      bool `json:"unsignedTransactionPrepared"`
 	CancunIntrinsicGasChecked        bool `json:"cancunIntrinsicGasChecked"`
@@ -136,10 +139,11 @@ type custodyDeploymentRequest struct {
 	source, native string
 	members        [7]common.Address
 	plan           custodyTransactionPlan
+	founderControl bool
 }
 
 func CustodyDeploymentTemplate() []byte {
-	return []byte("{\n  \"version\": 1,\n  \"tokenContract\": \"\",\n  \"sourceChainId\": \"\",\n  \"sourceChain\": \"\",\n  \"nativeChain\": \"\",\n  \"members\": [\"\", \"\", \"\", \"\", \"\", \"\", \"\"],\n  \"transactionPlan\": {\n    \"version\": 1,\n    \"sender\": \"\",\n    \"nonce\": \"\",\n    \"gasLimit\": \"\",\n    \"maxFeePerGas\": \"\",\n    \"maxPriorityFeePerGas\": \"\",\n    \"maximumFeeCost\": \"\"\n  }\n}\n")
+	return []byte("{\n  \"version\": 2,\n  \"controlModel\": \"founder-controlled\",\n  \"tokenContract\": \"\",\n  \"sourceChainId\": \"\",\n  \"sourceChain\": \"\",\n  \"nativeChain\": \"\",\n  \"members\": [\"\", \"\", \"\", \"\", \"\", \"\", \"\"],\n  \"transactionPlan\": {\n    \"version\": 1,\n    \"sender\": \"\",\n    \"nonce\": \"\",\n    \"gasLimit\": \"\",\n    \"maxFeePerGas\": \"\",\n    \"maxPriorityFeePerGas\": \"\",\n    \"maximumFeeCost\": \"\"\n  }\n}\n")
 }
 
 func custodyDeploymentChainName(s string) bool {
@@ -159,8 +163,26 @@ func parseCustodyDeploymentRequest(raw []byte) (custodyDeploymentRequest, error)
 	if len(raw) == 0 || len(raw) > MaxCustodyRequestBytes || !utf8.Valid(raw) {
 		return r, ErrCustodyDeployment
 	}
-	f, err := custodyObject(raw, []string{"version", "tokenContract", "sourceChainId", "sourceChain", "nativeChain", "members", "transactionPlan"}, nil)
-	if err != nil || !bytes.Equal(bytes.TrimSpace(f["version"]), []byte("1")) {
+	f, err := custodyObject(raw, []string{"version", "tokenContract", "sourceChainId", "sourceChain", "nativeChain", "members", "transactionPlan"}, []string{"controlModel"})
+	if err != nil {
+		return r, ErrCustodyDeployment
+	}
+	// Retained v1 inputs remain reviewable without retroactively asserting a
+	// custody decision. New v2 requests explicitly bind the selected one-owner
+	// model through their original request pin. Neither version proves control
+	// of any key or authorizes production signing/activation.
+	switch string(bytes.TrimSpace(f["version"])) {
+	case "1":
+		if f["controlModel"] != nil {
+			return r, ErrCustodyDeployment
+		}
+	case "2":
+		model, err := custodyText(f["controlModel"])
+		if err != nil || model != "founder-controlled" {
+			return r, ErrCustodyDeployment
+		}
+		r.founderControl = true
+	default:
 		return r, ErrCustodyDeployment
 	}
 	a, err := custodyHex(f["tokenContract"], 20)
@@ -290,6 +312,9 @@ func PrepareCustodyDeployment(artifact CompiledCustodyDeployment, request []byte
 	}
 	report := CustodyDeploymentReport{ReviewedSourceMatched: true, CompilerWorkerCompleted: true, CreationArtifactReady: true, ConstructorMatched: true,
 		SevenOrderedMembersChecked: true, CreateAddressCalculated: true, UnsignedTransactionPrepared: true, CancunIntrinsicGasChecked: true,
-		WithinSuppliedExecutionFeeBudget: true, InitCodeBytes: len(init)}
+		SingleCustodianDeclared: r.founderControl, RequiredMemberSignatures: 5, WithinSuppliedExecutionFeeBudget: true, InitCodeBytes: len(init)}
+	if r.founderControl {
+		report.DeclaredCustodians = 1
+	}
 	return CustodyDeployment{raw: raw, runtime: runtime, creator: creator, predicted: predicted, report: report}, nil
 }

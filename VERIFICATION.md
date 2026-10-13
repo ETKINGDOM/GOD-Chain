@@ -9,6 +9,19 @@ real assets. God EVM + God SDK + GodCometBFT pins remain unchanged.
 
 ## Signed custody creation and conditional recovery composition
 
+The selected initial custody model is one founder controlling all seven member
+keys, not seven independent custodians; the contract's five-distinct-signature
+threshold is unchanged. New version-2 requests explicitly bind that declaration
+to the original request pin. Retained version-1 requests remain undeclared.
+Missing, duplicated, case-aliased, unknown and version-mismatched declarations
+are refused. Equal operational inputs produce identical constructor/transaction
+bytes across both versions. Declaration never proves member control or enables
+key generation, spending, signing, broadcasting or activation.
+
+Scoped actual compiler/creation/recovery/CLI race checks passed
+(85.285/24.751 seconds), as did all twenty-one publication-scope checks. Private
+fixtures and generated operational materials remain excluded.
+
 The exact compiler AST names the two immutable declarations; reviewed
 constructor semantics produce runtime matching actual pinned God EVM creation.
 Strict signed creation, complete transaction/receipt roots, execution Gas and

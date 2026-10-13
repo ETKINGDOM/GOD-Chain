@@ -23,7 +23,32 @@ OS security sandbox or proof of toolchain provenance.
 
 ## Explicit private request
 
-`rh-custody-deployment-template` prints blank slots only. The request requires:
+`rh-custody-deployment-template` leaves every operational slot blank and selects
+only the declared initial control model.
+
+The selected initial control model is **one founder controlling all seven
+member keys**, with the contract's existing five-distinct-signature threshold.
+This is single-party custody, not seven independent custodians. Availability
+and signing authority remain concentrated even when signatures are distinct.
+Independent custodians are a possible later expansion, not a prerequisite for
+the selected initial model. The immutable prototype has no signer rotation;
+moving to a new member set requires separately reviewed continuity/migration.
+
+New requests use version 2 and the exact `controlModel` value
+`founder-controlled`. Reports expose `singleCustodianDeclared`, one declared
+custodian and five required member signatures. These are declared policy, not
+evidence that the operator possesses or safely stores the seven keys;
+`memberControlVerified` remains false. The original request pin binds the
+declaration during packet review, signed-envelope review and journal recovery.
+It grants no key-generation, ETH-spending or activation authority.
+
+Retained version-1 requests remain reviewable with no custody declaration.
+Adding a control field to version 1, omitting it from version 2 or claiming
+independent custody is refused. Existing requests, packets and journal history
+are never rewritten or automatically promoted. The declaration changes no
+constructor ABI, member order, signature threshold or transaction wire bytes.
+
+The populated operational request must supply:
 
 - Token contract, source chain ID, source/native domain names and exactly seven
   nonzero, unique signing members in ascending raw-address order. No member or

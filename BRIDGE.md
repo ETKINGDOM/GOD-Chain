@@ -4,6 +4,15 @@
 
 ## Offline custody creation preparation
 
+Initial custody uses one founder controlling all seven member keys, with five
+distinct member signatures still required by the contract. This is single-party
+custody, not seven independent operators; independent custodians are later
+expansion work. New version-2 preparation requests bind the explicit
+`founder-controlled` declaration. Reports distinguish declared custody from
+verified key possession. Retained version-1 inputs remain unchanged and
+undeclared. Neither model declaration authorizes key generation, ETH spending
+or bridge activation. The immutable prototype has no signer rotation.
+
 An offline workflow compiles the exact reviewed standalone custody source and
 pinned local compiler, checks seven ordered members and constructs a private
 unsigned creation transaction bound to explicit nonce/Gas/execution-fee limits.
@@ -444,4 +453,4 @@ Private checks exercised compiled custody bytecode and native stores with synthe
 
 Private signed-message checks cover ownership, envelope tampering, quorum verification, fees, gas, rollback and disk replay. Seven initial reconciliation tests cover complete funding, real staking custody, plan binding, canonical ordering, atomic rejection and record integrity. None fetches an actual RH checkpoint or proves source backing.
 
-Successful delayed network bridge payments, production-backed validators/genesis, independent source-finality verification, independent signer operations and recoverable financial relaying remain required. The checksum-bound shutdown repair and admission guard passed local regression checks, not operator-grade reliability or throughput certification. Custody continuity and governance need additional design. Deployment, bridge funding and real-asset activation require separate explicit authorization.
+Successful delayed network bridge payments, production-backed validators/genesis, source-finality verification, safe founder-controlled signing and recoverable financial relaying remain required. Independent custodians are later expansion work, not an initial-release condition. The checksum-bound shutdown repair and admission guard passed local regression checks, not operator-grade reliability or throughput certification. Custody continuity and governance need additional design. Deployment, bridge funding and real-asset activation require separate explicit authorization.

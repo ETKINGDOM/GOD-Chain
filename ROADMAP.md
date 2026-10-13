@@ -14,6 +14,15 @@ indefinite list of additional prototype milestones. Initial operation uses the
 selected founder-operated, single-host topology; independent hosts are later
 expansion work and must not be claimed as deployed infrastructure.
 
+Initial bridge custody is also founder-controlled: the founder controls all
+seven member keys, while the existing contract still requires five distinct
+member signatures. This is one custodian, not seven independent operators.
+Finding independent custodians is not an initial-release condition. Version-2
+custody preparation explicitly records this declaration; it does not establish
+key possession, authorize key generation/ETH spending or enable real assets.
+Signer rotation is absent from the immutable prototype and must not be
+promised as an automatic later change.
+
 | Deliverable | Current boundary | Completion evidence required |
 | --- | --- | --- |
 | Production node assembly | Economic/runtime/bootstrap/owner-consent inputs compose into one privately staged candidate. Bounded rehearsal and a cancellable persistent service share the guarded runtime; four validator processes agree, stop with SIGTERM and restart using the same stores/witnesses. Continuous service rechecks original pins/profile and refuses changed input or signing rollback. Non-prototype configuration and ordinary `init`/`start` remain refused. | Reviewed economic/upgrade/control policy and production installation/launch entry point; authenticated source-funded genesis, fee/stake funding, immutable validator/bridge policy and intended-host replay/restart acceptance. No conversion of synthetic balances into backed balances. |

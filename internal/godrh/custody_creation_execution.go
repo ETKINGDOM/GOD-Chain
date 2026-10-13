@@ -18,6 +18,8 @@ var ErrCustodyCreationExecution = errors.New("RH conditional custody creation re
 
 type CustodyCreationExecutionReport struct {
 	PrivateInputsChecked          bool `json:"privateInputsChecked"`
+	SingleCustodianDeclared       bool `json:"singleCustodianDeclared"`
+	MemberControlVerified         bool `json:"memberControlVerified"`
 	SignedEnvelopeMatched         bool `json:"signedEnvelopeMatched"`
 	SenderSignatureChecked        bool `json:"senderSignatureChecked"`
 	CompleteReceiptSetMatched     bool `json:"completeReceiptSetMatched"`
@@ -66,7 +68,8 @@ func checkCustodyDeploymentTransaction(d CustodyDeployment, raw []byte) (checked
 		return bad()
 	}
 	d.raw, d.runtime = bytes.Clone(d.raw), bytes.Clone(d.runtime)
-	return checkedCustodyDeployment{deployment: d, raw: bytes.Clone(raw), hash: [32]byte(tx.Hash()), report: CustodyCreationExecutionReport{SignedEnvelopeMatched: true, SenderSignatureChecked: true}}, nil
+	return checkedCustodyDeployment{deployment: d, raw: bytes.Clone(raw), hash: [32]byte(tx.Hash()), report: CustodyCreationExecutionReport{
+		SignedEnvelopeMatched: true, SenderSignatureChecked: true, SingleCustodianDeclared: d.report.SingleCustodianDeclared}}, nil
 }
 
 func CheckCustodyDeploymentTransaction(d CustodyDeployment, raw []byte) (CustodyCreationExecutionReport, error) {
