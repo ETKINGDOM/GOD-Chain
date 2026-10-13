@@ -10,6 +10,9 @@ import (
 	"math/big"
 	"unicode/utf8"
 
+	sdkmath "cosmossdk.io/math"
+	"github.com/ETKINGDOM/GOD-Chain/x/godbridge"
+
 	"github.com/ethereum/go-ethereum/accounts/abi"
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
@@ -28,8 +31,9 @@ var ErrCustodyDeployment = errors.New("RH offline custody deployment preparation
 // Private opaque output. Only execution of the pinned compiler against the
 // exact reviewed source/settings can produce an admitted creation artifact.
 type CompiledCustodyDeployment struct {
-	creation []byte
-	valid    bool
+	creation, template     []byte
+	tokenSites, assetSites []tokenImmutableSite
+	valid                  bool
 }
 
 func (CompiledCustodyDeployment) String() string {
@@ -83,13 +87,26 @@ func CompileCustodyDeployment(ctx context.Context, source []byte, sourcePin [32]
 	input, err := json.Marshal(map[string]any{"language": "Solidity", "sources": map[string]any{label: map[string]string{"content": string(source)}},
 		"settings": map[string]any{"optimizer": map[string]any{"enabled": true, "runs": 200}, "viaIR": false, "evmVersion": "cancun",
 			"metadata": map[string]string{"bytecodeHash": "none"}, "outputSelection": map[string]any{label: map[string]any{"GodBridgeEscrow": []string{
-				"evm.bytecode.object", "evm.bytecode.linkReferences", "evm.deployedBytecode.object", "evm.deployedBytecode.linkReferences", "evm.deployedBytecode.immutableReferences"}}}}})
+				"evm.bytecode.object", "evm.bytecode.linkReferences", "evm.deployedBytecode.object", "evm.deployedBytecode.linkReferences", "evm.deployedBytecode.immutableReferences"}, "": []string{"ast"}}}}})
 	if err != nil {
 		return CompiledCustodyDeployment{}, r, ErrCustodyDeployment
 	}
-	base, raw := runPinnedCompiler(ctx, compiler, input, label, "GodBridgeEscrow", true, TokenCompilationReport{})
+	base, raw := runPinnedCompilerMode(ctx, compiler, input, label, "GodBridgeEscrow", true, true, TokenCompilationReport{})
 	r.CompilerWorkerCompleted = base.CompilerWorkerCompleted
-	out, err := parseTokenCreationCompileOutput(raw)
+	fields, err := custodyObject(raw, []string{"version", "hasErrors", "runtime", "linkReferences", "immutableReferences", "creation", "creationLinkReferences", "immutableNames"}, nil)
+	if err != nil || len(raw) > maxTokenCompilerOutputBytes {
+		return CompiledCustodyDeployment{}, r, ErrCustodyDeployment
+	}
+	var names map[string]string
+	if json.Unmarshal(fields["immutableNames"], &names) != nil || len(names) != 2 || names["token"] == "" || names["assetID"] == "" || names["token"] == names["assetID"] {
+		return CompiledCustodyDeployment{}, r, ErrCustodyDeployment
+	}
+	delete(fields, "immutableNames")
+	ordinary, err := json.Marshal(fields)
+	if err != nil {
+		return CompiledCustodyDeployment{}, r, ErrCustodyDeployment
+	}
+	out, err := parseTokenCreationCompileOutput(ordinary)
 	if err != nil || ctx.Err() != nil || out.HasErrors || out.Version != tokenCompilerReleases[custodyDeploymentCompiler] || len(out.LinkReferences) != 0 || len(out.CreationLinkReferences) != 0 {
 		return CompiledCustodyDeployment{}, r, ErrCustodyDeployment
 	}
@@ -102,11 +119,15 @@ func CompileCustodyDeployment(ctx context.Context, source []byte, sourcePin [32]
 		return CompiledCustodyDeployment{}, r, ErrCustodyDeployment
 	}
 	groups, err := tokenImmutableGroups(template, out.ImmutableReferences)
-	if err != nil || len(groups) == 0 {
+	if err != nil || len(groups) != 2 {
+		return CompiledCustodyDeployment{}, r, ErrCustodyDeployment
+	}
+	var tokenSites, assetSites []tokenImmutableSite
+	if json.Unmarshal(out.ImmutableReferences[names["token"]], &tokenSites) != nil || json.Unmarshal(out.ImmutableReferences[names["assetID"]], &assetSites) != nil || len(tokenSites) == 0 || len(assetSites) == 0 {
 		return CompiledCustodyDeployment{}, r, ErrCustodyDeployment
 	}
 	r.CreationArtifactReady = true
-	return CompiledCustodyDeployment{creation: bytes.Clone(creation), valid: true}, r, nil
+	return CompiledCustodyDeployment{creation: bytes.Clone(creation), template: bytes.Clone(template), tokenSites: tokenSites, assetSites: assetSites, valid: true}, r, nil
 }
 
 type custodyDeploymentRequest struct {
@@ -185,7 +206,7 @@ func parseCustodyDeploymentRequest(raw []byte) (custodyDeploymentRequest, error)
 }
 
 type CustodyDeployment struct {
-	raw                []byte
+	raw, runtime       []byte
 	creator, predicted common.Address
 	report             CustodyDeploymentReport
 }
@@ -236,6 +257,31 @@ func PrepareCustodyDeployment(artifact CompiledCustodyDeployment, request []byte
 			return CustodyDeployment{}, ErrCustodyDeployment
 		}
 	}
+	// Exact known immutable values, derived from reviewed constructor semantics
+	// and compiler AST IDs. No supplied replacement map or arbitrary wildcard.
+	runtime := bytes.Clone(artifact.template)
+	if len(runtime) > 0 {
+		id, err := godbridge.AssetBinding(sdkmath.NewIntFromBigInt(r.chain), [20]byte(r.asset), [20]byte(predicted), 18)
+		if err != nil {
+			return CustodyDeployment{}, ErrCustodyDeployment
+		}
+		var tokenWord [32]byte
+		copy(tokenWord[12:], r.asset[:])
+		for _, binding := range []struct {
+			sites []tokenImmutableSite
+			word  [32]byte
+		}{{artifact.tokenSites, tokenWord}, {artifact.assetSites, id}} {
+			if len(binding.sites) == 0 {
+				return CustodyDeployment{}, ErrCustodyDeployment
+			}
+			for _, site := range binding.sites {
+				if site.Length != 32 || uint64(site.Start)+32 > uint64(len(runtime)) {
+					return CustodyDeployment{}, ErrCustodyDeployment
+				}
+				copy(runtime[site.Start:site.Start+32], binding.word[:])
+			}
+		}
+	}
 	tx := types.NewTx(&types.DynamicFeeTx{ChainID: new(big.Int).Set(r.chain), Nonce: r.plan.nonce, Gas: r.plan.gas,
 		GasFeeCap: new(big.Int).Set(r.plan.fee), GasTipCap: new(big.Int).Set(r.plan.tip), Value: new(big.Int), Data: init})
 	raw, err := tx.MarshalBinary()
@@ -245,5 +291,5 @@ func PrepareCustodyDeployment(artifact CompiledCustodyDeployment, request []byte
 	report := CustodyDeploymentReport{ReviewedSourceMatched: true, CompilerWorkerCompleted: true, CreationArtifactReady: true, ConstructorMatched: true,
 		SevenOrderedMembersChecked: true, CreateAddressCalculated: true, UnsignedTransactionPrepared: true, CancunIntrinsicGasChecked: true,
 		WithinSuppliedExecutionFeeBudget: true, InitCodeBytes: len(init)}
-	return CustodyDeployment{raw: raw, creator: creator, predicted: predicted, report: report}, nil
+	return CustodyDeployment{raw: raw, runtime: runtime, creator: creator, predicted: predicted, report: report}, nil
 }

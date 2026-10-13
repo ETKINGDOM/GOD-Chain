@@ -17,6 +17,8 @@ try {
   if (raw.length === 0) throw new Error();
   const job = JSON.parse(raw.toString('utf8'));
   const creationJob = job.purpose === 'GOD Chain private offline creation compiler job v1';
+  const custodyJob = job.custodyRuntime === true;
+  if (custodyJob && (!creationJob || job.targetSource !== 'contracts/GodBridgeEscrow.sol' || job.targetContract !== 'GodBridgeEscrow')) throw new Error();
   if ((!creationJob && job.purpose !== 'GOD Chain private offline compiler job v1') || typeof job.compiler !== 'string' ||
       typeof job.input !== 'string' || typeof job.compilerSHA256 !== 'string') throw new Error();
   const bytes = Buffer.from(job.compiler, 'base64');
@@ -54,6 +56,24 @@ try {
   // parent consumes this bounded code result and exposes only redacted flags.
   const response = {version,hasErrors,runtime,linkReferences,immutableReferences};
   if (creationJob) Object.assign(response,{creation,creationLinkReferences});
+  if (custodyJob) {
+    // Exact compiler-assigned IDs, never caller-selected immutable wildcards.
+    // Only fixed-source custody compilation asks for this minimal AST binding.
+    const names = {};
+    if (!hasErrors) {
+      const ast = result.sources?.[job.targetSource]?.ast;
+      const contracts = ast?.nodes?.filter(n => n.nodeType === 'ContractDefinition' && n.name === job.targetContract);
+      if (!contracts || contracts.length !== 1) throw new Error();
+      const declarations = contracts[0].nodes.filter(n => n.nodeType === 'VariableDeclaration' && n.stateVariable === true && n.mutability === 'immutable');
+      if (declarations.length !== 2) throw new Error();
+      for (const n of declarations) {
+        if (!['token','assetID'].includes(n.name) || !Number.isSafeInteger(n.id) || n.id <= 0 || Object.hasOwn(names,n.name) || !Object.hasOwn(immutableReferences,String(n.id))) throw new Error();
+        names[n.name] = String(n.id);
+      }
+      if (Object.keys(immutableReferences).length !== 2) throw new Error();
+    }
+    response.immutableNames = names;
+  }
   process.stdout.write(JSON.stringify(response));
 } catch {
   process.stderr.write('GOD Chain offline compiler worker rejected\n');

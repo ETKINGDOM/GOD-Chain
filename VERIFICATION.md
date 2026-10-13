@@ -7,6 +7,41 @@ source, other pilot gateways and generated operational inputs are not
 distributed in this exact source snapshot. Publication activates no service or
 real assets. God EVM + God SDK + GodCometBFT pins remain unchanged.
 
+## Signed custody creation and conditional recovery composition
+
+The exact compiler AST names the two immutable declarations; reviewed
+constructor semantics produce runtime matching actual pinned God EVM creation.
+Strict signed creation, complete transaction/receipt roots, execution Gas and
+same-header account/code proof compose without trusting JSON creation metadata.
+Success requires the exact compiled runtime; revert cannot claim created code.
+
+A private append-only creation simulation journal requires the independently
+pre-retained next UNKNOWN pin before one signed-byte export. Durable UNKNOWN
+precedes export and survives actual child-process termination/reopen without
+redispatch. All original inputs/toolchain and full history prefixes are checked;
+identical conditional observations are idempotent, conflicts and partial/shared/
+linked histories are refused without repair or nonce/fee release. No signer,
+broadcaster or production journal is installed.
+
+Strict/disk race checks passed (2.987 seconds), combined actual creation/CLI
+checks passed (61.713/20.022 seconds), actual forced termination/reopen passed
+(26.561 seconds), expanded actual compiler/custody/CLI regression passed
+(120.262/21.932 seconds), and final scoped context/ownership checks passed
+(3.145 seconds). A test-only child diagnostic reading race was corrected; no
+protection was relaxed. All twenty-one exact publication-scope checks passed.
+Private tests, fixtures, operational records, signatures and compiler binaries
+are not distributed in this source snapshot.
+
+These conditional checks do not authenticate RH header origin/finality,
+mutable constructor storage, total source fees or real backing. The journal is
+not shared source-account nonce coordination, hardware key ownership or
+protection from whole-history/external-pin rollback. Production financial
+activation remains open. See [CUSTODY_DEPLOYMENT.md](CUSTODY_DEPLOYMENT.md).
+
+Final complete unfiltered RH/CLI race regression passed (275.857/5.285 seconds).
+Vet and Linux/Windows amd64 CLI compilation passed. Unsupported private disk/
+ACL platforms retain refusal rather than an unverified fallback.
+
 ## Offline custody creation preparation
 
 Actual pinned Solidity compilation, independent compiled ABI/bytecode comparison,

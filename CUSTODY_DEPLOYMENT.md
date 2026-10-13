@@ -79,6 +79,67 @@ The private packet contains creator, predicted custody, unsigned wire bytes and
 input/toolchain pins. Never publish populated requests or packets. JSON/string
 reports expose only verification flags, not addresses, paths or wire bytes.
 
+## Signed creation and conditional execution review
+
+`check-rh-custody-deployment-transaction` uses the same eight original arguments
+followed by an absolute private signed binary-envelope file and its independently
+retained SHA256. It recompiles original materials, recovers the exact sender and
+checks chain, nonce, fees, zero value, no destination/access list/authorizations
+and identical constructor bytes. Reports contain no addresses or signed bytes.
+This command verifies supplied signing output; it does not sign or broadcast.
+
+The compiler worker also returns only the two reviewed immutable declaration
+IDs, identified from its actual AST. Token and asset-binding words are derived
+from the fixed constructor semantics and predicted CREATE address. There is no
+caller-selected replacement map or arbitrary immutable wildcard. Actual pinned
+God EVM creation must reproduce the resulting runtime exactly in acceptance.
+
+`CheckCustodyDeploymentExecution` combines the signed creation with complete
+transaction/receipt trie roots and a contract account/code proof at the **same
+supplied header**. It derives creation identity rather than trusting JSON
+`contractAddress` metadata. Successful execution requires the exact compiled
+runtime, including both known immutable values; a reverted receipt cannot claim
+created code. Cumulative Gas, selected transaction, receipt type and supplied
+execution-fee arithmetic are checked. The header's origin, RH settlement,
+additional source fees and mutable constructor storage are not authenticated.
+These conditional checks never enable financial custody or native credits.
+
+## Durable simulation creation recovery
+
+The explicit `CustodyCreationSimulationJournal` composes those checks with a
+private append-only three-stage history:
+
+```text
+prepared -> dispatch-unknown -> conditional-observation
+```
+
+Open with all original pinned source/request/compiler/signed-file inputs. The
+Linux/macOS disk adapter owns an existing empty private directory exclusively;
+reopen never creates a missing lease. Records are new mode-0600, single-link,
+fsynced files; duplicate, partial, missing, shared, linked or changed history is
+refused without repair. A failed constructor leaves storage ownership with the
+caller, who must close it; any complete or partial record must be retained for
+review rather than reinitializing the directory.
+
+Before handoff, independently retain `ExpectedHandoffPin`. Pass that exact pin
+to `TakeForSimulation`; durable UNKNOWN is written and read back **before** one
+detached signed-byte export. The prepared pin cannot reopen a newer history.
+After interruption, the pre-retained expected UNKNOWN pin allows exact reopen
+without deriving trust from the current unreviewed file. UNKNOWN or observed
+history cannot export a second submission. `Observe` rechecks complete original
+inputs and retains one exact conditional receipt/code identity; an identical
+observation is idempotent, a conflicting one is refused. All history prefixes
+are rechecked, not just the latest file. Ambiguous writes freeze that handle.
+
+This journal supplies no signer or broadcaster. It is **not a shared source
+account nonce manager** across creation and existing method-call journals,
+hardware key custody, independent finality or protection from an operator
+rolling back all history and retained external pins. Conditional observation
+does not release nonce/Gas reservations, and dispatch remains UNKNOWN as a
+financial statement even after a matching local observation. Production use
+still needs coordinated source-account ownership and authenticated receipt/
+state/finality handling. No production journal or submission CLI is installed.
+
 ## Financial boundary
 
 Preparation and retained-file verification leave signing, broadcasting,
@@ -87,8 +148,8 @@ deployment retry or production signing CLI. This closes a source-creation
 preparation gap; it does not reserve an account nonce or connect creation to the
 existing durable method-call signing journal. A real deployment needs separate
 approval of the prototype's limits/control policy, signer custody, exact source
-network, live account/nonce, complete fees, canonical signed-envelope checks,
-bounded submission, receipt/finality reconciliation and safe failure recovery.
+network, live account/nonce, complete fees, bounded production submission,
+authenticated receipt/state/finality reconciliation and safe failure recovery.
 Only then can confirmed custody state bind the native bridge. The initial
 founder-operated topology remains one host, not independent distributed custody.
 

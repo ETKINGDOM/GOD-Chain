@@ -28,8 +28,13 @@ compilation, fixed constructor ABI, seven ordered members, explicit sender/nonce
 and Gas execution-fee budget, predicted CREATE address and a privately retained
 unsigned packet. Rechecking recompiles original materials rather than trusting
 supplied bytecode. This closes creation preparation, not a real deployment,
-nonce reservation, live fee estimate, signed creation dispatch/recovery or
-custody/asset activation. Source-chain funding/finality, source custody limits
+nonce reservation, live fee estimate or custody/asset activation. Exact signed
+creation review now composes complete receipt roots, compiler-bound runtime and
+same-header account proof with an append-only private simulation journal.
+Pre-retained next-state pins and forced-process recovery preserve UNKNOWN with
+no second export. Production account coordination, broadcaster, authenticated
+source receipt/state/finality and financial activation remain open.
+Source-chain funding/finality, source custody limits
 and control policy, safe key custody and exact production financial handoff
 remain required. See [custody creation](CUSTODY_DEPLOYMENT.md).
 

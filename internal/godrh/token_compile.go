@@ -274,6 +274,10 @@ func runTokenCompiler(ctx context.Context, c Config, b TokenSourceBundle, compil
 // Shared execution primitive, not a public artifact constructor. Callers must
 // first admit their own exact source/settings and validate all returned bytes.
 func runPinnedCompiler(ctx context.Context, compiler TokenCompiler, input []byte, source, contract string, creation bool, r TokenCompilationReport) (TokenCompilationReport, []byte) {
+	return runPinnedCompilerMode(ctx, compiler, input, source, contract, creation, false, r)
+}
+
+func runPinnedCompilerMode(ctx context.Context, compiler TokenCompiler, input []byte, source, contract string, creation, custody bool, r TokenCompilationReport) (TokenCompilationReport, []byte) {
 	check := func(name string, ok bool) bool {
 		ok = ok && ctx != nil && ctx.Err() == nil
 		r.Checks = append(r.Checks, Check{name, ok})
@@ -306,7 +310,8 @@ func runPinnedCompiler(ctx context.Context, compiler TokenCompiler, input []byte
 		Input          string `json:"input"`
 		TargetSource   string `json:"targetSource"`
 		TargetContract string `json:"targetContract"`
-	}{purpose, code, hex.EncodeToString(compiler.compilerPin[:]), string(input), source, contract})
+		CustodyRuntime bool   `json:"custodyRuntime"`
+	}{purpose, code, hex.EncodeToString(compiler.compilerPin[:]), string(input), source, contract, custody})
 	if !check("private_compiler_job", err == nil) {
 		return r, nil
 	}

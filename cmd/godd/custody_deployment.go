@@ -27,7 +27,7 @@ func runCustodyDeployment(command string, args []string, out io.Writer) error {
 		}
 		return nil
 	}
-	wanted := map[string]int{"review-rh-custody-deployment": 8, "prepare-rh-custody-deployment": 9, "check-rh-custody-deployment": 10}
+	wanted := map[string]int{"review-rh-custody-deployment": 8, "prepare-rh-custody-deployment": 9, "check-rh-custody-deployment": 10, "check-rh-custody-deployment-transaction": 10}
 	if wanted[command] == 0 || len(args) != wanted[command] {
 		return godrh.ErrCustodyDeployment
 	}
@@ -46,6 +46,25 @@ func runCustodyDeployment(command string, args []string, out io.Writer) error {
 	f := godrh.CustodyDeploymentFiles{SourcePath: args[0], SourcePin: pins[0], RequestPath: args[2], RequestPin: pins[1]}
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
+	if command == "check-rh-custody-deployment-transaction" {
+		pin, err := godrh.SourceMaterialPin(args[9])
+		if err != nil {
+			return godrh.ErrCustodyDeployment
+		}
+		r, err := godrh.CheckCustodyDeploymentTransactionFiles(ctx, f, c, args[8], pin)
+		if err != nil {
+			return godrh.ErrCustodyDeployment
+		}
+		raw, err := json.MarshalIndent(r, "", "  ")
+		if err != nil {
+			return godrh.ErrCustodyDeployment
+		}
+		raw = append(raw, '\n')
+		if n, err := out.Write(raw); err != nil || n != len(raw) {
+			return godrh.ErrCustodyDeployment
+		}
+		return nil
+	}
 	var r godrh.CustodyDeploymentReport
 	switch command {
 	case "review-rh-custody-deployment":

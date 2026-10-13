@@ -12,6 +12,14 @@ It does not deploy custody, reserve a nonce, sign, submit, verify live source
 fees/funding/finality or enable real assets. See
 [CUSTODY_DEPLOYMENT.md](CUSTODY_DEPLOYMENT.md) for commands and financial gates.
 
+Signed creation now composes exact sender/envelope review, full receipt roots
+and compiler-bound runtime proof at the same supplied header. A separate private
+simulation journal pre-retains the next UNKNOWN pin, writes durable UNKNOWN
+before one signed-byte export and refuses redispatch after interrupted/reopened
+or observed history. Identical conditional observations are idempotent. No
+global source-account nonce coordination, production signer/broadcaster,
+independent RH finality or financial activation is installed.
+
 ## Two-way asset flow and committed status queries
 
 RH-to-GOD locks source tokens in custody before an approved native reserve
