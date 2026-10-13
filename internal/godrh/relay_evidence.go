@@ -103,6 +103,12 @@ func (j *RelayJournal) ReviewTaskReceiptEvidence(ctx context.Context, ticket uin
 	}
 	j.mu.Lock()
 	defer j.mu.Unlock()
+	return j.reviewTaskReceiptEvidence(ctx, ticket, source)
+}
+
+// Caller holds j.mu; shared with the explicit paired native/source review.
+func (j *RelayJournal) reviewTaskReceiptEvidence(ctx context.Context, ticket uint64, source ReceiptSetSource) (TaskReceiptEvidenceReview, error) {
+	fail := func() (TaskReceiptEvidenceReview, error) { return TaskReceiptEvidenceReview{}, ErrTaskReceiptEvidence }
 	readCtx, cancel := context.WithTimeout(ctx, RelayReadTimeout)
 	defer cancel()
 	pin, _, err := j.taskReceiptProofPin(readCtx, ticket)

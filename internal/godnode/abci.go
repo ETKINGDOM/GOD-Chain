@@ -59,6 +59,20 @@ func (x application) Query(_ context.Context, req *abci.RequestQuery) (*abci.Res
 		var result NetworkView
 		result, err = a.queryNetwork(req.Height)
 		state, height = result, result.Commit.Height
+	case "/god/bridge":
+		if len(req.Data) != 0 {
+			return &abci.ResponseQuery{Code: 1}, nil
+		}
+		var result BridgeView
+		result, err = a.queryBridge(req.Height)
+		state, height = result, result.Commit.Height
+	case "/god/bridge-withdrawal":
+		if len(req.Data) == 0 || len(req.Data) > 20 {
+			return &abci.ResponseQuery{Code: 1}, nil
+		}
+		var result BridgeWithdrawalView
+		result, err = a.queryBridgeWithdrawal(string(req.Data), req.Height)
+		state, height = result, result.Commit.Height
 	case "/god/account":
 		if len(req.Data) != godaddress.NativeLength {
 			return &abci.ResponseQuery{Code: 1}, nil

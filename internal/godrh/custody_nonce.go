@@ -104,16 +104,18 @@ type custodyNonceEntry struct {
 	MaximumGasCost string              `json:"maximumGasCost"`
 }
 type custodyNonceState struct {
-	Purpose                string               `json:"purpose"`
-	Version                uint32               `json:"version"`
-	Sequence               uint32               `json:"sequence"`
-	PreviousSHA256         string               `json:"previousSHA256"`
-	ConfigurationSHA256    string               `json:"configurationSHA256"`
-	AccountPlanSHA256      string               `json:"accountPlanSHA256"`
-	StartingNonce          string               `json:"startingNonce"`
-	MaximumReservedGasCost string               `json:"maximumReservedGasCost"`
-	Entries                []custodyNonceEntry  `json:"entries"`
-	Reviews                []custodyNonceReview `json:"reviews,omitempty"`
+	Purpose                string                `json:"purpose"`
+	Version                uint32                `json:"version"`
+	Sequence               uint32                `json:"sequence"`
+	PreviousSHA256         string                `json:"previousSHA256"`
+	ConfigurationSHA256    string                `json:"configurationSHA256"`
+	AccountPlanSHA256      string                `json:"accountPlanSHA256"`
+	StartingNonce          string                `json:"startingNonce"`
+	MaximumReservedGasCost string                `json:"maximumReservedGasCost"`
+	Entries                []custodyNonceEntry   `json:"entries"`
+	Reviews                []custodyNonceReview  `json:"reviews,omitempty"`
+	SigningRevision        uint32                `json:"signingRevision,omitempty"`
+	SigningIntent          *custodySigningIntent `json:"signingIntent,omitempty"`
 }
 
 func encodeCustodyNonce(s custodyNonceState) ([]byte, error) {
@@ -126,7 +128,7 @@ func encodeCustodyNonce(s custodyNonceState) ([]byte, error) {
 			unknown++
 		}
 	}
-	if len(s.Reviews) > len(s.Entries) || s.Sequence != uint32(1+len(s.Entries)+unknown+len(s.Reviews)) {
+	if s.SigningRevision > 2*MaxCustodyNonceEntries || len(s.Reviews) > len(s.Entries) || s.Sequence != uint32(1+len(s.Entries)+unknown+len(s.Reviews))+s.SigningRevision {
 		return nil, ErrCustodyNonceState
 	}
 	if s.Sequence == 1 {
@@ -175,7 +177,8 @@ func encodeCustodyNonce(s custodyNonceState) ([]byte, error) {
 		}
 		total.Add(total, cost)
 	}
-	if total.Cmp(budget) > 0 {
+	pendingCost, err := custodySigningStateCost(s)
+	if err != nil || total.Add(total, pendingCost).Cmp(budget) > 0 {
 		return nil, ErrCustodyNonceState
 	}
 	seenReviews := map[string]bool{}
@@ -215,7 +218,7 @@ func custodyNonceHeaderEqual(a, b custodyNonceState) bool {
 	return a.Purpose == b.Purpose && a.Version == b.Version && a.ConfigurationSHA256 == b.ConfigurationSHA256 && a.AccountPlanSHA256 == b.AccountPlanSHA256 && a.StartingNonce == b.StartingNonce && a.MaximumReservedGasCost == b.MaximumReservedGasCost
 }
 
-// Exactly one reservation, reserved->unknown change OR immutable local review.
+// Exactly one signed reservation/dispatch/review OR unsigned signing step.
 // Never delete/release/reprice or replace an earlier observation.
 func custodyNonceTransition(old, next custodyNonceState) bool {
 	raw, err := encodeCustodyNonce(old)
@@ -238,12 +241,21 @@ func custodyNonceTransition(old, next custodyNonceState) bool {
 				return false
 			}
 		}
-		return next.Entries[len(old.Entries)].Binding.Stage == CustodyAttemptReserved
+		if next.Entries[len(old.Entries)].Binding.Stage != CustodyAttemptReserved {
+			return false
+		}
+		if sameCustodySigningState(old, next) {
+			return !custodySigningPending(old)
+		}
+		return custodySigningRetentionTransition(old, next)
 	}
 	if len(next.Entries) != len(old.Entries) {
 		return false
 	}
 	if len(next.Reviews) == len(old.Reviews)+1 {
+		if !sameCustodySigningState(old, next) {
+			return false
+		}
 		for n, e := range old.Entries {
 			if next.Entries[n] != e {
 				return false
@@ -253,6 +265,14 @@ func custodyNonceTransition(old, next custodyNonceState) bool {
 	}
 	if !sameCustodyNonceReviews(old.Reviews, next.Reviews) {
 		return false
+	}
+	if !sameCustodySigningState(old, next) {
+		for n, e := range old.Entries {
+			if next.Entries[n] != e {
+				return false
+			}
+		}
+		return custodySigningStepTransition(old, next)
 	}
 	changed := 0
 	for n, e := range old.Entries {
@@ -280,6 +300,9 @@ type CustodyNonceReport struct {
 	Reservations              int  `json:"reservations"`
 	UnknownDispatches         int  `json:"unknownDispatches"`
 	LocalReceiptReviews       int  `json:"localReceiptReviews"`
+	PendingSigning            bool `json:"pendingSigning,omitempty"`
+	SigningConsumed           bool `json:"signingConsumed,omitempty"`
+	SignedEnvelopeRetained    bool `json:"signedEnvelopeRetained,omitempty"`
 	StorageUsable             bool `json:"storageUsable"`
 	WriteOutcomeUncertain     bool `json:"writeOutcomeUncertain"`
 	SharedJournalOnly         bool `json:"sharedJournalOnly"`
@@ -298,6 +321,7 @@ type CustodyNonceBook struct {
 	plan                      custodyNoncePlan
 	chain                     *big.Int
 	directory                 string // disk adapter's private input-separation guard
+	signingActive             bool   // never release the account lease during a signer callback
 	usable, closed, uncertain bool
 }
 
@@ -316,7 +340,13 @@ func (b *CustodyNonceBook) Report() CustodyNonceReport {
 			u++
 		}
 	}
-	return CustodyNonceReport{Reservations: len(b.state.Entries), UnknownDispatches: u, LocalReceiptReviews: len(b.state.Reviews), StorageUsable: b.usable && !b.closed, WriteOutcomeUncertain: b.uncertain, SharedJournalOnly: true}
+	r := CustodyNonceReport{Reservations: len(b.state.Entries), UnknownDispatches: u, LocalReceiptReviews: len(b.state.Reviews), StorageUsable: b.usable && !b.closed, WriteOutcomeUncertain: b.uncertain, SharedJournalOnly: true}
+	if i := b.state.SigningIntent; i != nil {
+		r.PendingSigning = custodySigningPending(b.state)
+		r.SigningConsumed = i.Stage != custodySigningReserved
+		r.SignedEnvelopeRetained = i.Stage == custodySigningRetained
+	}
+	return r
 }
 func loadCustodyNonceInputs(i CustodyNonceInputs) (custodyNonceState, custodyNoncePlan, *big.Int, error) {
 	bad := func() (custodyNonceState, custodyNoncePlan, *big.Int, error) {
@@ -452,6 +482,10 @@ func (b *CustodyNonceBook) nextState() custodyNonceState {
 	next := b.state
 	next.Entries = append([]custodyNonceEntry{}, b.state.Entries...)
 	next.Reviews = append([]custodyNonceReview(nil), b.state.Reviews...)
+	if b.state.SigningIntent != nil {
+		copy := *b.state.SigningIntent
+		next.SigningIntent = &copy
+	}
 	raw, _ := encodeCustodyNonce(b.state)
 	pin := sha256.Sum256(raw)
 	next.PreviousSHA256 = hex.EncodeToString(pin[:])
@@ -474,7 +508,7 @@ func (b *CustodyNonceBook) NextNonce(ctx context.Context) (uint64, error) {
 		return 0, err
 	}
 	n := b.plan.start + uint64(len(b.state.Entries))
-	if len(b.state.Entries) == MaxCustodyNonceEntries || n == math.MaxUint64 {
+	if b.signingActive || custodySigningPending(b.state) || len(b.state.Entries) == MaxCustodyNonceEntries || n == math.MaxUint64 {
 		return 0, ErrCustodyNonceState
 	}
 	return n, nil
@@ -516,7 +550,7 @@ func (b *CustodyNonceBook) Reserve(ctx context.Context, i CustodyTransactionInpu
 			return ErrCustodyNonceState
 		}
 	}
-	if len(b.state.Entries) == MaxCustodyNonceEntries || tx.nonce != b.plan.start+uint64(len(b.state.Entries)) || ctx.Err() != nil {
+	if b.signingActive || custodySigningPending(b.state) || len(b.state.Entries) == MaxCustodyNonceEntries || tx.nonce != b.plan.start+uint64(len(b.state.Entries)) || ctx.Err() != nil {
 		return ErrCustodyNonceState
 	}
 	next := b.nextState()
@@ -596,6 +630,9 @@ func (b *CustodyNonceBook) Close() (err error) {
 	defer b.mu.Unlock()
 	if b.closed {
 		return nil
+	}
+	if b.signingActive {
+		return ErrCustodySigningUnknown
 	}
 	b.closed, b.usable = true, false
 	defer func() {

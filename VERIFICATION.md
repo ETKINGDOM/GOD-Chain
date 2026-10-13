@@ -7,6 +7,114 @@ source, other pilot gateways and generated operational inputs are not
 distributed in this exact source snapshot. Publication activates no service or
 real assets. God EVM + God SDK + GodCometBFT pins remain unchanged.
 
+## Persistent guarded private candidate service
+
+The independently pinned, already initialized private synthetic candidate runs
+continuously under caller cancellation. The CLI maps SIGINT/SIGTERM to joined
+consensus shutdown before stores, witness and home lease close. Original keys,
+funding approval, runtime and separate witness are retained, never regenerated
+or adopted from a used signer. Original profile/input/candidate changes fail
+closed. Non-progress heartbeats do not assert commits, balances or rewards.
+
+Scoped node/CLI race checks passed (4.014/4.988 seconds). Compiled four-process
+service and bounded-rehearsal acceptance passed (134.399 seconds), checking exact
+fixed supply, bridge-funded staking/Gas and signature-derived on-chain G after
+SIGTERM and retained-store restart. Duplicate ownership, changed inputs and
+signing rollback were refused. The complete node-tooling race suite passed in
+two complementary groups (469.265/359.917 seconds); the complete unfiltered CLI
+race run passed (5.541 seconds). Vet and Linux amd64 compilation passed.
+
+Expanded regression corrected a refused role edit creating a lease before
+configuration rejection. Observer recovery now waits for the exact transaction
+receipt, not an insufficient relative height. Authentication/economic policy
+and pinned dependencies were not weakened. These are same-host synthetic
+checks, not intended-host installation, whole-host recovery, RH backing or
+production activation. Cancellation is cooperative; external resource and
+blocked-shutdown supervision remains required.
+
+## Durable source signing and one-use HTTP handoff
+
+The same nonce/Gas journal retains unsigned intent and signing UNKNOWN before
+the injected signer, recovers only complete original output and preserves old
+wire encodings. Disposable process termination verifies no re-signing after
+restart. It is not hardware key ownership or rollback protection against an
+operator bypassing the tools and retained external pins.
+
+The separately injected simulation HTTP handoff makes one loopback request
+after durable dispatch UNKNOWN. Tests cover strict TX-hash admission, malformed
+replies, TLS rejection, redirects, cancellation, dropped connections and lost
+acknowledgments with no retry. Compiled custody executes exact received wire
+and verifies synthetic movement, Gas/nonce and full HTTP receipt recovery for
+all four actions and both execution outcomes. Full RH/CLI compiled race checks
+passed (281.792/4.833 seconds), scoped checks passed (15.606 seconds), and a bounded
+five-second parser fuzz run passed 8,397 executions. Vet and Linux compilation
+passed. Production endpoints/signers and financial activation remain closed.
+
+## Committed two-way bridge status query candidate
+
+The candidate exposes exact committed reserve/withdrawal views with queue,
+waiting and retained terminal evidence. Paired RH/native evidence, durable
+outbox, shared native sequence/fee reservations and exact execution recovery
+retain UNKNOWN without replacement. Caller-pinned/provider views are not
+independent finality, live backing or a real payment service. See [BRIDGE.md](BRIDGE.md).
+
+## Combined bridge and validator possession policy
+
+Fresh synthetic assembly binds approved bridge funding, immutable runtime and
+validator owner/consensus possession in the same initialization. Missing or
+altered approvals cannot silently change genesis. This is synthetic
+authorization evidence, not independently authenticated source deposits.
+
+## Button-only official wallet staking
+
+The separately hosted pilot offers configured node cards, amount presets,
+estimated upper G/day, committed positions, settled-G claiming and exits.
+One locally confirmed signing review shows Gas; estimates are not spendable G.
+Wallet source/distribution remains outside this core snapshot.
+
+## Atomic staking display and background refresh
+
+One committed snapshot binds configured nodes, rewards and exits. Checked
+values/focus survive background refresh; unavailable data is explicitly stale
+and cannot enable signing. The authorized observer query update did not change
+the four signing validators or economic rules.
+
+## Official wallet transfer completion and staking selection
+
+Confirmed matching GOD sends clear their draft and return to Overview while
+retaining exact transaction recovery/history. Failed, unknown or unrelated
+results do not trigger successful-send cleanup. Local selections avoid repeated
+node reads; fresh signing checks remain required.
+
+## Hosted positive G claim transfer and redemption
+
+Project-generated worthless test wallets completed naturally settled G claim,
+one-G transfer and proportional redemption with committed receipt/account/pool
+checks and explorer links. Successful voluntary redemption burns only offered
+G; empty liquidity preserves G. These pilot checks are not production G or RH
+backing, sustained staking or an elapsed unbonding payout.
+
+## Isolated Linux bridge staking and G business acceptance
+
+Isolated intended-host acceptance exercised signed synthetic credit, stake,
+G and return/unbonding accounting with fresh-process recovery. Source statements
+and delayed timestamps were synthetic. A separate actual four-process consensus
+drill checked receipt agreement, offline catch-up and checkpoint recovery.
+Existing pilot services and signing identities were not replaced.
+
+## Isolated Linux two program retained state acceptance
+
+Two programs checked retained synthetic state through a bounded isolated
+upgrade/recovery exercise. This did not activate production policy or certify
+whole-host signing-safe restore. The temporary unit was stopped afterwards.
+
+## Isolated Linux four validator rolling upgrade acceptance
+
+An isolated four-process drill exercised controlled upgrade/rollback with
+retained identities and stores. All processes were on the same founder host;
+no independent operators or geographic deployment is claimed. Existing public
+nodes were not upgraded. Production installation remains a separate gate.
+
 ## Current synthetic participant acceptance
 
 ### Local custody candidate acceptance

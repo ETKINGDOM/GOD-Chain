@@ -155,13 +155,18 @@ func CheckUnpacked(archive, expected, destination string) (Report, error) {
 	if checkUnpackedSnapshot(snapshot, dir) != nil {
 		return Report{}, ErrPackage
 	}
+	listed, listErr := os.Lstat(destination)
+	opened, statErr := dir.Stat(".")
+	if listErr != nil || statErr != nil || !os.SameFile(listed, opened) || !privateInfo(listed) || !privateInfo(opened) {
+		return Report{}, ErrPackage
+	}
 	report.DirectoryVerified = true
 	return report, nil
 }
 
 func checkUnpackedSnapshot(snapshot []byte, destination *os.Root) error {
 	top, err := destination.Stat(".")
-	if err != nil || top.Mode() != os.ModeDir|0700 {
+	if err != nil || top.Mode() != os.ModeDir|0700 || !privateInfo(top) {
 		return ErrPackage
 	}
 	gz, err := gzip.NewReader(bytes.NewReader(snapshot))
@@ -193,9 +198,10 @@ func checkUnpackedSnapshot(snapshot []byte, destination *os.Root) error {
 			return ErrPackage
 		}
 		diskHash, diskSize, readErr := hashReader(io.LimitReader(file, h.Size+1))
+		retained := retainedPrivateFile(destination, h.Name, file, info)
 		closeErr := file.Close()
 		archiveHash, archiveSize, archiveErr := hashReader(tr)
-		if readErr != nil || closeErr != nil || archiveErr != nil || diskSize != h.Size || archiveSize != h.Size || diskHash != archiveHash {
+		if readErr != nil || closeErr != nil || archiveErr != nil || !retained || diskSize != h.Size || archiveSize != h.Size || diskHash != archiveHash {
 			return ErrPackage
 		}
 		files[h.Name] = true
@@ -208,7 +214,7 @@ func checkUnpackedSnapshot(snapshot []byte, destination *os.Root) error {
 			return ErrPackage
 		}
 		info, err := entry.Info()
-		if err != nil || info.Mode()&os.ModeSymlink != 0 {
+		if err != nil || info.Mode()&os.ModeSymlink != 0 || !privateInfo(info) {
 			return ErrPackage
 		}
 		if entry.IsDir() {

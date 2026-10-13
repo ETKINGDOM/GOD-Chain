@@ -32,7 +32,34 @@ source, fixtures and distribution files remain outside this exact core scope;
 the private developer checks and remaining gates are summarized in
 [VERIFICATION.md](VERIFICATION.md#local-only-wallet-recovery-candidate).
 
-See the [Implementation Status and Roadmap](ROADMAP.md) for verified capabilities, six remaining core workstreams, ten supporting modules and the proposed delivery sequence. The plan distinguishes prototype and pilot checks from production acceptance; it does not authorize further deployment or real assets.
+See the [Implementation Status and Roadmap](ROADMAP.md) for the four integrated mainnet deliverables and supporting work. The plan distinguishes prototype and pilot checks from production acceptance; it does not authorize further deployment or real assets.
+
+## Guarded candidate and bridge recovery
+
+Private signed launch materials now compose into an exact synthetic candidate.
+The bounded rehearsal and persistent `serve-launch-candidate` command use the
+same retained home, original keys, independently reviewed input pins and separate
+signing witness. Four compiled validator processes agree after SIGTERM shutdown
+and restart; duplicate ownership, signing rollback and altered inputs are refused.
+Heartbeats without new commits are not blocks or rewards. This is private
+candidate execution, not authenticated source funding or mainnet activation.
+See [NODE_RUNTIME.md](NODE_RUNTIME.md#persistent-private-candidate-service).
+
+The bridge source includes committed two-way queries, paired return evidence,
+durable unsigned outbox and exact native execution recovery. The shared source
+sender book owns nonce/Gas reservations, records signing uncertainty before
+calling an injected signer, retains the exact envelope and consumes dispatch
+before one loopback HTTP request. Lost responses and restart never authorize
+another send. Compiled synthetic custody checks all four actions and receipt
+recovery. Production source signing/broadcast and real assets remain disabled.
+G is a consensus-managed ecosystem asset, not a website balance; pilot G remains
+worthless. See [BRIDGE.md](BRIDGE.md#one-use-http-submission-and-exact-receipt-recovery)
+and the [verification boundaries](VERIFICATION.md#persistent-guarded-private-candidate-service).
+
+The public build uses checksum-bound consensus-worker joining, no-JIT
+dependencies and a logging-only overlay. Private test targets mentioned in
+runtime guides are not included here and are not public build commands.
+Publication does not install binaries or alter the hosted pilot.
 
 ## Execution and validators
 

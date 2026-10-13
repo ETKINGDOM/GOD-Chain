@@ -60,6 +60,24 @@ func readCustodyPrivateSnapshot(filePath string, limit int64, expected [32]byte)
 	if expected == [32]byte{} || limit <= 0 || limit > MaxCustodyRequestBytes {
 		return nil, ErrCustodyWorkflow
 	}
+	return readRHPrivateSnapshot(filePath, limit, expected)
+}
+
+// Shared bounded reader only. Each protocol wrapper keeps its smaller schema
+// limit; this does not enlarge custody request/packet acceptance.
+func readRHPrivateSnapshot(filePath string, limit int64, expected [32]byte) ([]byte, error) {
+	if expected == [32]byte{} || limit <= 0 || limit > MaxParentProofMaterialBytes {
+		return nil, ErrCustodyWorkflow
+	}
+	return readRHPrivateBytes(filePath, limit, expected)
+}
+
+// Internal file primitive. Protocol wrappers retain their distinct smaller
+// bounds; the larger source capsule does not widen custody/parent admission.
+func readRHPrivateBytes(filePath string, limit int64, expected [32]byte) ([]byte, error) {
+	if expected == [32]byte{} || limit <= 0 || limit > MaxTokenSourceBundleBytes {
+		return nil, ErrCustodyWorkflow
+	}
 	r, leaf, err := custodyPrivateRoot(filePath)
 	if err != nil {
 		return nil, ErrCustodyWorkflow
@@ -125,6 +143,20 @@ func writeCustodyPrivateFile(filePath string, raw []byte) error {
 	defer dir.Close()
 	if dir.Sync() != nil || dir.Close() != nil {
 		return ErrCustodyWorkflow
+	}
+	return nil
+}
+
+// Read-only signing preflight, not a reservation of the output name. Exclusive
+// creation rechecks it after the callback; a concurrent owner cannot be fenced.
+func custodySigningOutputAvailable(filePath string) error {
+	r, leaf, err := custodyPrivateRoot(filePath)
+	if err != nil {
+		return ErrCustodySigning
+	}
+	defer r.Close()
+	if _, err := r.Lstat(leaf); !os.IsNotExist(err) {
+		return ErrCustodySigning
 	}
 	return nil
 }

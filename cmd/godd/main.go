@@ -22,6 +22,24 @@ import (
 )
 
 func run(args []string, out io.Writer) error {
+	if len(args) > 0 && (args[0] == "init-launch-rehearsal" || args[0] == "run-launch-rehearsal" || args[0] == "serve-launch-candidate") {
+		return runLaunchRehearsal(args[0], args[1:], out)
+	}
+	if len(args) > 0 && (args[0] == "launch-assembly-template" || args[0] == "check-launch-assembly" || args[0] == "stage-launch-candidate") {
+		return runLaunchAssembly(args[0], args[1:], out)
+	}
+	if len(args) > 0 && (args[0] == "rh-token-state-template" || args[0] == "check-rh-token-state" || args[0] == "rh-token-state-read-template" || args[0] == "read-rh-token-state") {
+		return runTokenState(args[0], args[1:], out)
+	}
+	if len(args) > 0 && (args[0] == "rh-token-creation-template" || args[0] == "replay-rh-token-creation") {
+		return runTokenCreation(args[0], args[1:], out)
+	}
+	if len(args) > 0 && (args[0] == "launch-economics-template" || args[0] == "check-launch-economics") {
+		return runLaunchEconomics(args[0], args[1:], out)
+	}
+	if len(args) > 0 && (args[0] == "parent-trust-template" || args[0] == "parent-proof-template" || args[0] == "check-parent-proof") {
+		return runParentMaterial(args[0], args[1:], out)
+	}
 	if len(args) > 0 && (args[0] == "rh-custody-transaction-template" || args[0] == "check-rh-custody-transaction") {
 		return runRHCustodyTransaction(args[0], args[1:], out)
 	}
@@ -49,6 +67,27 @@ func run(args []string, out io.Writer) error {
 		return runTestnet(args[1:], out)
 	}
 	if len(args) == 0 || (len(args) == 1 && args[0] == "help") {
+		if _, err := fmt.Fprintln(out, "Private candidate service: serve-launch-candidate --home <same-retained-private-home> --signer-guard <same-retained-separate-directory> --input <original-signed-assembly> --input-pin <reviewed-SHA256> --candidate <staged-private-candidate> --candidate-pin <reviewed-SHA256> --report-seconds <1..300>\nRuns the exact initialized synthetic candidate until SIGINT/SIGTERM. Periodically rechecks immutable pins/profile and reports actual progress or a non-progress heartbeat. Joins consensus before store/lease release. No time-limit override, public peering, RPC, source client, production mode, real assets, reset, key copy or automatic restart. Resource/shutdown limits require a separately reviewed external supervisor."); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintln(out, "Private candidate execution: init-launch-rehearsal --home <fresh-private-identity> --signer-guard <separate-existing-private-directory> --input <original-signed-input> --input-pin <independently-reviewed-SHA256> --candidate <staged-private-candidate> --candidate-pin <independently-reviewed-SHA256> --p2p <explicit-loopback-listen> --peers <explicit-loopback-peers>; run-launch-rehearsal --home <same-private-identity> --signer-guard <same-retained-directory> --input <same-original-input> --input-pin <same-reviewed-SHA256> --candidate <same-staged-candidate> --candidate-pin <same-reviewed-SHA256> --seconds <2..180>\nRequires fresh pre-existing validator/P2P keys, then mandatory retained signing progress. Re-derives the exact candidate before every bounded persistent run. Loopback only, no RPC, source client, operator account signer, public bridge peering or real assets. No key generation/copy, lost-witness adoption, reset, production flag or automatic repair; report only observed committed progress."); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintln(out, "Private launch composition: launch-assembly-template; check-launch-assembly <private-input> <retained-SHA256>; stage-launch-candidate <private-input> <retained-SHA256> <new-private-output>\nMatches explicit candidate economics to actual bridge-funded validator/Gas allocations, immutable runtime, quorum signatures and owner/consensus possession. Stages detached synthetic runtime/genesis only; no signing key, source request, database, listener, production start or real-asset activation. Existing/unsafe output is refused; interrupted artifacts are retained for review."); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintln(out, "Explicit read-only token state: rh-token-state-read-template; read-rh-token-state <absolute-private-config> <config-SHA256> <absolute-private-bundle> <bundle-SHA256> <absolute-private-read-request> <request-SHA256> <compiler-SHA256> <reviewed-block-height> <reviewed-0x-block-hash>\nContacts only the configured endpoint with four permitted read methods and the separately retained header/slot inputs. Exact-hash code/account/storage proofs, bounded time/bytes, no redirects/proxies/retries/debug or latest fallback. Pins and files are rechecked; redacted report only. HTTPS production-mode diagnosis does not enable source signing, independent RH finality, permissions, custody or real assets."); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintln(out, "Offline conditional token state: rh-token-state-template; check-rh-token-state <absolute-private-config> <config-SHA256> <absolute-private-bundle> <bundle-SHA256> <absolute-private-proof> <proof-SHA256> <compiler-SHA256> <reviewed-block-height> <reviewed-0x-block-hash>\nExact account, code and optional slot proofs against a separately retained block; no guessed storage layout. Owner-only POSIX inputs are rechecked before a redacted report. No network, compilation, independent source identity or finality, permission verdict, signing, broadcast or real-asset activation."); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintln(out, "Offline candidate economics: launch-economics-template; check-launch-economics <private-candidate-file> <retained-SHA256>\nCurrent prototype policy, explicit one-host founder control and funding/emission arithmetic only. Blank monetary choices must be reviewed; no measured fees, source backing, owner approval, configuration change or activation."); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintln(out, "Offline conditional parent proof: parent-trust-template; parent-proof-template <single-period|adjacent-period>; check-parent-proof <private-trust-file> <retained-trust-SHA256> <private-proof-file> <retained-proof-SHA256> <reviewed-current-slot>\nSeparately reviewed trust, proof and clock inputs; exact bounded schemas, Deneb/Electra only. No network, automatic checkpoint, persistence, RH finality, signing, broadcast or real-asset approval. Use owner-only private POSIX files; never publish populated materials or obtain trust pins from the same unreviewed provider."); err != nil {
+			return err
+		}
 		if _, err := fmt.Fprintln(out, "Offline signed custody envelope review: rh-custody-transaction-template; check-rh-custody-transaction <private-config> <config-SHA256> <private-request> <request-SHA256> <private-fee-plan> <plan-SHA256> <private-signed-envelope> <envelope-SHA256>\nChecks exact dynamic-fee sender, chain, nonce, target, calldata and supplied fee budget. No signing, dispatch command, nonce allocation, source state or real-asset activation."); err != nil {
 			return err
 		}
@@ -59,6 +98,9 @@ func run(args []string, out io.Writer) error {
 			return err
 		}
 		if _, err := fmt.Fprintln(out, "Explicit offline token recompilation: recompile-rh-token <private-config> <private-bundle> <retained-bundle-SHA256> <absolute-node-binary> <retained-node-SHA256> <absolute-known-soljson-file> <retained-compiler-SHA256>\nExecutes only independently pinned local runtime/compiler inputs. No download, external import, signing, permission verdict, pin update or activation. Use a reviewed quiescent host; reproduction is not toolchain authentication."); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintln(out, "Offline constructor reproduction: rh-token-creation-template <create|create2>; replay-rh-token-creation <absolute-private-config> <config-SHA256> <absolute-private-bundle> <bundle-SHA256> <absolute-node-binary> <node-SHA256> <absolute-known-soljson-file> <compiler-SHA256> <absolute-private-replay> <replay-SHA256> <full-init-SHA256>\nOne pinned local compile and bounded God EVM replay with explicit constructor environment. Owner-only POSIX files are checked again after replay. Redacted report only; no output artifacts, downloads, source RPC, signing, broadcast, permissions verdict or real-asset activation. Supplied inputs are not authenticated RH issuance or finality."); err != nil {
 			return err
 		}
 		if _, err := fmt.Fprintln(out, "Offline token source material: rh-token-source-template; check-rh-token-source <private-config> <private-bundle> <retained-bundle-SHA256> <retained-compiler-SHA256>\nIntegrity only: no compiler execution, permission verdict, network reads or activation. Do not obtain review pins from the same unreviewed bundle."); err != nil {
@@ -102,6 +144,9 @@ func run(args []string, out io.Writer) error {
 
 func runTestnet(args []string, out io.Writer) error {
 	if len(args) == 0 || args[0] == "help" {
+		if _, err := fmt.Fprintln(out, "Stopped synthetic candidate integrity: upgrade-check --home <stopped-private-validator> --signer-guard <same-retained-directory> --archive <private-reviewed-archive> --expected-archive <independently-reviewed-digest> --candidate-dir <already-staged-private-package>\nHolds both existing leases during package verification and rechecks original node inputs afterward. No extraction, installation, database opening, execution, signature or restart. Does not verify database migration or authorize an upgrade/mainnet activation."); err != nil {
+			return err
+		}
 		if _, err := fmt.Fprintln(out, "Finite Linux resource observation: host-observe --data-dir <existing-private-directory> --pids <reviewed-comma-separated-process-leaders> --samples <2..60> --interval-ms <250..5000> --budget-seconds <2..180> --minimum-free-bytes <reviewed-budget> --minimum-memory-bytes <reviewed-budget> --maximum-rss-bytes <reviewed-budget> --maximum-open-files <64..65536>\nSame-user processes only, no root or automatic discovery. Fixed procfs reads and filesystem space, no keys/argv/environment, signals, writes, restart or network. Stops on first fault; approximate counters are not server capacity or cgroup headroom. Use an external supervisor for a hard syscall deadline."); err != nil {
 			return err
 		}
@@ -138,10 +183,19 @@ func runTestnet(args []string, out io.Writer) error {
 		if _, err := fmt.Fprintln(out, "Offline funding: sign-funding --request <private-file> --key <private-test-wallet> --output <new-private-file> --bundle <private-file> --expected-bundle <reviewed-digest> --nonce <fresh-sequence> --gas-price <smallest-units>\nFunding requests require manual review. Signing never submits, mints or releases reserve."); err != nil {
 			return err
 		}
+		if _, err := fmt.Fprintln(out, "Fresh synthetic signing witness: guard-init --home <never-started-private-validator> --signer-guard <existing-separate-private-directory>; start --home <private-validator> --signer-guard <same-retained-directory>\nRetains key-wide process exclusion and exact signing progress outside node backups. Used keys, missing/stale witnesses and omitted/wrong paths fail closed. No repair, restore, remote signer or mainnet activation."); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintln(out, "Stopped synthetic signing preflight: guard-check --home <stopped-private-validator> --signer-guard <same-retained-directory>\nRequires both existing exclusive leases and an exact witness match. Emits redacted height/round/step only; no file creation, repair, database opening, listener, signature or restart. Point-in-time local evidence, not mainnet readiness or backup-restore authorization; every later start rechecks independently."); err != nil {
+			return err
+		}
 		_, err := fmt.Fprintln(out, "GOD Chain synthetic testnet\nCommands: create --home <new-private-cluster> --validators <count> --first-port <port>; identity --home <new-private-node> --role <validator|observer> --owner <wallet> --endpoint <advertised-ip:port> --p2p <tcp-listen> --rpc <listen> --hosts <exact-hosts>; assemble --home <new-private-ceremony> --profiles <private-profile-files>; join --home <private-node> --bundle <private-file> --expected-bundle <reviewed-digest>; sign --request <private-file> --key <private-test-wallet> --output <new-private-file> --bundle <private-file> --expected-bundle <reviewed-digest>; check --home <private-node>; start --home <private-node> [--allow-network]\nExisting data and signing progress are never replaced. Local clusters are not independently operated networks. No RH or real assets are enabled.")
 		return err
 	}
 	command := args[0]
+	if command == "upgrade-check" {
+		return runUpgradeCheck(args[1:], out)
+	}
 	if command == "host-check" || command == "smoke" {
 		return runAcceptance(command, args[1:], out)
 	}
@@ -157,7 +211,7 @@ func runTestnet(args []string, out io.Writer) error {
 	if command == "read-load" {
 		return runReadLoad(args[1:], out)
 	}
-	if command != "create" && command != "check" && command != "start" && command != "identity" && command != "init" && command != "assemble" && command != "join" && command != "join-observer" && command != "join-candidate" && command != "prepare-registration" && command != "sign-registration" && command != "sign" && command != "sign-funding" && command != "health" && command != "inspect-bundle" {
+	if command != "create" && command != "check" && command != "start" && command != "guard-init" && command != "guard-check" && command != "identity" && command != "init" && command != "assemble" && command != "join" && command != "join-observer" && command != "join-candidate" && command != "prepare-registration" && command != "sign-registration" && command != "sign" && command != "sign-funding" && command != "health" && command != "inspect-bundle" {
 		return godtestnet.ErrConfig
 	}
 	flags := flag.NewFlagSet("testnet", flag.ContinueOnError)
@@ -165,6 +219,7 @@ func runTestnet(args []string, out io.Writer) error {
 	home := flags.String("home", "", "")
 	var count, port *int
 	var network *bool
+	var signerGuard *string
 	var requireProof *bool
 	var role, owner, endpoint, p2pListen, rpcListen, hosts, origins, profiles, bundle, expected *string
 	var request, key, output *string
@@ -180,6 +235,9 @@ func runTestnet(args []string, out io.Writer) error {
 	}
 	if command == "start" {
 		network = flags.Bool("allow-network", false, "")
+	}
+	if command == "start" || command == "guard-init" || command == "guard-check" {
+		signerGuard = flags.String("signer-guard", "", "")
 	}
 	if command == "identity" || command == "init" {
 		role = flags.String("role", "validator", "")
@@ -227,6 +285,18 @@ func runTestnet(args []string, out io.Writer) error {
 		return godtestnet.ErrConfig
 	}
 	switch command {
+	case "guard-check":
+		report, err := godtestnet.CheckNodeSigningGuard(*home, *signerGuard)
+		if err != nil {
+			return err
+		}
+		return json.NewEncoder(out).Encode(report)
+	case "guard-init":
+		report, err := godtestnet.InitializeNodeSigningGuard(*home, *signerGuard)
+		if err != nil {
+			return err
+		}
+		return json.NewEncoder(out).Encode(report)
 	case "prepare-registration":
 		report, err := godtestnet.PrepareRegistration(*home, *bundle, *expected, *output, godtestnet.RegistrationRequest{AccountNumber: *number, Sequence: *sequence, Gas: *gas, Fee: *fee, Stake: *stake})
 		if err != nil {
@@ -328,7 +398,7 @@ func runTestnet(args []string, out io.Writer) error {
 	default:
 		ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 		defer cancel()
-		return godtestnet.Run(ctx, *home, *network, out)
+		return godtestnet.RunWithSigningGuard(ctx, *home, *signerGuard, *network, out)
 	}
 }
 

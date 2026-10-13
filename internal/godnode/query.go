@@ -264,6 +264,11 @@ func (a *App) QueryDelegation(owner, validator string, height int64) (view Deleg
 	}
 	a.mu.Lock()
 	defer a.mu.Unlock()
+	return a.queryDelegation(owner, validator, height)
+}
+
+// Caller holds a.mu, including the atomic staking display query.
+func (a *App) queryDelegation(owner, validator string, height int64) (view DelegationView, err error) {
 	defer func() {
 		if recover() != nil {
 			view, err = DelegationView{}, ErrQueryState

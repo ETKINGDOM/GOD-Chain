@@ -41,7 +41,7 @@ func parseMode(args []string) (godnativegateway.Config, bootstrap, error) {
 	f.StringVar(&c.CompatibleChainID, "compatible-chain", "", "decimal compatible chain identity")
 	f.Uint64Var(&c.Gas, "gas", 0, "fixed reviewed native gas limit")
 	f.StringVar(&c.MinFeePerGas, "min-price", "", "positive agod per gas floor")
-	f.BoolVar(&c.ValidatorOnly, "validator-only", false, "serve only one bounded unsigned validator lookup")
+	f.BoolVar(&c.ValidatorOnly, "validator-only", false, "serve only bounded unsigned validator and staking display lookups")
 	f.StringVar(&c.AttemptDirectory, "attempt-directory", "", "existing owner-only native attempt directory")
 	f.Uint64Var(&c.AttemptCapacity, "attempt-capacity", 0, "exact durable store capacity; zero retains the 1000-record default")
 	f.BoolVar(&b.initialize, "initialize-attempts", false, "offline creation only; never start an HTTP server")

@@ -341,6 +341,20 @@ func (r *TestnetRPC) dispatch(ctx context.Context, call rpcRequest) (result any,
 			return nil, unavailable
 		}
 		return map[string]any{"running": r.n.node.IsRunning(), "applicationUsable": usable, "applicationHeight": strconv.FormatInt(height, 10), "blockStoreHeight": strconv.FormatInt(r.n.node.BlockStore().Height(), 10), "commitPending": pending, "connectedPeers": r.n.node.Switch().Peers().Size(), "catchingUp": status.SyncInfo.CatchingUp, "consensusProgress": round.Progress, "synthetic": true, "realAssets": false}, nil
+	case "god_stakingSnapshot":
+		if len(call.Params) != 2 {
+			return nil, bad
+		}
+		owner, ok := rpcString(call.Params[0])
+		var operators []string
+		if !ok || len(call.Params[1]) > 2048 || json.Unmarshal(call.Params[1], &operators) != nil || len(operators) < 1 || len(operators) > ValidatorPageLimit {
+			return nil, bad
+		}
+		view, err := r.n.app.QueryStakingSnapshot(owner, operators)
+		if err != nil {
+			return nil, unavailable
+		}
+		return view, nil
 	case "god_validators":
 		if len(call.Params) < 1 || len(call.Params) > 2 {
 			return nil, bad
@@ -413,6 +427,46 @@ func (r *TestnetRPC) dispatch(ctx context.Context, call rpcRequest) (result any,
 		v, err := r.n.app.QueryDelegation(owner, validator, height)
 		if err != nil {
 			return nil, bad
+		}
+		return v, nil
+	case "god_bridge":
+		if len(call.Params) > 1 {
+			return nil, bad
+		}
+		h := int64(0)
+		if len(call.Params) == 1 {
+			var ok bool
+			h, ok = rpcHeight(call.Params[0])
+			if !ok {
+				return nil, bad
+			}
+		}
+		v, err := r.n.app.QueryBridge(h)
+		if err != nil {
+			return nil, unavailable
+		}
+		return v, nil
+	case "god_bridgeWithdrawal":
+		if len(call.Params) < 1 || len(call.Params) > 2 {
+			return nil, bad
+		}
+		sequence, ok := rpcString(call.Params[0])
+		if !ok {
+			return nil, bad
+		}
+		if _, err := bridgeSequence(sequence); err != nil {
+			return nil, bad
+		}
+		h := int64(0)
+		if len(call.Params) == 2 {
+			h, ok = rpcHeight(call.Params[1])
+			if !ok {
+				return nil, bad
+			}
+		}
+		v, err := r.n.app.QueryBridgeWithdrawal(sequence, h)
+		if err != nil {
+			return nil, unavailable
 		}
 		return v, nil
 	case "god_network":

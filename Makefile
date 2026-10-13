@@ -12,23 +12,23 @@ prepare-consensus:
 prepare-native-gateway: prepare-consensus
 	GOOS= GOARCH= $(GO) run -mod=readonly ./cmd/godbuild -native-gateway -go "$(GO)"
 
-check build-native-gateway build-native-gateway-linux: prepare-native-gateway
-build build-history-index compile-targets generate-proto: prepare-consensus
+check build build-history-index build-native-gateway build-native-gateway-linux compile-targets: prepare-native-gateway
+generate-proto: prepare-consensus
 
 check:
-	$(GO) vet $(GOD_BUILD_FLAGS) -p 2 ./...
+	$(GO) vet $(GOD_NATIVE_BUILD_FLAGS) -p 2 ./...
 	$(GO) mod verify
-	$(GO) build $(GOD_BUILD_FLAGS) -p 2 ./...
+	$(GO) build $(GOD_NATIVE_BUILD_FLAGS) -p 2 ./...
 	$(GO) vet $(GOD_NATIVE_BUILD_FLAGS) -p 2 ./internal/godnative ./internal/godnativegateway ./internal/godorigin ./cmd/godnative
 	$(GO) build $(GOD_NATIVE_BUILD_FLAGS) -p 2 -o build/godnative ./cmd/godnative
 
 build:
-	$(GO) build $(GOD_BUILD_FLAGS) -p 2 -trimpath -o build/godd ./cmd/godd
-	$(GO) build $(GOD_BUILD_FLAGS) -p 2 -trimpath -o build/godpack ./cmd/godpack
+	$(GO) build $(GOD_NATIVE_BUILD_FLAGS) -p 2 -trimpath -o build/godd ./cmd/godd
+	$(GO) build $(GOD_NATIVE_BUILD_FLAGS) -p 2 -trimpath -o build/godpack ./cmd/godpack
 
 # Opt-in keyless synthetic history CLI; building starts no listener or sync.
 build-history-index:
-	$(GO) build $(GOD_BUILD_FLAGS) -p 2 -trimpath -o build/godhistory ./cmd/godhistory
+	$(GO) build $(GOD_NATIVE_BUILD_FLAGS) -p 2 -trimpath -o build/godhistory ./cmd/godhistory
 
 # Opt-in keyless candidate. Builds never initialize storage or start a service.
 build-native-gateway:
@@ -42,13 +42,13 @@ status: build
 
 # Synthetic candidates only. Foreign compilation is not runtime acceptance.
 compile-targets:
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build $(GOD_BUILD_FLAGS) -p 2 -trimpath -o build/linux-amd64/godd ./cmd/godd
-	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 $(GO) build $(GOD_BUILD_FLAGS) -p 2 -trimpath -o build/linux-arm64/godd ./cmd/godd
-	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build $(GOD_BUILD_FLAGS) -p 2 -trimpath -o build/linux-amd64/godpack ./cmd/godpack
-	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 $(GO) build $(GOD_BUILD_FLAGS) -p 2 -trimpath -o build/linux-arm64/godpack ./cmd/godpack
-	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 $(GO) build $(GOD_BUILD_FLAGS) -p 2 -trimpath -o build/darwin-amd64/godd ./cmd/godd
-	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 $(GO) build $(GOD_BUILD_FLAGS) -p 2 -trimpath -o build/darwin-arm64/godd ./cmd/godd
-	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 $(GO) build $(GOD_BUILD_FLAGS) -p 2 -trimpath -o build/windows-amd64/godd.exe ./cmd/godd
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build $(GOD_NATIVE_BUILD_FLAGS) -p 2 -trimpath -o build/linux-amd64/godd ./cmd/godd
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 $(GO) build $(GOD_NATIVE_BUILD_FLAGS) -p 2 -trimpath -o build/linux-arm64/godd ./cmd/godd
+	CGO_ENABLED=0 GOOS=linux GOARCH=amd64 $(GO) build $(GOD_NATIVE_BUILD_FLAGS) -p 2 -trimpath -o build/linux-amd64/godpack ./cmd/godpack
+	CGO_ENABLED=0 GOOS=linux GOARCH=arm64 $(GO) build $(GOD_NATIVE_BUILD_FLAGS) -p 2 -trimpath -o build/linux-arm64/godpack ./cmd/godpack
+	CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 $(GO) build $(GOD_NATIVE_BUILD_FLAGS) -p 2 -trimpath -o build/darwin-amd64/godd ./cmd/godd
+	CGO_ENABLED=0 GOOS=darwin GOARCH=arm64 $(GO) build $(GOD_NATIVE_BUILD_FLAGS) -p 2 -trimpath -o build/darwin-arm64/godd ./cmd/godd
+	CGO_ENABLED=0 GOOS=windows GOARCH=amd64 $(GO) build $(GOD_NATIVE_BUILD_FLAGS) -p 2 -trimpath -o build/windows-amd64/godd.exe ./cmd/godd
 
 generate-proto:
 	@test "$$($(PROTOC) --version)" = "libprotoc 33.0"

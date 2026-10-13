@@ -84,6 +84,10 @@ type TokenCompilationReport struct {
 // semantic inputs. Only outputSelection is replaced by minimal exact-target
 // runtime outputs; other admitted compiler settings remain unchanged.
 func tokenCompilationInput(b TokenSourceBundle) ([]byte, error) {
+	return tokenCompilationInputMode(b, false)
+}
+
+func tokenCompilationInputMode(b TokenSourceBundle, creation bool) ([]byte, error) {
 	var settings map[string]json.RawMessage
 	if !b.valid || json.Unmarshal(b.private.CompilerSettings, &settings) != nil {
 		return nil, ErrTokenCompilation
@@ -109,9 +113,13 @@ func tokenCompilationInput(b TokenSourceBundle) ([]byte, error) {
 	if json.Unmarshal(settings["evmVersion"], &fork) != nil || fork == "" {
 		return nil, ErrTokenCompilation
 	}
-	selection, err := json.Marshal(map[string]any{b.private.TargetSource: map[string]any{b.private.TargetContract: []string{
+	outputs := []string{
 		"evm.deployedBytecode.object", "evm.deployedBytecode.linkReferences", "evm.deployedBytecode.immutableReferences",
-	}}})
+	}
+	if creation {
+		outputs = append(outputs, "evm.bytecode.object", "evm.bytecode.linkReferences")
+	}
+	selection, err := json.Marshal(map[string]any{b.private.TargetSource: map[string]any{b.private.TargetContract: outputs}})
 	if err != nil {
 		return nil, ErrTokenCompilation
 	}
@@ -205,76 +213,20 @@ func (b *tokenCompileBuffer) Write(raw []byte) (int, error) {
 // A complete match is local reproduction, not toolchain authenticity, original
 // publisher identity, permissions, provider state, finality or financial use.
 func RecompileToken(ctx context.Context, c Config, b TokenSourceBundle, compiler TokenCompiler) TokenCompilationReport {
-	r := TokenCompilationReport{Checks: []Check{}, RequiredReviews: tokenSourceReport().RequiredReviews}
+	r, raw := runTokenCompiler(ctx, c, b, compiler, false)
+	if raw == nil {
+		return r
+	}
 	check := func(name string, ok bool) bool {
 		ok = ok && ctx != nil && ctx.Err() == nil
 		r.Checks = append(r.Checks, Check{name, ok})
 		return ok
 	}
-	materials := CheckTokenSourceMaterials(c, b, compiler.compilerPin)
-	if !check("offline_materials", materials.OfflineMaterialsMatched) {
-		return r
-	}
-	r.OfflineMaterialsMatched = true
-	knownVersion := tokenCompilerReleases[hex.EncodeToString(compiler.compilerPin[:])]
-	if !check("known_compiler_release", knownVersion != "" && knownVersion == b.private.CompilerVersion) {
-		return r
-	}
-	input, err := tokenCompilationInput(b)
-	if !check("bounded_compiler_input", err == nil) {
-		return r
-	}
-	ctx, cancel := context.WithTimeout(ctx, TokenCompilationTimeout)
-	defer cancel()
-	_, err = tokenCompilerFile(ctx, compiler.nodePath, compiler.nodePin, maxTokenRuntimeBytes, true)
-	if !check("runtime_file_pin", err == nil) {
-		return r
-	}
-	r.RuntimeFileMatched = true
-	code, err := tokenCompilerFile(ctx, compiler.compilerPath, compiler.compilerPin, maxTokenCompilerBytes, false)
-	if !check("compiler_file_pin", err == nil) {
-		return r
-	}
-	r.CompilerFileMatched = true
-	job, err := json.Marshal(struct {
-		Purpose        string `json:"purpose"`
-		Compiler       []byte `json:"compiler"`
-		CompilerSHA256 string `json:"compilerSHA256"`
-		Input          string `json:"input"`
-		TargetSource   string `json:"targetSource"`
-		TargetContract string `json:"targetContract"`
-	}{"GOD Chain private offline compiler job v1", code, hex.EncodeToString(compiler.compilerPin[:]), string(input), b.private.TargetSource, b.private.TargetContract})
-	if !check("private_compiler_job", err == nil) {
-		return r
-	}
-	command := exec.CommandContext(ctx, compiler.nodePath, "--max-old-space-size=512", "-e", tokenCompilerWorker)
-	command.Env = []string{"TZ=UTC"}
-	if runtime.GOOS == "windows" {
-		command.Env = append(command.Env, "SystemRoot="+os.Getenv("SystemRoot"))
-	}
-	command.Stdin = bytes.NewReader(job)
-	var output tokenCompileBuffer
-	command.Stdout = &output
-	command.Stderr = io.Discard
-	command.WaitDelay = time.Second
-	if !check("compiler_worker", command.Run() == nil) {
-		return r
-	}
-	r.CompilerWorkerCompleted = true
-	// Re-read both inputs after the subprocess; no digest is automatically saved.
-	_, err = tokenCompilerFile(ctx, compiler.nodePath, compiler.nodePin, maxTokenRuntimeBytes, true)
-	if !check("runtime_file_stable", err == nil) {
-		return r
-	}
-	retained, err := tokenCompilerFile(ctx, compiler.compilerPath, compiler.compilerPin, maxTokenCompilerBytes, false)
-	if !check("compiler_file_stable", err == nil && bytes.Equal(code, retained)) {
-		return r
-	}
-	result, err := parseTokenCompileOutput(output.Bytes())
+	result, err := parseTokenCompileOutput(raw)
 	if !check("bounded_compiler_result", err == nil) {
 		return r
 	}
-	if !check("actual_compiler_version", result.Version == knownVersion) {
+	if !check("actual_compiler_version", result.Version == tokenCompilerReleases[hex.EncodeToString(compiler.compilerPin[:])]) {
 		return r
 	}
 	r.CompilerVersionMatched = true
@@ -291,4 +243,80 @@ func RecompileToken(ctx context.Context, c Config, b TokenSourceBundle, compiler
 	}
 	r.RecompiledRuntimeMatched, r.CompilerExecutionVerified = true, true
 	return r
+}
+
+// Shared worker execution returns private bytes only inside this package.
+// Ordinary recompilation retains its no-replacement requirement. Creation
+// output is usable only through a separate opaque, bounded replay artifact.
+func runTokenCompiler(ctx context.Context, c Config, b TokenSourceBundle, compiler TokenCompiler, creation bool) (TokenCompilationReport, []byte) {
+	r := TokenCompilationReport{Checks: []Check{}, RequiredReviews: tokenSourceReport().RequiredReviews}
+	check := func(name string, ok bool) bool {
+		ok = ok && ctx != nil && ctx.Err() == nil
+		r.Checks = append(r.Checks, Check{name, ok})
+		return ok
+	}
+	materials := CheckTokenSourceMaterials(c, b, compiler.compilerPin)
+	if !check("offline_materials", materials.OfflineMaterialsMatched) {
+		return r, nil
+	}
+	r.OfflineMaterialsMatched = true
+	knownVersion := tokenCompilerReleases[hex.EncodeToString(compiler.compilerPin[:])]
+	if !check("known_compiler_release", knownVersion != "" && knownVersion == b.private.CompilerVersion) {
+		return r, nil
+	}
+	input, err := tokenCompilationInputMode(b, creation)
+	if !check("bounded_compiler_input", err == nil) {
+		return r, nil
+	}
+	ctx, cancel := context.WithTimeout(ctx, TokenCompilationTimeout)
+	defer cancel()
+	_, err = tokenCompilerFile(ctx, compiler.nodePath, compiler.nodePin, maxTokenRuntimeBytes, true)
+	if !check("runtime_file_pin", err == nil) {
+		return r, nil
+	}
+	r.RuntimeFileMatched = true
+	code, err := tokenCompilerFile(ctx, compiler.compilerPath, compiler.compilerPin, maxTokenCompilerBytes, false)
+	if !check("compiler_file_pin", err == nil) {
+		return r, nil
+	}
+	r.CompilerFileMatched = true
+	purpose := "GOD Chain private offline compiler job v1"
+	if creation {
+		purpose = "GOD Chain private offline creation compiler job v1"
+	}
+	job, err := json.Marshal(struct {
+		Purpose        string `json:"purpose"`
+		Compiler       []byte `json:"compiler"`
+		CompilerSHA256 string `json:"compilerSHA256"`
+		Input          string `json:"input"`
+		TargetSource   string `json:"targetSource"`
+		TargetContract string `json:"targetContract"`
+	}{purpose, code, hex.EncodeToString(compiler.compilerPin[:]), string(input), b.private.TargetSource, b.private.TargetContract})
+	if !check("private_compiler_job", err == nil) {
+		return r, nil
+	}
+	command := exec.CommandContext(ctx, compiler.nodePath, "--max-old-space-size=512", "-e", tokenCompilerWorker)
+	command.Env = []string{"TZ=UTC"}
+	if runtime.GOOS == "windows" {
+		command.Env = append(command.Env, "SystemRoot="+os.Getenv("SystemRoot"))
+	}
+	command.Stdin = bytes.NewReader(job)
+	var output tokenCompileBuffer
+	command.Stdout = &output
+	command.Stderr = io.Discard
+	command.WaitDelay = time.Second
+	if !check("compiler_worker", command.Run() == nil) {
+		return r, nil
+	}
+	r.CompilerWorkerCompleted = true
+	// Re-read both inputs after the subprocess; no digest is automatically saved.
+	_, err = tokenCompilerFile(ctx, compiler.nodePath, compiler.nodePin, maxTokenRuntimeBytes, true)
+	if !check("runtime_file_stable", err == nil) {
+		return r, nil
+	}
+	retained, err := tokenCompilerFile(ctx, compiler.compilerPath, compiler.compilerPin, maxTokenCompilerBytes, false)
+	if !check("compiler_file_stable", err == nil && bytes.Equal(code, retained)) {
+		return r, nil
+	}
+	return r, bytes.Clone(output.Bytes())
 }

@@ -8,6 +8,37 @@ Connect explicitly, load the latest ten blocks and select a block or enter an ex
 
 ## Bounded explorer methods
 
+### Public explorer presentation
+
+The English public explorer separates latest block and manually loaded transaction
+tables from structured block, transaction and account details. Wallet activity
+links open focused transaction views using the existing `/#tx=<GOD-hash>` and
+`/#native-tx=<consensus-hash>` fragments. Exact `/#block=<height>` fragments
+support block links, reload and browser back navigation. Public address links
+lead to the checksum-checked account view. No query parameter carries these IDs.
+
+Transaction details show the action, actual execution status, full copyable
+identifiers, linked sender/recipient and block, sequence, execution code and
+reported Gas. A single optional `god_block` read with the exact consensus index
+and limit one supplies the timestamp only when block hash and transaction
+membership match. Unavailable metadata is explicitly labeled, never guessed.
+Compatible fees are unavailable in this query; no fee or gas price is invented.
+Native fees use validated `agod` units. Native redemption minima and operation
+amounts are requests, not fabricated payouts; starting unbonding is not an
+immediate transfer. Sanitized raw fields are secondary, collapsed details.
+
+Latest transactions load only on request, checking at most five non-empty blocks
+from the current ten-block page and displaying at most twenty summaries in total.
+The block list uses the just-observed committed height as its fixed query anchor,
+so another block arriving between the network and list reads is not mislabeled
+as a future or inconsistent block.
+There is no automatic backfill, periodic polling or claim submission. Invalid,
+changed-network, superseded and mismatched results clear previous details.
+Unknown results remain unconfirmed. All rendered fields and links are validated;
+memos, calldata, private text and unknown provider fields are not copied to the UI.
+Mobile tables scroll inside their own containers; full identifiers wrap and remain
+copyable on transaction pages. The layout does not add signing or indexing services.
+
 Height, count and offset arguments are canonical decimal strings, except the `latest` height marker. They never pass through floating-point coercion. The existing restricted synthetic RPC retains its host, exact-origin, size, request and connection limits.
 
 | Method | Parameters | Result and limit |

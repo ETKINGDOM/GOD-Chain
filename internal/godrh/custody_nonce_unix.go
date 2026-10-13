@@ -14,7 +14,7 @@ import (
 )
 
 const custodyNonceLease = ".god-shared-simulation-nonce-lease"
-const custodyNonceMaxSnapshots = 1 + 3*MaxCustodyNonceEntries
+const custodyNonceMaxSnapshots = 1 + 5*MaxCustodyNonceEntries
 
 func custodyNonceSnapshotName(sequence uint32) string {
 	return fmt.Sprintf("simulation-state-%03d.json", sequence)

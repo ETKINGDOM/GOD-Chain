@@ -600,12 +600,12 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	// A separately deployed read service cannot enter any transaction route,
 	// including preflight, status reservations or submission decoding.
-	if g.config.ValidatorOnly && r.URL.Path != "/validator" && r.URL.Path != "/validators" {
+	if g.config.ValidatorOnly && r.URL.Path != "/validator" && r.URL.Path != "/validators" && r.URL.Path != "/staking" {
 		http.Error(w, "request rejected", 403)
 		return
 	}
 	peer, _, err := net.SplitHostPort(r.RemoteAddr)
-	if err != nil || !net.ParseIP(peer).IsLoopback() || r.Host != g.config.Listen || r.URL.RawPath != "" || r.URL.RawQuery != "" || r.URL.ForceQuery || r.URL.Fragment != "" || r.URL.Path != "/submit" && r.URL.Path != "/status" && r.URL.Path != "/state" && r.URL.Path != "/unbonding" && r.URL.Path != "/validator" && r.URL.Path != "/validators" || len(r.Header.Values("Origin")) != 1 || !godorigin.Allowed(g.config.Origin, g.config.ExtensionOrigin, r.Header.Get("Origin")) {
+	if err != nil || !net.ParseIP(peer).IsLoopback() || r.Host != g.config.Listen || r.URL.RawPath != "" || r.URL.RawQuery != "" || r.URL.ForceQuery || r.URL.Fragment != "" || r.URL.Path != "/submit" && r.URL.Path != "/status" && r.URL.Path != "/state" && r.URL.Path != "/unbonding" && r.URL.Path != "/validator" && r.URL.Path != "/validators" && r.URL.Path != "/staking" || len(r.Header.Values("Origin")) != 1 || !godorigin.Allowed(g.config.Origin, g.config.ExtensionOrigin, r.Header.Get("Origin")) {
 		http.Error(w, "request rejected", 403)
 		return
 	}
@@ -648,6 +648,45 @@ func (g *Gateway) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	ctx, cancel := context.WithTimeout(r.Context(), 15*time.Second)
 	defer cancel()
+	if r.URL.Path == "/staking" {
+		var q struct {
+			Address    string   `json:"address"`
+			Validators []string `json:"validators"`
+		}
+		if strict(raw, &q) != nil || len(q.Validators) < 1 || len(q.Validators) > 8 {
+			http.Error(w, "request rejected", 400)
+			return
+		}
+		if _, e := godnative.Account(q.Address); e != nil {
+			http.Error(w, "request rejected", 400)
+			return
+		}
+		seen := map[string]bool{}
+		for _, v := range q.Validators {
+			if !validOperator(v) || seen[v] {
+				http.Error(w, "request rejected", 400)
+				return
+			}
+			seen[v] = true
+		}
+		if !g.reserveState(clientIP) {
+			http.Error(w, "read budget exhausted", 429)
+			return
+		}
+		view, e := g.readStaking(ctx, q.Address, q.Validators)
+		if e != nil {
+			http.Error(w, "staking snapshot unavailable", 503)
+			return
+		}
+		payload, e := stakingJSON(view)
+		if e != nil {
+			http.Error(w, "staking snapshot unavailable", 503)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write(payload)
+		return
+	}
 	if r.URL.Path == "/validators" {
 		var q struct {
 			After  string `json:"after"`

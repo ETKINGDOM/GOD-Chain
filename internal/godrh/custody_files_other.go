@@ -7,4 +7,14 @@ func readCustodyPrivateSnapshot(string, int64, [32]byte) ([]byte, error) {
 	return nil, ErrCustodyWorkflow
 }
 
+func readRHPrivateSnapshot(string, int64, [32]byte) ([]byte, error) {
+	return nil, ErrCustodyWorkflow
+}
+
+func readRHPrivateBytes(string, int64, [32]byte) ([]byte, error) {
+	return nil, ErrCustodyWorkflow
+}
+
 func writeCustodyPrivateFile(string, []byte) error { return ErrCustodyWorkflow }
+
+func custodySigningOutputAvailable(string) error { return ErrCustodySigning }

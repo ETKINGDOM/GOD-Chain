@@ -32,6 +32,8 @@ type HTTPSource struct {
 	rawReads     bool // enabled only by the explicit complete-material constructor
 	tokenReads   bool // narrows the pre-custody adapter to four methods
 	accountReads bool // narrows the explicit account adapter to four methods
+	stateReads   bool // exact token account/storage reads; no calls/debug/writes
+	nativeReads  bool // separate native committed bridge queries, never RH methods
 }
 
 func (*HTTPSource) String() string     { return "GOD Chain RH read-only source (redacted)" }
@@ -74,31 +76,58 @@ func (s *HTTPSource) rpc(ctx context.Context, method string, params any) (json.R
 		return nil, ErrSource
 	}
 	limit := maxRPCBytes
-	if s.accountReads {
+	if s.nativeReads {
+		if s.rawReads || s.tokenReads || s.accountReads || s.stateReads ||
+			(method != "god_bridge" && method != "god_bridgeWithdrawal") {
+			return nil, ErrSource
+		}
+		limit = maxNativeBridgeRPCBytes
+	} else {
+		if s.stateReads {
+			if s.rawReads || s.tokenReads || s.accountReads {
+				return nil, ErrSource
+			}
+			switch method {
+			case "eth_chainId", "eth_getBlockByNumber", "eth_getProof", "eth_getCode":
+			default:
+				return nil, ErrSource
+			}
+		}
+		if s.accountReads {
+			switch method {
+			case "eth_chainId", "eth_getBlockByNumber", "eth_getProof", "debug_getRawHeader":
+			default:
+				return nil, ErrSource
+			}
+		}
 		switch method {
-		case "eth_chainId", "eth_getBlockByNumber", "eth_getProof", "debug_getRawHeader":
+		case "eth_chainId", "eth_getBlockByNumber", "eth_getCode", "eth_call":
+		case "eth_getTransactionReceipt", "eth_getLogs":
+			if s.tokenReads {
+				return nil, ErrSource
+			}
+		case "debug_getRawBlock", "debug_getRawReceipts":
+			if !s.rawReads || s.tokenReads {
+				return nil, ErrSource
+			}
+			limit = maxMaterialRPCBytes
+		case "eth_getProof":
+			if s.stateReads {
+				limit = maxTokenStateRPCBytes
+				break
+			}
+			if !s.accountReads || s.tokenReads || s.rawReads {
+				return nil, ErrSource
+			}
+			limit = maxCustodyAccountRPCBytes
+		case "debug_getRawHeader":
+			if !s.accountReads || s.tokenReads || s.rawReads {
+				return nil, ErrSource
+			}
+			limit = maxCustodyAccountRPCBytes
 		default:
 			return nil, ErrSource
 		}
-	}
-	switch method {
-	case "eth_chainId", "eth_getBlockByNumber", "eth_getCode", "eth_call":
-	case "eth_getTransactionReceipt", "eth_getLogs":
-		if s.tokenReads {
-			return nil, ErrSource
-		}
-	case "debug_getRawBlock", "debug_getRawReceipts":
-		if !s.rawReads || s.tokenReads {
-			return nil, ErrSource
-		}
-		limit = maxMaterialRPCBytes
-	case "eth_getProof", "debug_getRawHeader":
-		if !s.accountReads || s.tokenReads || s.rawReads {
-			return nil, ErrSource
-		}
-		limit = maxCustodyAccountRPCBytes
-	default:
-		return nil, ErrSource
 	}
 	id := s.nextID.Add(1)
 	if id == 0 {

@@ -107,7 +107,9 @@ func startNode(ctx context.Context, a *App, o LocalOptions, network bool) (*Loca
 		return nil, ErrConfig
 	}
 	if o.CandidateOwner != "" {
-		if _, err := godaddress.FromNative(o.CandidateOwner); err != nil || o.Observer || !o.Persistent || !a.config.RequireValidatorProof || a.config.BridgeGenesis != nil || a.config.BridgeApprovalGas != 0 {
+		// Local bridge/proof rehearsals use the same committed owner/active-set
+		// guard. Public testnet bridge peering remains refused by StartTestnet.
+		if _, err := godaddress.FromNative(o.CandidateOwner); err != nil || o.Observer || !o.Persistent || !a.config.RequireValidatorProof {
 			return nil, ErrConfig
 		}
 		pub, err := o.Signer.GetPubKey()

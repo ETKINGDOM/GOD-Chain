@@ -2,6 +2,93 @@
 
 `x/godbridge` and `contracts/GodBridgeEscrow.sol` are ledger and custody components for one-for-one GOD transfer accounting. Explicit synthetic node genesis mounts and initializes the ledger atomically before staking. A separate positive approval-gas policy enables six authenticated participant routes in the local node prototype. Ordinary and ledger-only configurations leave them disabled. Read-only source observers, a simulation journal, event discovery and complete receipt-set checks are supplied without configured RH access. Separate synthetic-testnet/RPC and terminal-wallet tools do not activate these bridge routes. Conditional account/parent proof components grant no independent RH finality or asset authority. No bridge deployment, financial relayer, populated signer configuration or real assets are supplied.
 
+## Two-way asset flow and committed status queries
+
+RH-to-GOD locks source tokens in custody before an approved native reserve
+release. GOD-to-RH locks native GOD, waits under committed time and requires the
+exact source payment or finalized cancellation before resolution. An elapsed
+timeout alone cannot refund funds. Views expose committed accounting, not
+independent finality or a live financial relay. No configured address is shipped.
+
+## Paired native withdrawal and RH return evidence
+
+An explicitly supplied native read source is compared before and after review
+of the original complete RH receipt set. Exact binding, parties, amount, queue,
+waiting progress and same-commit checks refuse inconsistent views. Provider
+agreement is conditional evidence, not independently authenticated source or
+native finality. No signing, source payment or automatic refund is installed.
+
+## Durable unsigned return resolution outbox
+
+The original task and exact private proof are retained in one exclusively owned
+simulation slot. UNKNOWN is durable before an unsigned handoff. Reopen requires
+a separately retained latest pin and does not repeat handoff. Exact terminal
+attestation may be rechecked; it is not native execution proof or payment.
+Partial/conflicting state is retained for review, never repaired automatically.
+
+## Offline native return message assembly
+
+One exact unsigned resolution may be assembled with explicit quorum approvals
+and original sender/fee/sequence inputs. The combined node codec authenticates
+outer ownership and the business quorum separately. Construction alone has no
+authority to sign, broadcast, resolve a withdrawal or assert RH backing.
+
+## Reviewed native transaction and durable simulation attempt
+
+Signed native wire must match the original outbox/message and full reviewed
+authentication domain. A private attempt records UNKNOWN before its one
+simulation handoff; lost responses and disk reopen do not create another send.
+No default signer, public route or production broadcaster is supplied.
+
+## Shared native return sequence and fee budget
+
+The shared native sender book reserves explicit ordered sequences and aggregate
+fees for exact attempts. Reservations cannot be silently changed or released
+after uncertainty. A local book is not global operator coordination or
+protection from whole-history-and-pin rollback.
+
+## Exact native return submission and execution recovery
+
+Complete transaction/result commitments and a separately pinned following
+header/validator set conditionally bind exact native execution. Original
+sequence, signed wire and attestation must match. Reconciliation changes no
+unknown dispatch into retry, fee release, refund or source-finality approval.
+
+## Exact private source signing integration
+
+An explicitly injected local signer receives the exact reviewed source intent.
+Returned dynamic-fee wire must preserve chain, sender, nonce, target, calldata
+and Gas plan. The exact private file is retained without another signature.
+The standalone attempt guard is process-local; no production key provider or
+signing command is installed.
+
+## Durable signing in the shared sender book
+
+The existing nonce/Gas book owns unsigned reservations and records signing
+UNKNOWN durably before invoking the signer. Restart cannot recreate a signable
+attempt; complete original output may be explicitly recovered and bound to the
+same entry. Original reservations remain counted exactly once. Old encodings
+are preserved. This is not hardware key custody or hostile-owner protection.
+
+## Composed source submission and receipt recovery
+
+The same exact signed envelope and sender book compose a single handoff with
+complete receipt fetching/reconciliation. Successful admission is not payment;
+errors, lost replies and restart never permit replacement or repeated dispatch.
+Compiled synthetic custody exercises deposit, payment, cancellation and pause,
+successful/reverted execution and retained recovery. Real RH assets are closed.
+
+## One-use HTTP submission and exact receipt recovery
+
+Only complete private simulation configuration and a literal loopback endpoint
+permit one `eth_sendRawTransaction`. UNKNOWN is saved before HTTP. The transport
+has no ambient proxy/custom transport, redirect, connection reuse, replayable
+body or automatic retry. A bounded strict reply accepts only the original TX
+hash as admission, never payment. Complete receipts are separately recovered
+through read-only HTTP after lost responses. Production and non-loopback writes
+are refused; ordinary source/public RPC remains read-only. Test code, generated
+keys, signed files and operational configurations are deliberately excluded.
+
 ## Trust and backing
 
 RH means Robinhood Chain. Independent signers must verify successful finalized source execution, not merely wait a timer. Read-only receipt observation does not implement independent source-finality verification.

@@ -39,8 +39,19 @@ func (g *Gateway) unbondingSnapshot(ctx context.Context, owner, validator string
 	}
 	raw, err := g.call(ctx, "god_unbonding", []any{owner, validator, n.Commit.Height})
 	var u unbonding
-	if err != nil || strict(raw, &u) != nil || u.Commit != n.Commit || u.Owner != owner || u.Validator != validator || u.Delay != "1814400" || u.Max != 7 || u.Entries == nil || len(u.Entries) > 7 {
+	if err != nil || strict(raw, &u) != nil || !validUnbonding(n, owner, validator, u) {
 		return out, ErrGateway
+	}
+	end, err := g.network(ctx, n.Commit.Height)
+	if err != nil || end != n {
+		return out, ErrGateway
+	}
+	return unbondingSnapshot{n, u}, nil
+}
+
+func validUnbonding(n network, owner, validator string, u unbonding) bool {
+	if u.Commit != n.Commit || u.Owner != owner || u.Validator != validator || u.Delay != "1814400" || u.Max != 7 || u.Entries == nil || len(u.Entries) > 7 {
+		return false
 	}
 	ids := map[string]bool{}
 	for _, e := range u.Entries {
@@ -51,17 +62,13 @@ func (g *Gateway) unbondingSnapshot(ctx context.Context, owner, validator string
 		_, hold := integer(e.Hold, maxInt, false)
 		when, t := time.Parse(time.RFC3339Nano, e.Time)
 		if a != nil || b != nil || c != nil || d != nil || hold != nil || t != nil || when.IsZero() || when.UTC().Format(time.RFC3339Nano) != e.Time || ids[e.ID] || h.String() != e.Height || id.String() != e.ID || balance.Cmp(initial) > 0 {
-			return out, ErrGateway
+			return false
 		}
 		tip, _ := integer(n.Commit.Height, maxInt, true)
 		if h.Cmp(tip) > 0 {
-			return out, ErrGateway
+			return false
 		}
 		ids[e.ID] = true
 	}
-	end, err := g.network(ctx, n.Commit.Height)
-	if err != nil || end != n {
-		return out, ErrGateway
-	}
-	return unbondingSnapshot{n, u}, nil
+	return true
 }

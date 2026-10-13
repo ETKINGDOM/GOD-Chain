@@ -159,15 +159,18 @@ func parentG1(k [48]byte) (bls.G1Affine, bool) {
 	return p, err == nil && n == len(k) && !p.IsInfinity() && p.Bytes() == k
 }
 
-func parentSignature(ctx context.Context, t ParentFinalityTrust, p *ParentFinalityProof) bool {
+// Validate every position and the aggregate, even when that position did not
+// sign. The selected sum can be infinity; only signature verification rejects
+// that case. A committee that did not sign an update has no selected subset.
+func parentCommitteeSelected(ctx context.Context, p *ParentFinalityProof) (bls.G1Affine, bool) {
 	var all, selected bls.G1Affine
 	for i, raw := range p.Committee {
 		if ctx.Err() != nil {
-			return false
+			return bls.G1Affine{}, false
 		}
 		key, valid := parentG1(raw)
 		if !valid {
-			return false
+			return bls.G1Affine{}, false
 		}
 		all.Add(&all, &key)
 		if p.Participation[i/8]&(1<<(i%8)) != 0 {
@@ -175,7 +178,15 @@ func parentSignature(ctx context.Context, t ParentFinalityTrust, p *ParentFinali
 		}
 	}
 	aggregate, valid := parentG1(p.AggregatePubkey)
-	if !valid || all.IsInfinity() || selected.IsInfinity() || !all.Equal(&aggregate) {
+	if !valid || all.IsInfinity() || !all.Equal(&aggregate) {
+		return bls.G1Affine{}, false
+	}
+	return selected, true
+}
+
+func parentSignature(ctx context.Context, t ParentFinalityTrust, p *ParentFinalityProof) bool {
+	selected, valid := parentCommitteeSelected(ctx, p)
+	if !valid || selected.IsInfinity() {
 		return false
 	}
 	var signature bls.G2Affine
@@ -203,6 +214,13 @@ func parentSignature(ctx context.Context, t ParentFinalityTrust, p *ParentFinali
 // No activation flag, financial authorization, file or raw material is returned.
 // Callers must not concurrently mutate slices during entry/copy.
 func VerifyParentFinalityProof(ctx context.Context, t ParentFinalityTrust, p ParentFinalityProof) (report ParentFinalityReport, err error) {
+	return verifyParentFinalityProof(ctx, t, p, nil)
+}
+
+// The optional handoff is confined to the immediately following committee
+// period, proved in the ORIGINAL checkpoint state, with the original age and
+// single-fork limits. The public single-period API always passes nil.
+func verifyParentFinalityProof(ctx context.Context, t ParentFinalityTrust, p ParentFinalityProof, handoff *ParentNextCommitteeProof) (report ParentFinalityReport, err error) {
 	defer func() {
 		if recover() != nil {
 			report, err = ParentFinalityReport{}, ErrParentFinalityProof
@@ -215,6 +233,9 @@ func VerifyParentFinalityProof(ctx context.Context, t ParentFinalityTrust, p Par
 	case "electra":
 		committeeIndex, finalityIndex = 86, 169
 	default:
+		return fail()
+	}
+	if handoff != nil && len(handoff.Branch) != bits.Len64(committeeIndex+1)-1 {
 		return fail()
 	}
 	if ctx == nil || t.CheckpointRoot == [32]byte{} || t.GenesisValidatorsRoot == [32]byte{} || t.ForkVersion == [4]byte{} ||
@@ -231,12 +252,28 @@ func VerifyParentFinalityProof(ctx context.Context, t ParentFinalityTrust, p Par
 	p.FinalityBranch = append([][32]byte(nil), p.FinalityBranch...)
 	p.ExecutionHashBranch = append([][32]byte(nil), p.ExecutionHashBranch...)
 	p.FinalizedExecutionHeader = bytes.Clone(p.FinalizedExecutionHeader)
+	if handoff != nil {
+		owned := *handoff
+		owned.Branch = append([][32]byte(nil), handoff.Branch...)
+		handoff = &owned
+	}
 	if ctx.Err() != nil {
 		return fail()
 	}
+	checkpointPeriod := t.CheckpointSlot / parentPeriodSlots
 	for _, slot := range []uint64{t.CheckpointSlot, p.Finalized.Slot, p.Attested.Slot, p.SignatureSlot - 1, p.SignatureSlot, t.CurrentSlot} {
-		if slot < t.ForkStartSlot || slot >= t.ForkEndSlot || slot/parentPeriodSlots != t.CheckpointSlot/parentPeriodSlots {
+		if slot < t.ForkStartSlot || slot >= t.ForkEndSlot || (handoff == nil && slot/parentPeriodSlots != checkpointPeriod) {
 			return fail()
+		}
+	}
+	if handoff != nil {
+		// Requiring finality within the next period is stricter than accepting
+		// an optimistic next-period signature on an old finalized header. It
+		// neither promotes an optimistic head nor supports skipped periods.
+		for _, slot := range []uint64{p.Finalized.Slot, p.Attested.Slot, p.SignatureSlot, t.CurrentSlot} {
+			if slot/parentPeriodSlots != checkpointPeriod+1 {
+				return fail()
+			}
 		}
 	}
 	for _, h := range []ParentBeaconHeader{p.Bootstrap, p.Attested, p.Finalized} {
@@ -260,8 +297,22 @@ func VerifyParentFinalityProof(ctx context.Context, t ParentFinalityTrust, p Par
 	}
 	canonical, encodeErr := rlp.EncodeToBytes(&header)
 	if encodeErr != nil || !bytes.Equal(canonical, p.FinalizedExecutionHeader) ||
-		!parentBranch(p.Finalized.BodyRoot, parentExecutionHashIndex, p.ExecutionHashBranch, [32]byte(header.Hash())) ||
-		!parentSignature(ctx, t, &p) || ctx.Err() != nil {
+		!parentBranch(p.Finalized.BodyRoot, parentExecutionHashIndex, p.ExecutionHashBranch, [32]byte(header.Hash())) {
+		return fail()
+	}
+	if handoff != nil {
+		next := p
+		next.Committee, next.AggregatePubkey = handoff.Committee, handoff.AggregatePubkey
+		if !parentBranch(p.Bootstrap.StateRoot, committeeIndex+1, handoff.Branch, parentCommitteeRoot(&next)) {
+			return fail()
+		}
+		if _, valid := parentCommitteeSelected(ctx, &p); !valid || !parentSignature(ctx, t, &next) {
+			return fail()
+		}
+	} else if !parentSignature(ctx, t, &p) {
+		return fail()
+	}
+	if ctx.Err() != nil {
 		return fail()
 	}
 	return ParentFinalityReport{CheckpointMatched: true, CommitteeIncluded: true, CommitteeAggregateMatched: true,

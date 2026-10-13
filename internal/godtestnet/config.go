@@ -62,6 +62,7 @@ type Report struct {
 	ValidatorCount  int    `json:"validatorCount"`
 	NetworkExposure bool   `json:"networkExposure"`
 	Persistent      bool   `json:"persistent"`
+	SigningGuard    bool   `json:"signingGuard,omitempty"`
 }
 
 type Loaded struct {

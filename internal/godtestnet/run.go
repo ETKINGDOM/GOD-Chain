@@ -23,14 +23,39 @@ import (
 // only after separately reviewing the host, firewall and TLS gateway. Config
 // errors and startup failures never include private path/endpoint/key values.
 func Run(ctx context.Context, home string, allowNetwork bool, out io.Writer) (result error) {
+	return RunWithSigningGuard(ctx, home, "", allowNetwork, out)
+}
+
+// RunWithSigningGuard requires a separately initialized, retained directory.
+// It does not enable production mode or create/reset any signing witness.
+func RunWithSigningGuard(ctx context.Context, home, guard string, allowNetwork bool, out io.Writer) (result error) {
 	if ctx == nil || out == nil {
 		return ErrConfig
+	}
+	// A cancelled launch is not permission to create a lease, prepare stores or
+	// consume the process-wide execution runtime. Later boundaries cooperate too;
+	// this is not a hard deadline for an already blocked filesystem operation.
+	if err := ctx.Err(); err != nil {
+		return err
 	}
 	r, err := openPrivate(home)
 	if err != nil {
 		return err
 	}
 	defer r.Close()
+	// Read-only preflight must reject invalid role/binding or unauthorized
+	// exposure without creating a lease file. Reload under the actual lease
+	// below: this first read is never startup or signing authority.
+	preflight, err := Load(home)
+	if err != nil {
+		return err
+	}
+	if preflight.Report.NetworkExposure && !allowNetwork {
+		return ErrConfig
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	lease, err := acquireNodeLease(r)
 	if err != nil {
 		return err
@@ -44,6 +69,21 @@ func Run(ctx context.Context, home string, allowNetwork bool, out io.Writer) (re
 	}
 	if loaded.Report.NetworkExposure && !allowNetwork {
 		return ErrConfig
+	}
+	guarded, err := openNodeSigningGuard(r, home, guard, loaded)
+	if err != nil {
+		return err
+	}
+	if guarded != nil {
+		defer func() {
+			if err := guarded.Close(); err != nil && result == nil {
+				result = godnode.ErrSigningGuard
+			}
+		}()
+		loaded.Report.SigningGuard = true
+	}
+	if err := ctx.Err(); err != nil {
+		return err
 	}
 	for _, name := range []string{"data", "data/sdk"} {
 		if r.MkdirAll(name, 0700) != nil {
@@ -61,6 +101,9 @@ func Run(ctx context.Context, home string, allowNetwork bool, out io.Writer) (re
 		return startFailure("rpc-listener", err)
 	}
 	defer listener.Close()
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	db, err := dbm.NewDB("god_app", dbm.GoLevelDBBackend, filepath.Join(home, "data", "sdk"))
 	if err != nil {
 		return startFailure("application-database", err)
@@ -75,8 +118,12 @@ func Run(ctx context.Context, home string, allowNetwork bool, out io.Writer) (re
 			result = startFailure("application-close", err)
 		}
 	}()
-	n, err := godnode.StartTestnet(ctx, app, godnode.LocalOptions{Directory: home, Listen: loaded.Document.P2PListen, Peers: loaded.Document.Peers,
-		BlockInterval: time.Duration(loaded.Document.BlockIntervalMillis) * time.Millisecond, Genesis: loaded.Genesis, Signer: loaded.Signer, NodeKey: loaded.NodeKey, Persistent: true, Observer: loaded.Document.Role == "observer", CandidateOwner: loaded.Document.CandidateOwner})
+	options := godnode.LocalOptions{Directory: home, Listen: loaded.Document.P2PListen, Peers: loaded.Document.Peers,
+		BlockInterval: time.Duration(loaded.Document.BlockIntervalMillis) * time.Millisecond, Genesis: loaded.Genesis, Signer: loaded.Signer, NodeKey: loaded.NodeKey, Persistent: true, Observer: loaded.Document.Role == "observer", CandidateOwner: loaded.Document.CandidateOwner}
+	if guarded != nil {
+		options.Signer = guarded
+	}
+	n, err := godnode.StartTestnet(ctx, app, options)
 	if err != nil {
 		return startFailure("consensus-start", err)
 	}

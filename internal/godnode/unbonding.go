@@ -37,6 +37,10 @@ func (a *App) QueryUnbonding(owner, validator string, height int64) (view Unbond
 	}
 	a.mu.Lock()
 	defer a.mu.Unlock()
+	return a.queryUnbonding(owner, validator, height)
+}
+
+func (a *App) queryUnbonding(owner, validator string, height int64) (view UnbondingView, err error) {
 	defer func() {
 		if recover() != nil {
 			view, err = UnbondingView{}, ErrQueryState

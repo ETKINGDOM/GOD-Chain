@@ -104,6 +104,166 @@ First run native diagnostics and offline checks. Start the candidate in the fore
 
 Keep validator RPC on loopback. The separate observer may serve a reviewed HTTPS gateway only after firewall, exact-host/origin, per-client limits and public-deployment approval. The local companion is not a public website server. No default public domain, gateway credential or paid service is supplied.
 
+## Stopped candidate integrity preflight
+
+After a guarded synthetic validator is fully stopped, the reviewed diagnostic
+can combine original signing-state checks with a separately reviewed, already
+staged package:
+
+```sh
+./build/godd testnet upgrade-check \
+  --home "$GOD_STOPPED_PRIVATE_VALIDATOR" \
+  --signer-guard "$GOD_ORIGINAL_RETAINED_GUARD" \
+  --archive "$GOD_PRIVATE_ARCHIVE" \
+  --expected-archive "$GOD_REVIEWED_ARCHIVE_SHA256" \
+  --candidate-dir "$GOD_PRIVATE_STAGING_DIR"
+```
+
+All paths must be clean, absolute and nonoverlapping. This operation acquires
+the existing home and key-wide witness leases and holds both throughout exact
+archive/staging verification. It then rechecks the original configuration,
+genesis, peer key, validator key/progress, requirement marker and any candidate
+identity against their original contents, metadata and file identities. Missing,
+linked, shared, wrong-owner, changed or mismatched inputs refuse without repair.
+Original input reads are bounded and reject special files; private archive and
+staging reads additionally reject hard links and recheck file identity after
+reading. Checks do not create a lease, copy a key or open application storage.
+
+Success emits only a redacted synthetic scope, retained signing height/round/step,
+candidate target and integrity flags. `candidateExecuted`,
+`stateCompatibilityVerified`, `migrationVerified` and `upgradeAuthorized`
+remain false. There is no extraction, installation, signature, service mutation,
+node start or network access. Failure emits no partial acceptance report.
+
+This is point-in-time integrity evidence on trusted owner-controlled storage,
+not an immutable installation or proof that a candidate can read an existing
+database. The candidate is not executed, even when its target matches the host.
+Use an external supervisor if a hard filesystem-call deadline is needed. Reads
+may update filesystem access-time metadata. Later installation/startup must
+revalidate independently; never restore signer progress when rolling software
+back. Retained-state migration, native Linux execution, actual upgrade/rollback
+drills, physical durability and production authorization remain separate gates.
+Existing deployed unguarded validators are not adopted by this command.
+
+## Private two-program retained-state drill
+
+The explicitly tagged Linux amd64 test fixture executes an independently pinned
+baseline, a distinct independently pinned candidate, then the same baseline
+again. It creates one new private synthetic validator and an independently
+located fresh signing witness. It accepts no existing node-home input, deployed
+key, public peer or real asset. This is an acceptance fixture, not a software
+installer, migration tool or production rollback command.
+
+```sh
+make test-retained-upgrade-inputs check-retained-upgrade compile-retained-upgrade-linux
+```
+
+The first target runs portable input and already-cancelled startup checks without
+starting consensus. The compilation target prepares two private Linux artifacts:
+the current `godd` and the tagged `godtestnet.test` runner. Retain the separately
+reviewed earlier baseline outside that output directory; identical executable
+digests are refused as a two-program test. Binary files and their immediate
+directories must be owned by the executing non-root user and mode 0700. Checks
+bind contents, permissions and file identity and reject symlinks, hard links,
+unsupported ELF targets and changed inputs. Pins must come from independently
+reviewed compiler inputs, not the same untrusted download.
+
+Run only after explicit intended-host authorization, in an isolated private
+directory with a reviewed external time/resource supervisor. For example, supply
+these locally selected inputs to the reviewed private runner:
+
+```sh
+env TMPDIR="$GOD_NEW_PRIVATE_DRILL_PARENT" \
+  GOD_UPGRADE_BASELINE_BINARY="$GOD_REVIEWED_BASELINE_BINARY" \
+  GOD_UPGRADE_BASELINE_SHA256="$GOD_REVIEWED_BASELINE_SHA256" \
+  GOD_UPGRADE_CANDIDATE_BINARY="$GOD_REVIEWED_CANDIDATE_BINARY" \
+  GOD_UPGRADE_CANDIDATE_SHA256="$GOD_REVIEWED_CANDIDATE_SHA256" \
+  "$GOD_REVIEWED_LINUX_TEST_EXECUTABLE" \
+  -test.run='^TestRetainedUpgrade(Inputs|CompiledPairPreservesStateAndSigner)|^TestStartupCancelledBeforePrivateAccess$' \
+  -test.timeout=160s
+```
+
+Only numeric loopback listeners are used. Each phase submits one fresh signed
+GOD payment and one contract creation/write, checks the known receipts and exact
+balance/sequence/storage effects, then joins a graceful process stop. Original
+configuration, genesis, consensus/peer keys, requirement marker and lease
+identity are retained. Later phases verify earlier receipts and committed block
+hashes and resume from the current signing witness and the same data directory.
+No signer progress or database is restored during the executable-only return
+to the baseline. New transaction submissions are one-shot; uncertain outcomes
+stop the fixture without retry or replacement signing. Only test-owned child
+processes are signalled during cleanup.
+
+The two-program result applies to that exact private executable pair and
+unchanged storage layout only. It cannot authorize arbitrary database-schema
+downgrades, adoption of deployed unguarded keys, host restoration, physical
+durability, public upgrades or mainnet activation. Test workspace material stays
+private and temporary; the runner is not a public binary distribution. The
+authorized VPS supervision uses an independent transient unit with loopback-only
+egress, inaccessible deployed key/store paths, one-CPU quota, a 2-GiB memory cap
+and a 180-second lifetime. Those are drill limits, not production node sizing.
+
+The authorized Linux VPS run passed the three phases and all six committed
+transactions while retaining the fourteen existing service identities. The
+temporary unit was stopped afterward. See [recorded evidence and limits](VERIFICATION.md#isolated-linux-two-program-retained-state-acceptance).
+The candidate refuses an already-cancelled/expired startup before acquiring
+private inputs and also checks cancellation before preparing data directories
+and before opening application storage. Cancellation at later boundaries may
+follow earlier preparation; it is not transactional rollback or a hard syscall
+deadline. The running public pilot was not upgraded with this candidate.
+
+## Private four-validator rolling executable drill
+
+The separately tagged `TestRetainedUpgradeCompiledRollingFourValidators`
+fixture extends the exact reviewed executable-pair checks to four fresh
+synthetic validators on one host. It creates its own homes, keys and separate
+signing witnesses; it accepts no deployed-home input or public peer. This is
+acceptance tooling, not a production upgrader or permission to change the pilot.
+
+```sh
+make test-retained-upgrade-inputs check-retained-rolling-upgrade compile-retained-upgrade-linux
+```
+
+After separate intended-host authorization, supply the same reviewed executable
+paths and pins described above to the private runner, selecting:
+
+```sh
+"$GOD_REVIEWED_LINUX_TEST_EXECUTABLE" \
+  -test.run='^TestRetainedUpgradeCompiledRollingFourValidators$' \
+  -test.timeout=270s
+```
+
+An external supervisor must bound runtime, memory, CPU, child count and network
+access. Only numeric loopback ports and a new private writable work directory
+are needed. Deployed keys/stores must be inaccessible. The intended-host drill
+budget is two CPU cores, 3 GiB memory, zero swap and 300 seconds; these are test
+limits, not production sizing evidence.
+
+All four validators start on the baseline. One at a time they stop gracefully,
+pass exact signing-witness/input checks, switch to the candidate and catch up.
+The same sequence then returns them to the baseline without restoring a
+database or signer progress. A fresh payment commits while each selected node
+remains stopped; a contract-state write commits after its restart. Seventeen
+one-shot transactions include the initial contract deployment and eight
+payment/write pairs. Unknown submission outcomes stop the fixture, with no
+retry or replacement signature.
+
+Later phases compare all prior successful receipts, exact balance/sequence,
+contract storage, fixed GOD supply and an earlier committed block hash across
+all four nodes. Original configuration, genesis, consensus/peer keys, witness
+requirement, home-lease identity and data-directory identity must remain
+unchanged. Final stopped checks require monotonic signer progress on every node.
+Eight retained outage commits are independently checked against the original
+four-validator public-key set: each must contain exactly three valid original
+signatures and none from its stopped validator. Only stopped test-owned block
+stores are opened for this check.
+
+A passing run covers this compatible pair and retained storage format on the
+selected host. It does not certify arbitrary schema migrations/downgrades,
+adoption of deployed unguarded keys, signer-safe backup restoration, physical
+failure, independently operated validators, RH finality or mainnet activation.
+See [rolling-drill evidence](VERIFICATION.md#isolated-linux-four-validator-rolling-upgrade-acceptance).
+
 ## Read only host budget checks
 
 Run `host-check` as the intended unprivileged service user against an existing owner-only directory on the intended data volume. It reads directory/filesystem metadata and the current process's open-file soft limit, without reading node or wallet contents, writing a probe file, changing limits or installing a service.

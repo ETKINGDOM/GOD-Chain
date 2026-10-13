@@ -11,6 +11,7 @@ import (
 	sdkmath "cosmossdk.io/math"
 	"github.com/ETKINGDOM/GOD-Chain/internal/godaddress"
 	"github.com/ETKINGDOM/GOD-Chain/internal/godtx"
+	"github.com/ETKINGDOM/GOD-Chain/x/godbridge"
 	bridgemsg "github.com/ETKINGDOM/GOD-Chain/x/godbridge/msg"
 	"github.com/ETKINGDOM/GOD-Chain/x/godrewards"
 	"github.com/ETKINGDOM/GOD-Chain/x/godrewards/msg"
@@ -36,6 +37,16 @@ func ValidatorProofBytes(c Config, m *stakingtypes.MsgCreateValidator) ([]byte, 
 	}
 	if _, err := m.Description.EnsureLength(); err != nil {
 		return nil, godtx.ErrPolicy
+	}
+	// Match New's immutable runtime normalization. Equivalent signer order
+	// must not make an offline registration fail after application assembly.
+	// Replace only the local copy; never reorder the caller's configuration.
+	if c.BridgeGenesis != nil {
+		bridge, err := godbridge.CanonicalConfig(*c.BridgeGenesis)
+		if err != nil {
+			return nil, godtx.ErrPolicy
+		}
+		c.BridgeGenesis = &bridge
 	}
 	config, err := json.Marshal(c)
 	if err != nil {

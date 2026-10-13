@@ -12,6 +12,10 @@ import (
 
 const relayDBName = "god_readonly_relay"
 const taskProofDBName = "god_task_receipt_proof"
+const parentTrackingDBName = "god_conditional_parent_tracking"
+const returnOutboxDBName = "god_simulation_return_outbox"
+const nativeReturnAttemptDBName = "god_simulation_native_return_attempt"
+const nativeReturnSequenceDBName = "god_simulation_native_return_sequence"
 
 type privateRelayStore struct{ db dbm.DB }
 
@@ -64,11 +68,31 @@ func OpenPrivateTaskReceiptProofStore(ctx context.Context, journal *RelayJournal
 	return p, nil
 }
 
+// Separate owner-only storage and process lock for conditional parent tracking.
+// Neither relay tasks nor custody records are stored here. The caller retains
+// the origin and old/planned snapshot pins separately; this does not authenticate
+// their provenance or furnish signing/financial authority.
+func OpenPrivateParentFinalityTracker(ctx context.Context, origin ParentFinalityTrust, current uint64, expectedPin [32]byte, directory string, create bool) (*ParentFinalityTracker, error) {
+	if ctx == nil || !parentTrackingFresh(origin, current) {
+		return nil, ErrParentTracking
+	}
+	store, err := openPrivateRelayStore(directory, create, parentTrackingDBName)
+	if err != nil {
+		return nil, ErrParentTrackingStorage
+	}
+	p, err := NewParentFinalityTracker(ctx, origin, current, expectedPin, store, create)
+	if err != nil {
+		_ = store.Close()
+		return nil, err
+	}
+	return p, nil
+}
+
 // Names are private constants, never user-provided path components. This
 // checks the final directory and its existing entries, not every ancestor or
 // hostile filesystem races. Caller supplies trusted ignored owner-only storage.
 func openPrivateRelayStore(directory string, create bool, name string) (*privateRelayStore, error) {
-	if name != relayDBName && name != taskProofDBName {
+	if name != relayDBName && name != taskProofDBName && name != parentTrackingDBName && name != returnOutboxDBName && name != nativeReturnAttemptDBName && name != nativeReturnSequenceDBName {
 		return nil, ErrRelayStorage
 	}
 	if runtime.GOOS == "windows" || !filepath.IsAbs(directory) || filepath.Clean(directory) == string(filepath.Separator) {

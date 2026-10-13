@@ -15,7 +15,20 @@ const nodeLeaseFile = ".god-node-lease"
 // so could let a second cooperating process lock a different inode. This is not
 // remote signer fencing, protection from the host owner or older executables.
 func acquireNodeLease(root *os.Root) (*os.File, error) {
-	f, err := root.OpenFile(nodeLeaseFile, os.O_RDWR|os.O_CREATE|unix.O_NOFOLLOW|unix.O_NONBLOCK, 0600)
+	return openNodeLease(root, true)
+}
+
+// A stopped-workspace check must not create or repair a missing lease file.
+func acquireExistingNodeLease(root *os.Root) (*os.File, error) {
+	return openNodeLease(root, false)
+}
+
+func openNodeLease(root *os.Root, create bool) (*os.File, error) {
+	flags := os.O_RDWR | unix.O_NOFOLLOW | unix.O_NONBLOCK
+	if create {
+		flags |= os.O_CREATE
+	}
+	f, err := root.OpenFile(nodeLeaseFile, flags, 0600)
 	if err != nil {
 		return nil, ErrPrivate
 	}

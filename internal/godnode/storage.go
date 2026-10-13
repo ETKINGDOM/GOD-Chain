@@ -13,7 +13,6 @@ import (
 	cmted "github.com/cometbft/cometbft/crypto/ed25519"
 	cmtjson "github.com/cometbft/cometbft/libs/json"
 	"github.com/cometbft/cometbft/libs/protoio"
-	"github.com/cometbft/cometbft/privval"
 	cmtproto "github.com/cometbft/cometbft/proto/tendermint/types"
 )
 
@@ -25,8 +24,8 @@ import (
 // made safe by this check. FilePV and the consensus WAL remain responsible for
 // same-height signature reuse. No keys or populated paths are supplied here.
 func validLocalSigner(a *App, o LocalOptions) bool {
-	pv, ok := o.Signer.(*privval.FilePV)
-	if !ok || pv == nil {
+	pv := fileSigner(o.Signer)
+	if pv == nil {
 		return false
 	}
 	key, ok := pv.Key.PrivKey.(cmted.PrivKey)
@@ -86,6 +85,9 @@ func bindLocalStorage(a *App, o LocalOptions) error {
 		return ErrGenesis
 	}
 	genesisHash := sha256.Sum256(genesis)
+	if guarded, ok := o.Signer.(*GuardedSigner); ok && !guarded.matches(a.config.ChainID, genesisHash) {
+		return ErrConfig
+	}
 	pub, err := o.Signer.GetPubKey()
 	if err != nil {
 		return ErrConfig

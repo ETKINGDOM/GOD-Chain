@@ -2,6 +2,173 @@
 
 `internal/godnode` connects God EVM execution, God SDK accounts and staking, and GodCometBFT consensus in an isolated synthetic-asset runtime. Four separate validator processes have produced matching committed state on the same computer. This is local integration evidence, not a live GOD Chain, independent operators, RH backing or mainnet readiness.
 
+## Private launch candidate assembly
+
+`PrepareBridgeLaunch` derives native balances and consensus validators directly
+from the canonical, quorum-approved bootstrap plan. There is no separately
+entered allocation that can diverge from the deposit recipients. It admits
+explicit startup/working-Gas budgets, validator possession policy and bridge
+transactions together. Total credited GOD must equal initial self-stake plus
+the declared Gas budgets, within the explicit startup budget. GOD still comes
+from the restricted fixed reserve; the declaration is never a second mint.
+This candidate starts with an empty redemption pool and refuses an unimplemented
+nonzero seed rather than displaying it as funded.
+
+The proposal produces the existing node-authorization challenge. Completion
+requires supplied quorum signatures, owner consent and consensus-key possession
+for the exact runtime, funding, genesis time and consensus parameters. It does
+not create/sign with an operator key. Explicit payload access returns detached
+runtime/genesis for private rehearsal; ordinary formatting/reports are redacted.
+The source statement remains a synthetic quorum input, not authenticated RH
+backing. A declared block interval is a candidate operating assumption, not a
+measured cadence or new consensus-enforced timing rule.
+
+The operator commands `launch-assembly-template`, `check-launch-assembly` and
+`stage-launch-candidate` combine these inputs with the economic candidate in one
+private document. Blank template fields cannot pass. Exact nested field names,
+duplicate/trailing/deep JSON refusal, runtime emission/minimum-fee matching,
+validator count, declared cadence and fee-budget reconciliation are checked
+before staging. All monetary and identity inputs are explicit; no production
+Chain ID, Gas price or initial wallet balance is guessed.
+
+Review/staging uses separately retained exact input hashes and owner-only
+Linux/macOS files. Staging creates only a new mode-0600 file in an existing
+mode-0700 private directory, verifies readback and never overwrites, repairs or
+removes an existing/partial artifact. The artifact contains the actual runtime
+and consensus genesis, not only a success report. Keep it ignored and private.
+Creation/recovery does not open a chain database or a listener. Windows private
+file staging remains closed pending ACL acceptance.
+
+The output is explicitly a `synthetic-bridge-launch-candidate`. Ordinary mainnet
+`init`, `start`, `bridge` and `mint`, non-prototype runtime and public bridge
+peering remain refused. This composes the launch materials but does not complete
+the production executable, key custody, independent source finality, funded
+custody, governance/upgrade policy or intended-host installation. Do not rename
+the pilot database or promote synthetic balances into production assets.
+
+Use `make test-launch-assembly check-launch-assembly test-launch-assembly-cli
+compile-launch-assembly-linux` for scoped local verification. The command-line
+round trip stages fresh generated fixtures only. Linux cross-compilation is not
+Linux runtime acceptance or authorization to replace a deployed node.
+
+## Run a privately staged candidate
+
+`init-launch-rehearsal` and `run-launch-rehearsal` now consume the actual staged
+candidate, not its success report. Every invocation independently pins the
+original complete signed assembly and the candidate file, re-derives the exact
+candidate bytes and checks the original files again. Changing a candidate and
+providing a new checksum does not authorize changed funding, runtime, genesis
+or cadence. This remains a prototype-only launch rehearsal, not mainnet start.
+
+Initialization requires an existing mode-0700 identity-only home with the
+original mode-0600 consensus key, empty signing state and P2P key. The consensus
+key must match an authorized genesis validator. It creates a new private launch
+profile and a mandatory separate signing-witness requirement under the node
+lease. It does not generate/copy keys, adopt used signing state, replace a joined
+pilot workspace or repair an interrupted initialization. Keep the witness
+outside the node backup scope; alternate paths cannot hide a nested witness.
+
+The operator interfaces are:
+
+```text
+godd init-launch-rehearsal --home <fresh-identity-only-home> --signer-guard <separate-existing-private-directory> --input <original-signed-assembly> --input-pin <independently-reviewed-SHA256> --candidate <staged-candidate> --candidate-pin <independently-reviewed-SHA256> --p2p <explicit-loopback-listen> --peers <explicit-loopback-peer-list>
+godd run-launch-rehearsal --home <same-retained-home> --signer-guard <same-retained-directory> --input <same-original-assembly> --input-pin <same-reviewed-SHA256> --candidate <same-staged-candidate> --candidate-pin <same-reviewed-SHA256> --seconds <2..180>
+```
+
+Each validator runs in a separate process with persistent application and
+consensus stores. Restart retains the same identities, candidate binding,
+committed state and key-wide signing witness. Existing cooperating home/key
+leases exclude duplicate starts; missing/wrong/stale signing witnesses fail
+closed before application opening. Consensus shutdown joins its workers before
+application closure and lease release. The duration is cooperative, not a hard
+deadline for a blocked filesystem or shutdown; a reviewed supervisor remains
+necessary for operational resource/deadline limits.
+
+All peers and listeners are explicit loopback endpoints. There is no HTTP RPC,
+source client, wallet signer, real funding request, public bridge peering,
+production switch, automatic restart or financial relay. Redacted JSON lines
+report initialization/start and actual committed heights, fixed-supply match
+and observed on-chain G. Pending G remains unclaimed, not a spendable reward.
+A successful process exit without committed progress is not launch acceptance.
+The witness is a local cooperating-process safeguard, not protection from the
+host owner, whole-host rollback or another unreviewed signing executable.
+
+`make test-launch-rehearsal test-launch-rehearsal-cli check-launch-rehearsal
+compile-launch-rehearsal-linux` checks the complete local path. Four generated
+temporary validator identities have started from one staged candidate, produced
+matching committed ledger/bridge/staking/G state and continued after whole-group
+restart. Rollback and duplicate startup are refused. These processes share one
+computer and one fixture custodian; they are not independent operators. Linux
+compilation does not install or run this candidate on the VPS. Public testnet
+startup remains bridge-disabled and cannot consume this private profile.
+
+## Persistent private candidate service
+
+`serve-launch-candidate` adds a cancellable continuous service path for the same
+already initialized, independently pinned candidate. It shares the bounded
+rehearsal's startup, consensus, persistent stores and shutdown implementation;
+it does not replace a time limit with production authority. No new keys, homes,
+genesis, funding, public peers or asset modes are created. Ordinary mainnet
+`init`/`start` remain refused. The selected topology is one founder-operated
+host with separate validator processes, not independent regions/operators.
+
+```text
+godd serve-launch-candidate --home <same-retained-private-home> --signer-guard <same-retained-separate-directory> --input <original-signed-assembly> --input-pin <independently-reviewed-SHA256> --candidate <staged-private-candidate> --candidate-pin <independently-reviewed-SHA256> --report-seconds <1..300>
+```
+
+All seven flag/value pairs are explicit, with no repeated or last-flag-wins
+bindings. The command has no `--production`, `--allow-network`, RPC, signing-key,
+reset or duration override. The existing fresh initialization ceremony is
+still mandatory; an ordinary testnet home cannot silently become this service.
+Missing/wrong/stale witnesses and duplicate home ownership fail before
+application opening. Retain original reviewed input/candidate pins separately
+from restored node data; a pin supplied by the same unreviewed file is not trust.
+
+The caller supplies cancellation; the CLI maps SIGINT and SIGTERM to that
+context. A successful exit joins consensus workers, closes the application and
+signing witness, then releases the home lease. Startup cancellation, output
+failure and shutdown/guard failure return a fixed error. Cancellation is
+cooperative, not a hard deadline for blocked filesystem access, output or
+engine shutdown. There is no automatic restart or service-manager installation;
+an independently reviewed supervisor must provide resource/shutdown limits.
+Never turn an unclean stop into a fresh key, empty witness or signing reset.
+
+The active witness and home identity are checked every half second. At the
+explicit reporting cadence, the original signed input and staged candidate are
+revalidated, along with the canonical launch profile and witness requirement.
+A changed/missing/unsafe input stops the service; no file, pin or balance is
+repaired. These checks detect changes between observations, not hostile-owner
+modification, whole-host rollback or physical-power-loss safety.
+
+Redacted reports explicitly use `private-synthetic-launch-service` and
+`service: true`, while production, real-asset and public-peer flags remain
+false. Actual observed committed height, fixed-supply match and on-chain G
+remain distinct from a `heartbeat` with no new committed height. A node without
+quorum can emit a healthy process heartbeat; that is not network readiness,
+another block, spendable rewards or source funding/finality. Reports before the
+first committed version do not claim a supply match or G issuance. Report
+cadence is operational only and does not change block timing or reward policy.
+
+Repeat `make test-launch-service test-launch-service-cli test-launch-service-regression check-launch-service
+compile-launch-service-linux`. Compiled CLI acceptance starts four disposable
+validator processes, stops them with SIGTERM, checks equal committed ledger,
+bridge-funded staking and signature-derived G, then restarts the same stores
+and identities. Duplicate startup, rolled-back signing progress and missing
+witnesses are refused. A lone restarted validator cannot advance the ledger;
+its heartbeat creates no G. Changing the original input or candidate makes it
+exit without repair, and the retained ledger remains unchanged. The old bounded
+rehearsal also passes the shared path. No live service, operator key or public
+network is involved. Linux compilation is not intended-host execution or
+production installation; source-backed funding and mainnet activation remain
+separate release requirements.
+
+The ordinary synthetic node startup also performs read-only configuration and
+exposure preflight before creating a home lease, then repeats full loading
+under the lease before any signing/runtime use. Invalid observer-to-validator
+role edits cannot add a lease file or open application data. Observer recovery
+acceptance waits for the exact second transfer receipt before checking its
+recipient balance; an old relative height alone is not proof of catch-up.
+
 ## Execution and fixed supply
 
 The runtime uses the locked execution keeper and Ethereum signature checks. It accepts legacy, access-list and dynamic-fee Ethereum transactions in a bounded SDK envelope. Contract deployment, bytecode execution and persistent contract storage use the same committed application state as GOD balances. Native participant transactions retain the reviewed single-owner direct-signature rules. Both paths share account sequences, so mixing transaction formats does not create a second nonce balance.
@@ -11,6 +178,32 @@ Native ecosystem precompiles, execution hooks, IBC, automatic ERC20 conversion, 
 The reference balance setter ordinarily changes bank supply while reconciling EVM account deltas. The GOD adapter instead stages those deltas and atomically transfers existing GOD from debited accounts to credited accounts. Debits precede credits, irrespective of address order. It neither borrows the bridge reserve nor grants mint or burn permission. Failed business execution rolls back the message cache. EVM gas refunds are paid before residual fees enter pending rewards; native signed fees retain their separate full-requested-fee rule.
 
 EVM self-destruction-to-self can discard native value under Ethereum semantics. GOD Chain preserves that value in a protected quarantine account instead of burning it. This is an intentional native-value policy difference, not general Ethereum equivalence. Quarantine has no authenticated release or reward route. GOD supply remains 1,000,000,000 throughout execution. Fixed supply alone does not establish backing.
+
+## Conditional exact native execution
+
+The private in-process `ExportNativeExecution` reads an explicit stored
+transaction block, subsequent confirmation header and signed commit from its
+following block. It exports only consensus-committed result fields, never SDK
+logs, events or codespace diagnostics. There is no HTTP route, index search,
+latest fallback, new signer or transaction submission. Reports and ordinary
+material/trust formatting are redacted.
+
+`ReviewNativeExecution` verifies an exact envelope at a selected index against
+the full transaction/result roots and quorum signatures. Independent exact
+header/validator trust is mandatory; the exporter cannot authenticate that
+trust's origin, freshness, validator transitions, current account state or RH
+payment. It supports bounded multi-transaction material and distinguishes an
+included failed SDK transaction from code-zero execution. SDK code zero is
+not a general God EVM-success claim. The bridge consumer separately checks its
+single native resolution message before any conditional receipt review.
+
+Actual four-validator process acceptance covers successful/failed bridge
+transactions, cancellation, offline catch-up and restart using these exports.
+The shared return book composes the exact original dispatch with retained
+execution observations and unknown-result recovery. See
+[native execution recovery](BRIDGE.md#exact-native-return-submission-and-execution-recovery).
+This does not enable public bridge peering, production signing or financial
+relay activation. All acceptance assets and source statements remain synthetic.
 
 ## Committed state queries
 
@@ -53,6 +246,17 @@ unchanged; bounded participant discovery and UI integration remain separate.
 `internal/godtestnet` provisions private persistent synthetic workspaces and supplies independent identity, bundle assembly, join, check, startup and offline native-signing tools. Profiles are signed by both consensus and P2P keys; account keys remain externally held. Joining pins the complete reviewed bundle, not only genesis, and refuses existing data or nonempty signing progress. This initialization protocol does not establish independent human control or account ownership.
 
 `StartTestnet` permits explicit nonloopback peers only in persistent, bridge-disabled synthetic mode. `StartLocal` retains its loopback-only scope. Engine RPC, gRPC, metrics, profiling and peer discovery stay disabled. Standalone validators must keep their restricted RPC on loopback; a separate observer can serve a secured gateway. Its consensus signer always rejects votes and proposals, even if its key later appears in staking state. Operator configuration and actual public exposure require separate review and authorization.
+
+Fresh local bridge-enabled runtimes may also require validator-key possession
+on registration. Registration bytes normalize the bridge signer order exactly
+as application assembly does, while binding the asset, configured signer set,
+approval Gas and complete runtime. Genesis owner/consensus consents stay separate
+from later registration signatures. The local candidate guard still requires
+committed operator ownership and exact-height active-set eligibility; it does
+not fund a candidate, register it automatically or reset signing progress.
+Enabling this policy requires new launch approvals and cannot reopen an existing
+database under changed policy. Public bridge peering and production startup
+remain disabled. See [combined integration](VERIFICATION.md#combined-bridge-and-validator-possession-policy).
 
 The HTTP adapter requires exact host and origin lists, bounds connection count, request size, response size, aggregate request rate, concurrent work and execution gas, and suppresses request/panic logging. Call and gas-estimation writes occur only in a discarded cache. It never stores wallet signing keys or exposes account unlocking, personal/admin/debug routes, subscriptions, arbitrary state overrides or fabricated proofs. A hardened HTTPS gateway and per-client abuse controls remain external requirements.
 
@@ -118,6 +322,138 @@ Persistent mode requires a caller-provided file signer with existing key and las
 
 Ordinary nil-policy runtime configuration retains binding version 2. Explicit ledger-only bridge initialization uses version 3; opt-in participant routes use version 4 and bind the exact approval gas. Node authorization digest domain version 2 includes these distinctions and the complete configuration. Incompatible databases or certificates require separately reviewed migration; they must not be silently reinterpreted, cleared or assigned replacement keys. No migration or production upgrade pathway is supplied. The separate native-only application retains its existing binding.
 
+### Independent retained signing witness candidate
+
+`GuardedSigner` adds an opt-in second witness outside the node home. One shared,
+owner-only directory must be retained separately from all node backups. A
+public-key-derived file lease excludes cooperating processes using that key in
+the same directory, including a copied home or different chain binding. It does
+not exclude another directory, host, older executable or privileged owner.
+
+The witness binds the key digest, chain ID, canonical genesis digest and exact
+FilePV height/round/step/signature/sign-bytes digest. Before each signature it
+checks both the in-memory signer and the retained witness. The guarded synthetic
+node workflow additionally binds the original private key/progress files as
+described below. The file signer persists first; original progress is checked
+and retained before the second witness is written, synced, atomically replaced
+and directory-synced. Both bindings are rechecked before the caller receives a
+signature. Ordinary conflicting
+or regressing requests remain refused; identical votes reuse the original
+signature and timestamp. Vote extensions remain disabled. Inputs, file sizes,
+private permissions, effective-user ownership, hard links, symlinks and retained
+lease identity are checked. Diagnostics never echo paths, key material or payloads.
+
+Any uncertain write, panic, missing/corrupt record or progress mismatch stops
+signing. A crash in the gap between the two writes can therefore stop the
+validator on reopen; availability is not preferred over unknown signing safety.
+There is no automatic adoption, reset, repair or restore command. Initialization
+accepts only an empty signer in a never-started synthetic home with no data or
+existing requirement marker. That check cannot independently prove a key has
+never been used elsewhere. Operators must retain the original fresh-key
+provenance and must never roll back/delete the witness with a node backup.
+
+The private diagnostic workflow is:
+
+```text
+godd testnet guard-init --home <fresh-private-validator> --signer-guard <existing-separate-private-directory>
+godd testnet start --home <private-validator> --signer-guard <same-retained-directory>
+```
+
+Initialize each fresh validator once, using the same retained directory for all
+cooperating identities on that host. The directory must be outside the entire
+backup scope, not merely outside one validator subdirectory. A requirement
+marker makes this runtime refuse omitted, changed or overlapping directory
+arguments before opening application storage/listeners. That marker is synced
+under the key lease before witness creation, so an interrupted initialization
+cannot silently fall back to an unguarded start. Non-signing observers
+are not initialized with this feature. Existing deployed validators are not
+automatically migrated; their used signing state cannot be adopted by this CLI.
+Direct library callers must exclusively own their FilePV and close the guard
+only after consensus shutdown and worker joins. Linux/macOS disk adapters require
+Go 1.25 or newer; unsupported platforms fail closed rather than use an unlocked
+fallback. This candidate does not make whole-VM rollback or host power loss safe,
+provide authenticated independent retention, certify Linux runtime acceptance,
+upgrade existing services or enable mainnet/real assets.
+
+#### Bound original signer files
+
+The synthetic `guard-init`, `guard-check` and guarded `start` workflow uses
+`InitializeFileSigningGuard` and `OpenFileSigningGuard`, not the bare witness
+adapter. These explicitly bind the original key and progress files in the
+original node home. The home must remain owner-held `0700`, and each file must
+remain regular, owner-held `0600`, single-link and within its retained root.
+Nonblocking, no-follow opens refuse pipes and symlinks; path/directory entry
+identity is checked before and after reads. The immutable key inode is retained
+for this adapter's lifetime; state replacement by the existing atomic FilePV
+writer remains allowed when the complete expected progress matches.
+
+Before signing, disk key/progress bytes must match their checked in-memory
+encodings as well as the separate witness. Compacted and indented existing
+encodings are accepted, but duplicate/unknown/aliased keys, missing required
+fields and alternate encodings are refused. Reads are bounded to 4 KiB for the
+key and 16 KiB for progress; temporary key-containing comparison buffers are
+cleared on ordinary return. This is not guaranteed process-memory erasure.
+
+After a new FilePV signature, the exact original state file is reread and
+synced, then its containing directory is synced. Original files are checked
+again before advancing the separate witness. A final original-file/witness
+check precedes returning either a new or reused signature. A reverted or
+corrupt disk state cannot be hidden by newer in-memory progress, silently
+overwritten by the next vote or bypassed through identical-signature reuse.
+Unsafe files, original retention failure/panic and post-retention disagreement
+poison the adapter without returning a signature or retrying. There is no
+automatic repair; a failure after the first write can leave irreconcilable
+local progress pending separately reviewed incident handling.
+
+Direct library users of bare `InitializeSigningGuard`,
+`InitializeBoundSigningGuard` and `OpenSigningGuard` retain their narrower
+in-memory/witness scope; those functions do not discover original FilePV paths
+or supply this file binding. The file-bound API expects an exclusively owned
+FilePV configured to write the named original files. It neither initializes
+missing files nor resets progress. Offline open/check performs no file or
+directory sync and changes no file contents. A stopped check releases these
+bindings; the next startup independently acquires and checks them again.
+
+The added retention sequence is a local software check, not certification of
+physical power-loss durability, malicious filesystem behavior, whole-host
+rollback, remote fencing or an independently retained checkpoint. Matching
+bytes on a later open do not authenticate historical key inode continuity.
+The existing two-write gap and privileged-owner boundaries remain. Current VPS
+keys are not adopted, copied or upgraded, and real-asset readiness stays false.
+
+#### Stopped-workspace signing preflight
+
+After a guarded synthetic validator has fully stopped, the diagnostic can check
+its original retained material without starting a node:
+
+```text
+godd testnet guard-check --home <stopped-private-validator> --signer-guard <same-retained-directory>
+```
+
+The check exclusively acquires the existing home lease and key-wide witness
+lease, validates the synthetic configuration and required directory binding,
+checks the original key/progress files and compares exact FilePV progress with
+the original witness. It reports the
+redacted scope and signing height, round and step with
+`check: retained-progress-matches`. A cooperating running home or copied key
+holding the witness lease is refused. Missing, corrupt, stale, pending,
+unmarked, shared or linked material cannot trigger file creation, adoption,
+reset or repair. Reopening the signer now requires an existing retained lease file;
+only fresh initialization may create that file.
+
+This command opens no application database or network listener and performs no
+signature or state update. Private tests compare file contents, permissions,
+size, modification time and inode before and after both successful and refused
+checks. Filesystem-managed access-time metadata may still change on reads.
+A successful result is only point-in-time local signing evidence, not a health
+check, restart permit, backup-restore certificate or mainnet readiness verdict.
+Every later start acquires its own leases and revalidates the witness. Never
+restore, copy or reset an operator's validator keys or signing records based on
+this result; independently retained durability and recovery review remain
+required. The check cannot authenticate historical inode continuity or detect
+lease replacement by the privileged owner. Existing deployed unguarded keys
+are not migrated by either command.
+
 Private disk fixtures provision random synthetic keys only in test-owned temporary files. A process restart reopens both the same application state and original file signer. Single-validator normal restart and abrupt process termination have been checked on macOS arm64. Four-validator disk checks cover one stopped validator catching up and the whole network stopping and restarting at different committed heights, with matching state, G, contract storage, replay rejection and newly executed EVM work. A permanently excluded identity also restarts as a following node with its older original signing progress and unchanged penalty custody. The separate file-signer test rejects conflicting same-height data and reuses an identical signature after reload. This does not certify power-loss durability, snapshot rollback, malicious local files, disk corruption or remote signer operations.
 
 Expanded private tests exposed a consensus peer-query routine reading the block database after shutdown closed it, causing `panic: leveldb: closed`. The local checksum-bound lifecycle patch now seals worker admission and joins all three admitted peer-worker classes before the node closes stores. Registration and the stop seal use the same mutex, preventing additions from racing the join. Each worker reports its actual exit; no fixed delay or swallowed database error establishes completion.
@@ -127,6 +463,23 @@ Expanded private tests exposed a consensus peer-query routine reading the block 
 The diagnostic reports `local-consensus-execution-prototype`, `localNodePrototype: true`, `nodeReady: false` and `realAssets: false`, with separate implemented synthetic-tool flags. Generic mainnet startup and financial commands remain disabled; explicit `testnet` startup permits only synthetic operation without bridge routes. Only the separate internal synthetic approval-gas mode mounts participant bridge routes; nothing is connected to RH. A four-validator P2P fixture verifies bridge-message propagation, signed result commitments, pending custody, fee/sequence accounting, offline catch-up and restart with each original database and signer. Those checks do not establish RH backing or independent operator acceptance.
 
 `CheckTx` refuses the mixed-state interval after `FinalizeBlock` and before `Commit` refreshes its context. It returns a distinct no-write admission status, not a fee/sequence change or successful transaction. `LocalNode.Submit` maps only that status to `ErrCommitPending`; callers may retry after commitment, but must not blindly retry authentication or policy failures. The check never waits while holding the mempool lock needed by commit. Bounded retry polling exists only in the private test harness; no production sleep or weakened timestamp rule was added.
+
+### Stopped candidate package inspection
+
+`godd testnet upgrade-check` combines the existing stopped signing preflight
+with exact private archive/staging checks while retaining both leases throughout.
+Original node inputs are compared before and after inspection, and the original
+file-bound signer/witness is revalidated before leases are released. A caught
+inspection panic or changed input returns no partial report. The read-only
+`GuardedSigner.Check` poisons that in-memory adapter after an uncertain retained
+state check; it never signs or repairs files.
+
+See [the private command and limits](DEPLOYMENT.md#stopped-candidate-integrity-preflight).
+This inspects package integrity only. It does not run the candidate, open a
+database, prove retained-state compatibility, migrate or restore anything, or
+authorize upgrade/mainnet activation. Original checks remain necessary on every
+later start. Same-host privileged control and whole-host rollback remain outside
+this cooperating-process protection.
 
 ## Local evidence and remaining gates
 

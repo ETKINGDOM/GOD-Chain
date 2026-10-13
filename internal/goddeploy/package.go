@@ -83,7 +83,7 @@ func root(path string, private bool) (*os.Root, error) {
 		return nil, ErrPackage
 	}
 	s, err := os.Lstat(path)
-	if err != nil || !s.IsDir() || s.Mode()&os.ModeSymlink != 0 || private && s.Mode().Perm()&0077 != 0 {
+	if err != nil || !s.IsDir() || s.Mode()&os.ModeSymlink != 0 || private && !privateInfo(s) {
 		return nil, ErrPackage
 	}
 	r, err := os.OpenRoot(path)
@@ -91,7 +91,7 @@ func root(path string, private bool) (*os.Root, error) {
 		return nil, ErrPackage
 	}
 	opened, err := r.Stat(".")
-	if err != nil || !os.SameFile(s, opened) {
+	if err != nil || !os.SameFile(s, opened) || private && !privateInfo(opened) {
 		_ = r.Close()
 		return nil, ErrPackage
 	}
@@ -99,19 +99,35 @@ func root(path string, private bool) (*os.Root, error) {
 }
 func regular(r *os.Root, name string, limit int64, private bool) (*os.File, int64, error) {
 	s, err := r.Lstat(name)
-	if err != nil || !s.Mode().IsRegular() || s.Size() < 1 || s.Size() > limit || private && s.Mode().Perm()&0077 != 0 {
+	if err != nil || !s.Mode().IsRegular() || s.Size() < 1 || s.Size() > limit || private && !privateInfo(s) {
 		return nil, 0, ErrPackage
 	}
-	f, err := r.Open(name)
+	var f *os.File
+	if private {
+		f, err = openPrivateRegular(r, name)
+	} else {
+		f, err = r.Open(name)
+	}
 	if err != nil {
 		return nil, 0, ErrPackage
 	}
 	a, err := f.Stat()
-	if err != nil || !os.SameFile(s, a) {
+	if err != nil || !samePackageFile(s, a) || private && !privateInfo(a) {
 		_ = f.Close()
 		return nil, 0, ErrPackage
 	}
 	return f, s.Size(), nil
+}
+
+func samePackageFile(a, b os.FileInfo) bool {
+	return os.SameFile(a, b) && a.Mode() == b.Mode() && a.Size() == b.Size() && a.ModTime().Equal(b.ModTime())
+}
+
+func retainedPrivateFile(root *os.Root, name string, file *os.File, before os.FileInfo) bool {
+	opened, err := file.Stat()
+	listed, listErr := root.Lstat(name)
+	return err == nil && listErr == nil && privateInfo(opened) && privateInfo(listed) &&
+		samePackageFile(before, opened) && samePackageFile(before, listed)
 }
 
 func buildOK(info *debug.BuildInfo, arch string) bool {
@@ -312,8 +328,12 @@ func reviewedArchive(path, expected string) ([]byte, error) {
 		return nil, ErrPackage
 	}
 	defer f.Close()
+	before, err := f.Stat()
+	if err != nil {
+		return nil, ErrPackage
+	}
 	raw, err := io.ReadAll(io.LimitReader(f, maxArchive+1))
-	if err != nil || int64(len(raw)) != size || len(raw) > maxArchive {
+	if err != nil || int64(len(raw)) != size || len(raw) > maxArchive || !retainedPrivateFile(r, filepath.Base(path), f, before) {
 		return nil, ErrPackage
 	}
 	h := sha256.Sum256(raw)

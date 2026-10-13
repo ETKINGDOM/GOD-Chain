@@ -16,7 +16,8 @@ try {
   const raw = Buffer.concat(chunks,total);
   if (raw.length === 0) throw new Error();
   const job = JSON.parse(raw.toString('utf8'));
-  if (job.purpose !== 'GOD Chain private offline compiler job v1' || typeof job.compiler !== 'string' ||
+  const creationJob = job.purpose === 'GOD Chain private offline creation compiler job v1';
+  if ((!creationJob && job.purpose !== 'GOD Chain private offline compiler job v1') || typeof job.compiler !== 'string' ||
       typeof job.input !== 'string' || typeof job.compilerSHA256 !== 'string') throw new Error();
   const bytes = Buffer.from(job.compiler, 'base64');
   if (!bytes.length || bytes.length > 32 * 1024 * 1024 || crypto.createHash('sha256').update(bytes).digest('hex') !== job.compilerSHA256) throw new Error();
@@ -36,17 +37,24 @@ try {
     if (!diagnostic || !['error','warning','info'].includes(diagnostic.severity)) throw new Error();
     hasErrors ||= diagnostic.severity === 'error';
   }
-  let runtime = '', linkReferences = {}, immutableReferences = {};
+  let runtime = '', linkReferences = {}, immutableReferences = {}, creation = '', creationLinkReferences = {};
   if (!hasErrors) {
     if (!result.contracts || !Object.hasOwn(result.contracts,job.targetSource) ||
         !Object.hasOwn(result.contracts[job.targetSource],job.targetContract)) throw new Error();
     const code = result.contracts[job.targetSource][job.targetContract]?.evm?.deployedBytecode;
     if (!code || typeof code.object !== 'string' || !code.linkReferences || !code.immutableReferences) throw new Error();
     runtime = code.object; linkReferences = code.linkReferences; immutableReferences = code.immutableReferences;
+    if (creationJob) {
+      const init = result.contracts[job.targetSource][job.targetContract]?.evm?.bytecode;
+      if (!init || typeof init.object !== 'string' || !init.linkReferences) throw new Error();
+      creation = init.object; creationLinkReferences = init.linkReferences;
+    }
   }
   // No diagnostic, source, path, input, ABI or metadata is printed. The private
   // parent consumes this bounded code result and exposes only redacted flags.
-  process.stdout.write(JSON.stringify({version,hasErrors,runtime,linkReferences,immutableReferences}));
+  const response = {version,hasErrors,runtime,linkReferences,immutableReferences};
+  if (creationJob) Object.assign(response,{creation,creationLinkReferences});
+  process.stdout.write(JSON.stringify(response));
 } catch {
   process.stderr.write('GOD Chain offline compiler worker rejected\n');
   process.exitCode = 1;
