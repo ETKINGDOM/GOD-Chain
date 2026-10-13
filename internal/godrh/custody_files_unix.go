@@ -108,7 +108,13 @@ func readRHPrivateBytes(filePath string, limit int64, expected [32]byte) ([]byte
 }
 
 func writeCustodyPrivateFile(filePath string, raw []byte) error {
-	if len(raw) == 0 || len(raw) > MaxCustodyPacketBytes {
+	return writeRHPrivateFile(filePath, raw, MaxCustodyPacketBytes)
+}
+
+// Distinct protocol bounds are retained by each wrapper. Creation packets do
+// not enlarge existing custody call/signing envelope admission.
+func writeRHPrivateFile(filePath string, raw []byte, limit int64) error {
+	if limit <= 0 || limit > MaxTokenSourceBundleBytes || len(raw) == 0 || int64(len(raw)) > limit {
 		return ErrCustodyWorkflow
 	}
 	r, leaf, err := custodyPrivateRoot(filePath)
@@ -121,14 +127,14 @@ func writeCustodyPrivateFile(filePath string, raw []byte) error {
 		return ErrCustodyWorkflow
 	}
 	defer f.Close()
-	if _, err := custodyFileInfo(f, MaxCustodyPacketBytes, true); err != nil {
+	if _, err := custodyFileInfo(f, limit, true); err != nil {
 		return ErrCustodyWorkflow
 	}
 	n, err := f.Write(raw)
 	if err != nil || n != len(raw) || f.Sync() != nil {
 		return ErrCustodyWorkflow
 	}
-	info, err := custodyFileInfo(f, MaxCustodyPacketBytes, false)
+	info, err := custodyFileInfo(f, limit, false)
 	if err != nil || info.Size() != int64(len(raw)) {
 		return ErrCustodyWorkflow
 	}

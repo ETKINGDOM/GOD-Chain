@@ -268,9 +268,24 @@ func runTokenCompiler(ctx context.Context, c Config, b TokenSourceBundle, compil
 	if !check("bounded_compiler_input", err == nil) {
 		return r, nil
 	}
+	return runPinnedCompiler(ctx, compiler, input, b.private.TargetSource, b.private.TargetContract, creation, r)
+}
+
+// Shared execution primitive, not a public artifact constructor. Callers must
+// first admit their own exact source/settings and validate all returned bytes.
+func runPinnedCompiler(ctx context.Context, compiler TokenCompiler, input []byte, source, contract string, creation bool, r TokenCompilationReport) (TokenCompilationReport, []byte) {
+	check := func(name string, ok bool) bool {
+		ok = ok && ctx != nil && ctx.Err() == nil
+		r.Checks = append(r.Checks, Check{name, ok})
+		return ok
+	}
+	if !check("pinned_worker_inputs", ctx != nil && len(input) > 0 && len(input) <= MaxTokenSourceBundleBytes &&
+		tokenCompilerReleases[hex.EncodeToString(compiler.compilerPin[:])] != "" && source != "" && contract != "") {
+		return r, nil
+	}
 	ctx, cancel := context.WithTimeout(ctx, TokenCompilationTimeout)
 	defer cancel()
-	_, err = tokenCompilerFile(ctx, compiler.nodePath, compiler.nodePin, maxTokenRuntimeBytes, true)
+	_, err := tokenCompilerFile(ctx, compiler.nodePath, compiler.nodePin, maxTokenRuntimeBytes, true)
 	if !check("runtime_file_pin", err == nil) {
 		return r, nil
 	}
@@ -291,7 +306,7 @@ func runTokenCompiler(ctx context.Context, c Config, b TokenSourceBundle, compil
 		Input          string `json:"input"`
 		TargetSource   string `json:"targetSource"`
 		TargetContract string `json:"targetContract"`
-	}{purpose, code, hex.EncodeToString(compiler.compilerPin[:]), string(input), b.private.TargetSource, b.private.TargetContract})
+	}{purpose, code, hex.EncodeToString(compiler.compilerPin[:]), string(input), source, contract})
 	if !check("private_compiler_job", err == nil) {
 		return r, nil
 	}

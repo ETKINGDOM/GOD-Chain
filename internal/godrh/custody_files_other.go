@@ -15,6 +15,7 @@ func readRHPrivateBytes(string, int64, [32]byte) ([]byte, error) {
 	return nil, ErrCustodyWorkflow
 }
 
-func writeCustodyPrivateFile(string, []byte) error { return ErrCustodyWorkflow }
+func writeCustodyPrivateFile(string, []byte) error   { return ErrCustodyWorkflow }
+func writeRHPrivateFile(string, []byte, int64) error { return ErrCustodyWorkflow }
 
 func custodySigningOutputAvailable(string) error { return ErrCustodySigning }

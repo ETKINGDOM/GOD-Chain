@@ -21,6 +21,18 @@ expansion work and must not be claimed as deployed infrastructure.
 | Production wallet and APIs | The hosted wallet, history, explorer and staking tools operate on the pilot; mainnet routing and real bridge submission are not enabled. | Official production configuration; committed GOD/G asset and NFT views; signed operations with exact TX links; bridge request/progress/failure views without synthetic balances or fake completion. |
 | Intended-host release and recovery | Local and isolated Linux process drills exist. Actual production installation, signing-safe restore and whole-host recovery are not accepted. | Bounded simultaneous load/resource measurement, alerts and retained backups, signing-safe recovery/reboot/rollback, followed by separately authorized limited real-asset acceptance. |
 
+### Source custody creation preparation
+
+The reviewed contract now has an offline creation workflow: pinned actual
+compilation, fixed constructor ABI, seven ordered members, explicit sender/nonce
+and Gas execution-fee budget, predicted CREATE address and a privately retained
+unsigned packet. Rechecking recompiles original materials rather than trusting
+supplied bytecode. This closes creation preparation, not a real deployment,
+nonce reservation, live fee estimate, signed creation dispatch/recovery or
+custody/asset activation. Source-chain funding/finality, source custody limits
+and control policy, safe key custody and exact production financial handoff
+remain required. See [custody creation](CUSTODY_DEPLOYMENT.md).
+
 ### Launch materials compose into a private candidate
 
 The stopped service preflight now checks the original candidate, signing

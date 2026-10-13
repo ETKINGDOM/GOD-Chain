@@ -4,6 +4,11 @@ GOD Chain is the independent blockchain project for ETERNAL KINGDOM, a global fa
 
 God EVM + God SDK + GodCometBFT are the project component names. Necessary upstream import paths, licenses and attribution remain intact; these names do not claim independent invention of imported infrastructure. All project-owned public content is in English.
 
+The [offline custody deployment preparation](CUSTODY_DEPLOYMENT.md) produces a
+private unsigned creation packet from exact reviewed source/compiler, seven
+ordered members and explicitly bounded nonce/Gas fees. It does not deploy,
+reserve a nonce, sign, broadcast or activate the real RH bridge.
+
 ## Public testnet status
 
 GOD Chain's public testnet operates with four validator nodes. Deployment across four geographic regions is planned. The current pilot is not an independently operated, geographically distributed network.

@@ -2,6 +2,16 @@
 
 `x/godbridge` and `contracts/GodBridgeEscrow.sol` are ledger and custody components for one-for-one GOD transfer accounting. Explicit synthetic node genesis mounts and initializes the ledger atomically before staking. A separate positive approval-gas policy enables six authenticated participant routes in the local node prototype. Ordinary and ledger-only configurations leave them disabled. Read-only source observers, a simulation journal, event discovery and complete receipt-set checks are supplied without configured RH access. Separate synthetic-testnet/RPC and terminal-wallet tools do not activate these bridge routes. Conditional account/parent proof components grant no independent RH finality or asset authority. No bridge deployment, financial relayer, populated signer configuration or real assets are supplied.
 
+## Offline custody creation preparation
+
+An offline workflow compiles the exact reviewed standalone custody source and
+pinned local compiler, checks seven ordered members and constructs a private
+unsigned creation transaction bound to explicit nonce/Gas/execution-fee limits.
+Retained-file review recompiles original pinned inputs and compares exact bytes.
+It does not deploy custody, reserve a nonce, sign, submit, verify live source
+fees/funding/finality or enable real assets. See
+[CUSTODY_DEPLOYMENT.md](CUSTODY_DEPLOYMENT.md) for commands and financial gates.
+
 ## Two-way asset flow and committed status queries
 
 RH-to-GOD locks source tokens in custody before an approved native reserve

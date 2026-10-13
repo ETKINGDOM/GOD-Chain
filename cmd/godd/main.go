@@ -22,6 +22,9 @@ import (
 )
 
 func run(args []string, out io.Writer) error {
+	if len(args) > 0 && (args[0] == "rh-custody-deployment-template" || args[0] == "review-rh-custody-deployment" || args[0] == "prepare-rh-custody-deployment" || args[0] == "check-rh-custody-deployment") {
+		return runCustodyDeployment(args[0], args[1:], out)
+	}
 	if len(args) > 0 && (args[0] == "check-launch-service" || args[0] == "prepare-launch-supervisor") {
 		return runLaunchSupervisor(args[0], args[1:], out)
 	}
@@ -92,6 +95,9 @@ func run(args []string, out io.Writer) error {
 			return err
 		}
 		if _, err := fmt.Fprintln(out, "Offline conditional parent proof: parent-trust-template; parent-proof-template <single-period|adjacent-period>; check-parent-proof <private-trust-file> <retained-trust-SHA256> <private-proof-file> <retained-proof-SHA256> <reviewed-current-slot>\nSeparately reviewed trust, proof and clock inputs; exact bounded schemas, Deneb/Electra only. No network, automatic checkpoint, persistence, RH finality, signing, broadcast or real-asset approval. Use owner-only private POSIX files; never publish populated materials or obtain trust pins from the same unreviewed provider."); err != nil {
+			return err
+		}
+		if _, err := fmt.Fprintln(out, "Offline custody deployment preparation: rh-custody-deployment-template; review-rh-custody-deployment <absolute-reviewed-source> <source-SHA256> <absolute-private-request> <request-SHA256> <absolute-node-binary> <node-SHA256> <absolute-soljson-file> <compiler-SHA256>\nprepare-rh-custody-deployment adds <new-private-packet>; check-rh-custody-deployment adds <retained-private-packet> <packet-SHA256>. Exact reviewed prototype source/compiler, seven sorted nonzero members, CREATE address and explicit nonce/Gas execution-fee budget. Cancun intrinsic floor only, not a source gas estimate or additional-fee approval. No keys, source RPC, nonce allocation, signing, broadcast, custody installation or real-asset activation."); err != nil {
 			return err
 		}
 		if _, err := fmt.Fprintln(out, "Offline signed custody envelope review: rh-custody-transaction-template; check-rh-custody-transaction <private-config> <config-SHA256> <private-request> <request-SHA256> <private-fee-plan> <plan-SHA256> <private-signed-envelope> <envelope-SHA256>\nChecks exact dynamic-fee sender, chain, nonce, target, calldata and supplied fee budget. No signing, dispatch command, nonce allocation, source state or real-asset activation."); err != nil {

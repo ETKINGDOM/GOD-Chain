@@ -7,6 +7,33 @@ source, other pilot gateways and generated operational inputs are not
 distributed in this exact source snapshot. Publication activates no service or
 real assets. God EVM + God SDK + GodCometBFT pins remain unchanged.
 
+## Offline custody creation preparation
+
+Actual pinned Solidity compilation, independent compiled ABI/bytecode comparison,
+isolated God EVM constructor execution and private packet/CLI roundtrip race
+checks passed (25.436/18.534 seconds). The calculated CREATE address, token, fixed
+supply, all seven members and domain names match actual synthetic creation.
+Strict schemas, canonical numeric and nonce/Gas/tip/budget bounds, creation
+intrinsic admission, detached unsigned bytes, exclusive owner-only retained
+files, exact recompile comparison, shared/changed-input refusal and redacted
+reports pass. The private independent compiler wrapper now evaluates verified
+bytes without package-type interpretation; no pins or dependencies changed.
+
+These tests use no live source, deployment, ETH spending or actual backing.
+Preparation does not reserve a nonce, sign or dispatch. Intrinsic admission is
+not a constructor estimate or additional source-chain fee approval. Actual
+custody policy, member control, complete source fees/account/finality, signed
+creation recovery and production financial activation remain open. Private
+tests/fixtures/toolchain/operational packets are excluded from this snapshot.
+See [CUSTODY_DEPLOYMENT.md](CUSTODY_DEPLOYMENT.md).
+
+The complete unfiltered RH/CLI race regression passed (275.740/7.874 seconds),
+existing actual token compilation/creation and compiled custody regression
+passed (40.823 seconds), and final strict deployment/CLI race checks passed
+(3.485/4.956 seconds). Vet, Linux amd64 CLI compilation and all twenty exact
+publication-scope checks passed. Existing method-call/signing packet bounds are
+unchanged despite the separate bounded creation-packet writer.
+
 ## Persistent guarded private candidate service
 
 ### Stopped service preflight and private supervisor staging
