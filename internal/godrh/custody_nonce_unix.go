@@ -187,6 +187,31 @@ func (s *privateCustodyNonceStore) Close() error {
 // Other directories/tools/hosts are not fenced. Never reset or repin a financial
 // retry. Existing owner-only empty leaf on create; retained lease on reopen.
 func OpenPrivateCustodyNonceBook(ctx context.Context, i CustodyNonceInputs, directory string, create bool, resumePin ...[32]byte) (*CustodyNonceBook, error) {
+	return openPrivateCustodyNonceBook(ctx, i, directory, create, nil, resumePin...)
+}
+
+// Same account lease and append-only inventory as existing method calls. No
+// parallel creation journal or separate nonce/Gas budget is opened.
+func OpenPrivateCustodyNonceCreationBookForSimulation(ctx context.Context, i CustodyNonceInputs, creation CustodyNonceCreationInputs, directory string, create bool, resumePin ...[32]byte) (book *CustodyNonceBook, err error) {
+	defer func() {
+		if recover() != nil {
+			book, err = nil, ErrCustodyNonceState
+		}
+	}()
+	if ctx == nil || ctx.Err() != nil || !custodyAttemptResumeValid(create, resumePin) {
+		return nil, ErrCustodyNonceState
+	}
+	g, err := loadCustodyNonceCreationGuard(ctx, i, creation)
+	if err != nil || !g.separated(directory) {
+		return nil, ErrCustodyNonceState
+	}
+	if create && custodySigningOutputAvailable(creation.OutputPath) != nil {
+		return nil, ErrCustodyNonceState
+	}
+	return openPrivateCustodyNonceBook(ctx, i, directory, create, g, resumePin...)
+}
+
+func openPrivateCustodyNonceBook(ctx context.Context, i CustodyNonceInputs, directory string, create bool, guard *custodyNonceCreationGuard, resumePin ...[32]byte) (*CustodyNonceBook, error) {
 	if ctx == nil || ctx.Err() != nil || !custodyAttemptResumeValid(create, resumePin) {
 		return nil, ErrCustodyNonceState
 	}
@@ -240,11 +265,21 @@ func OpenPrivateCustodyNonceBook(ctx context.Context, i CustodyNonceInputs, dire
 		return nil, ErrCustodyNonceStorage
 	}
 	store := &privateCustodyNonceStore{root: r, lease: lease, directory: directory, identity: identity}
-	book, err := NewCustodyNonceBook(ctx, i, store, create, resumePin...)
+	book, err := newCustodyNonceBook(ctx, i, store, create, guard, resumePin...)
 	if err != nil {
 		return nil, err
 	}
 	book.directory = directory
+	if guard != nil {
+		if create {
+			if err := book.reserveCreation(ctx); err != nil {
+				return nil, err
+			}
+		}
+		if err := book.recheck(ctx); err != nil {
+			return nil, err
+		}
+	}
 	ok = true
 	return book, nil
 }

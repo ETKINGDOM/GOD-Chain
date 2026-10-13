@@ -1,5 +1,12 @@
 # GOD Chain
 
+Source custody creation and later calls now share one bounded cooperative
+sender book, nonce sequence and maximum execution-Gas budget. Exact creation
+binding and pre-retained checkpoints cover one local signing attempt, signed-file
+binding, one handoff and conditional receipt/runtime observation. Unknown/reverted
+creation cannot unlock later calls. This does not install a production signer,
+broadcaster, key vault or live nonce/finality source; mainnet remains disabled.
+
 GOD Chain is the independent blockchain project for ETERNAL KINGDOM, a global faith-centered world for prayer, confession, praise and fellowship. This repository contains the [Whitepaper Draft](WHITEPAPER.md) and source candidates for a synthetic-asset prototype. God EVM execution, God SDK staking and GodCometBFT consensus have been connected in local tests. Mainnet, RH bridging and real assets remain disabled.
 
 God EVM + God SDK + GodCometBFT are the project component names. Necessary upstream import paths, licenses and attribution remain intact; these names do not claim independent invention of imported infrastructure. All project-owned public content is in English.

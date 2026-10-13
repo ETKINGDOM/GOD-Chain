@@ -271,7 +271,7 @@ type Report struct {
 func (c Config) Report() Report {
 	d := c.private
 	r := Report{Mode: d.Mode, Missing: []string{}, Checks: []Check{}, ReleaseGates: []string{
-		"independent_source_finality", "token_permissions_review", "independent_signer_operations",
+		"independent_source_finality", "token_permissions_review", "reviewed_key_custody",
 		"recoverable_relayer", "source_backed_genesis_and_fee_funding", "delayed_network_payment",
 		"production_node_wallet_and_rpc", "governance_and_operational_verification", "explicit_activation_authorization",
 	}}

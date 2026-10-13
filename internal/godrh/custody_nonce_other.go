@@ -7,3 +7,7 @@ import "context"
 func OpenPrivateCustodyNonceBook(context.Context, CustodyNonceInputs, string, bool, ...[32]byte) (*CustodyNonceBook, error) {
 	return nil, ErrCustodyNonceStorage
 }
+
+func OpenPrivateCustodyNonceCreationBookForSimulation(context.Context, CustodyNonceInputs, CustodyNonceCreationInputs, string, bool, ...[32]byte) (*CustodyNonceBook, error) {
+	return nil, ErrCustodyNonceStorage
+}

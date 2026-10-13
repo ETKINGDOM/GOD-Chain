@@ -53,6 +53,9 @@ func custodySigningStateCost(s custodyNonceState) (*big.Int, error) {
 		return new(big.Int), nil
 	}
 	i := s.SigningIntent
+	if s.Creation != nil && i.RequestSHA256 == s.Creation.RequestSHA256 {
+		return bad()
+	}
 	if s.SigningRevision == 0 || s.SigningRevision > 2*MaxCustodyNonceEntries {
 		return bad()
 	}
@@ -92,7 +95,7 @@ func custodySigningStateCost(s custodyNonceState) (*big.Int, error) {
 	}
 	if (i.Stage != custodySigningReserved && i.Stage != custodySigningUnknown) ||
 		(i.Stage == custodySigningReserved) != (s.SigningRevision%2 == 1) || s.SigningRevision > uint32(2*(len(s.Entries)+1)) ||
-		len(s.Entries) == MaxCustodyNonceEntries || nonce != start+uint64(len(s.Entries)) || i.EnvelopeSHA256 != "" || i.TransactionHash != "" {
+		len(s.Entries)+custodyCreationSlots(s) == MaxCustodyNonceEntries || nonce != start+uint64(len(s.Entries)+custodyCreationSlots(s)) || i.EnvelopeSHA256 != "" || i.TransactionHash != "" {
 		return bad()
 	}
 	for _, e := range s.Entries {
@@ -158,7 +161,7 @@ func (b *CustodyNonceBook) ReserveSigningForSimulation(ctx context.Context, i Cu
 	if old := b.state.SigningIntent; old != nil && sameCustodySigningIntent(*old, wanted) {
 		return nil
 	}
-	if b.signingActive || custodySigningPending(b.state) || custodySigningOutputAvailable(output) != nil {
+	if b.signingActive || !b.creationAllowsCalls() || custodySigningPending(b.state) || custodySigningOutputAvailable(output) != nil {
 		return ErrCustodyNonceState
 	}
 	next := b.nextState()
@@ -185,7 +188,7 @@ func (b *CustodyNonceBook) consumeSigning(ctx context.Context, i CustodySigningI
 		return report, ErrCustodyNonceState
 	}
 	report = CustodySigningReport{SimulationOnly: true, ExactUnsignedEnvelopePrepared: true, SharedNonceReserved: true, DurableSigningAttempt: true}
-	if b.signingActive || old.Stage != custodySigningReserved {
+	if b.signingActive || !b.creationAllowsCalls() || old.Stage != custodySigningReserved {
 		report.LocalSigningAttemptConsumed, report.SigningOutcomeUnknown = true, true
 		return report, ErrCustodySigningUnknown
 	}

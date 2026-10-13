@@ -116,10 +116,12 @@ type custodyNonceState struct {
 	Reviews                []custodyNonceReview  `json:"reviews,omitempty"`
 	SigningRevision        uint32                `json:"signingRevision,omitempty"`
 	SigningIntent          *custodySigningIntent `json:"signingIntent,omitempty"`
+	CreationRevision       uint32                `json:"creationRevision,omitempty"`
+	Creation               *custodyNonceCreation `json:"creation,omitempty"`
 }
 
 func encodeCustodyNonce(s custodyNonceState) ([]byte, error) {
-	if s.Purpose != custodyNoncePurpose || s.Version != 1 || s.Entries == nil || len(s.Entries) > MaxCustodyNonceEntries {
+	if s.Purpose != custodyNoncePurpose || s.Version != 1 || s.Entries == nil || len(s.Entries)+custodyCreationSlots(s) > MaxCustodyNonceEntries {
 		return nil, ErrCustodyNonceState
 	}
 	unknown := 0
@@ -128,7 +130,7 @@ func encodeCustodyNonce(s custodyNonceState) ([]byte, error) {
 			unknown++
 		}
 	}
-	if s.SigningRevision > 2*MaxCustodyNonceEntries || len(s.Reviews) > len(s.Entries) || s.Sequence != uint32(1+len(s.Entries)+unknown+len(s.Reviews))+s.SigningRevision {
+	if s.SigningRevision > 2*MaxCustodyNonceEntries || len(s.Reviews) > len(s.Entries) || s.Sequence != uint32(1+len(s.Entries)+unknown+len(s.Reviews))+s.SigningRevision+s.CreationRevision {
 		return nil, ErrCustodyNonceState
 	}
 	if s.Sequence == 1 {
@@ -144,19 +146,28 @@ func encodeCustodyNonce(s custodyNonceState) ([]byte, error) {
 		}
 	}
 	start, err := custodyNonceCounter(s.StartingNonce)
-	if err != nil || uint64(len(s.Entries)) > math.MaxUint64-start {
+	if err != nil || uint64(len(s.Entries)+custodyCreationSlots(s)) > math.MaxUint64-start {
 		return nil, ErrCustodyNonceState
 	}
 	budget, err := custodyNonceAmount(s.MaximumReservedGasCost)
 	if err != nil {
 		return nil, ErrCustodyNonceState
 	}
-	total := new(big.Int)
+	total, err := custodyCreationStateCost(s)
+	if err != nil {
+		return nil, ErrCustodyNonceState
+	}
 	requests, envelopes, hashes := map[string]bool{}, map[string]bool{}, map[string]bool{}
+	if c := s.Creation; c != nil {
+		requests[c.RequestSHA256] = true
+		if c.SignedSHA256 != "" {
+			envelopes[c.SignedSHA256], hashes[c.TransactionHash] = true, true
+		}
+	}
 	reservedSeen := false
 	for index, e := range s.Entries {
 		n, err := custodyNonceCounter(e.Nonce)
-		if err != nil || n != start+uint64(index) || e.Binding.ConfigurationSHA256 != s.ConfigurationSHA256 {
+		if err != nil || n != start+uint64(index+custodyCreationSlots(s)) || e.Binding.ConfigurationSHA256 != s.ConfigurationSHA256 {
 			return nil, ErrCustodyNonceState
 		}
 		if _, err := encodeCustodyAttempt(e.Binding); err != nil {
@@ -232,6 +243,9 @@ func custodyNonceTransition(old, next custodyNonceState) bool {
 	if !custodyNonceHeaderEqual(old, next) || next.Sequence != old.Sequence+1 || next.PreviousSHA256 != hex.EncodeToString(pin[:]) {
 		return false
 	}
+	if !sameCustodyCreationState(old, next) {
+		return custodyCreationStepTransition(old, next)
+	}
 	if len(next.Entries) == len(old.Entries)+1 {
 		if !sameCustodyNonceReviews(old.Reviews, next.Reviews) {
 			return false
@@ -303,6 +317,12 @@ type CustodyNonceReport struct {
 	PendingSigning            bool `json:"pendingSigning,omitempty"`
 	SigningConsumed           bool `json:"signingConsumed,omitempty"`
 	SignedEnvelopeRetained    bool `json:"signedEnvelopeRetained,omitempty"`
+	CreationReserved          bool `json:"creationReserved,omitempty"`
+	CreationSigningConsumed   bool `json:"creationSigningConsumed,omitempty"`
+	CreationSignedRetained    bool `json:"creationSignedRetained,omitempty"`
+	CreationDispatchConsumed  bool `json:"creationDispatchConsumed,omitempty"`
+	CreationObserved          bool `json:"creationObserved,omitempty"`
+	CreationSucceeded         bool `json:"creationSucceeded,omitempty"`
 	StorageUsable             bool `json:"storageUsable"`
 	WriteOutcomeUncertain     bool `json:"writeOutcomeUncertain"`
 	SharedJournalOnly         bool `json:"sharedJournalOnly"`
@@ -322,6 +342,7 @@ type CustodyNonceBook struct {
 	chain                     *big.Int
 	directory                 string // disk adapter's private input-separation guard
 	signingActive             bool   // never release the account lease during a signer callback
+	creationGuard             *custodyNonceCreationGuard
 	usable, closed, uncertain bool
 }
 
@@ -340,7 +361,14 @@ func (b *CustodyNonceBook) Report() CustodyNonceReport {
 			u++
 		}
 	}
-	r := CustodyNonceReport{Reservations: len(b.state.Entries), UnknownDispatches: u, LocalReceiptReviews: len(b.state.Reviews), StorageUsable: b.usable && !b.closed, WriteOutcomeUncertain: b.uncertain, SharedJournalOnly: true}
+	r := CustodyNonceReport{Reservations: len(b.state.Entries) + custodyCreationSlots(b.state), UnknownDispatches: u, LocalReceiptReviews: len(b.state.Reviews), StorageUsable: b.usable && !b.closed, WriteOutcomeUncertain: b.uncertain, SharedJournalOnly: true}
+	if c := b.state.Creation; c != nil {
+		r.CreationReserved, r.CreationSigningConsumed, r.CreationSignedRetained = true, b.state.CreationRevision >= 2, b.state.CreationRevision >= 3
+		r.CreationDispatchConsumed, r.CreationObserved, r.CreationSucceeded = b.state.CreationRevision >= 4, b.state.CreationRevision == 5, c.Succeeded
+		if r.CreationDispatchConsumed {
+			r.UnknownDispatches++
+		}
+	}
 	if i := b.state.SigningIntent; i != nil {
 		r.PendingSigning = custodySigningPending(b.state)
 		r.SigningConsumed = i.Stage != custodySigningReserved
@@ -390,6 +418,10 @@ func loadCustodyNonceInputs(i CustodyNonceInputs) (custodyNonceState, custodyNon
 // Reopen requires one independently retained latest exact-state pin. The
 // reviewed starting nonce is only a simulation seed, NOT a chain observation.
 func NewCustodyNonceBook(ctx context.Context, i CustodyNonceInputs, store CustodyNonceStorage, create bool, resumePin ...[32]byte) (book *CustodyNonceBook, err error) {
+	return newCustodyNonceBook(ctx, i, store, create, nil, resumePin...)
+}
+
+func newCustodyNonceBook(ctx context.Context, i CustodyNonceInputs, store CustodyNonceStorage, create bool, guard *custodyNonceCreationGuard, resumePin ...[32]byte) (book *CustodyNonceBook, err error) {
 	defer func() {
 		if recover() != nil {
 			book, err = nil, ErrCustodyNonceStorage
@@ -409,7 +441,7 @@ func NewCustodyNonceBook(ctx context.Context, i CustodyNonceInputs, store Custod
 	if ctx.Err() != nil {
 		return nil, ErrCustodyNonceState
 	}
-	b := &CustodyNonceBook{inputs: i, store: store, state: wanted, plan: plan, chain: chain, usable: true}
+	b := &CustodyNonceBook{inputs: i, store: store, state: wanted, plan: plan, chain: chain, usable: true, creationGuard: guard}
 	if create {
 		if len(raw) != 0 {
 			return nil, ErrCustodyNonceState
@@ -426,6 +458,9 @@ func NewCustodyNonceBook(ctx context.Context, i CustodyNonceInputs, store Custod
 			return nil, ErrCustodyNonceState
 		}
 		b.state = s
+	}
+	if b.state.Creation != nil && guard == nil || guard != nil && !guard.matches(b.state) {
+		return nil, ErrCustodyNonceState
 	}
 	return b, nil
 }
@@ -473,6 +508,9 @@ func (b *CustodyNonceBook) recheck(ctx context.Context) (err error) {
 	if ctx.Err() != nil {
 		return ErrCustodyNonceState
 	}
+	if b.creationGuard != nil && !b.creationGuard.recheck(ctx, b.state, b.directory) {
+		return ErrCustodyNonceState
+	}
 	return nil
 }
 func (b *CustodyNonceBook) ready(ctx context.Context) bool {
@@ -485,6 +523,10 @@ func (b *CustodyNonceBook) nextState() custodyNonceState {
 	if b.state.SigningIntent != nil {
 		copy := *b.state.SigningIntent
 		next.SigningIntent = &copy
+	}
+	if b.state.Creation != nil {
+		copy := *b.state.Creation
+		next.Creation = &copy
 	}
 	raw, _ := encodeCustodyNonce(b.state)
 	pin := sha256.Sum256(raw)
@@ -507,8 +549,8 @@ func (b *CustodyNonceBook) NextNonce(ctx context.Context) (uint64, error) {
 	if err := b.recheck(ctx); err != nil {
 		return 0, err
 	}
-	n := b.plan.start + uint64(len(b.state.Entries))
-	if b.signingActive || custodySigningPending(b.state) || len(b.state.Entries) == MaxCustodyNonceEntries || n == math.MaxUint64 {
+	n := b.plan.start + uint64(len(b.state.Entries)+custodyCreationSlots(b.state))
+	if b.signingActive || !b.creationAllowsCalls() || custodySigningPending(b.state) || len(b.state.Entries)+custodyCreationSlots(b.state) == MaxCustodyNonceEntries || n == math.MaxUint64 {
 		return 0, ErrCustodyNonceState
 	}
 	return n, nil
@@ -550,7 +592,7 @@ func (b *CustodyNonceBook) Reserve(ctx context.Context, i CustodyTransactionInpu
 			return ErrCustodyNonceState
 		}
 	}
-	if b.signingActive || custodySigningPending(b.state) || len(b.state.Entries) == MaxCustodyNonceEntries || tx.nonce != b.plan.start+uint64(len(b.state.Entries)) || ctx.Err() != nil {
+	if b.signingActive || !b.creationAllowsCalls() || custodySigningPending(b.state) || len(b.state.Entries)+custodyCreationSlots(b.state) == MaxCustodyNonceEntries || tx.nonce != b.plan.start+uint64(len(b.state.Entries)+custodyCreationSlots(b.state)) || ctx.Err() != nil {
 		return ErrCustodyNonceState
 	}
 	next := b.nextState()
@@ -575,6 +617,9 @@ func (b *CustodyNonceBook) TakeForSimulation(ctx context.Context, i CustodyTrans
 	}
 	if err := b.recheck(ctx); err != nil {
 		return nil, err
+	}
+	if b.signingActive || !b.creationAllowsCalls() {
+		return nil, ErrCustodyNonceState
 	}
 	wanted, tx, err := b.candidate(i)
 	if err != nil {

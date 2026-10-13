@@ -9,6 +9,38 @@ real assets. God EVM + God SDK + GodCometBFT pins remain unchanged.
 
 ## Signed custody creation and conditional recovery composition
 
+Creation and subsequent custody calls now share one bounded cooperative sender
+book, account lease, consecutive nonce sequence and execution-Gas ceiling.
+Original creator/config/domain/token/predicted-custody/runtime/member inputs
+must agree. Pre-retained expected checkpoints cover signing, signed-file binding,
+one export and conditional observation. Lost signing responses remain at the
+known UNKNOWN; binding is separate and cannot re-sign. Later calls use offset
+one only after matching successful conditional creation evidence; reverted or
+unknown creation cannot release its nonce/Gas reservation or permit calls.
+
+Legacy method-only bytes remain compatible. The old constructor refuses a
+creation-bearing history without its original-input guard. Creation counts as
+one of the existing 64 transaction slots; there is no financial rollover/prune
+or automatic recovery. Actual pinned God EVM creation followed by a signed
+custody payment passes with the same managed EOA. Actual child termination at
+binding and dispatch preserves the independently pre-retained checkpoint without
+re-signing or redispatch. Configured binding checks were not weakened to make a
+revert fixture pass.
+
+Scoped codec/nonce/signing-book race checks passed (16.686 seconds), corrected
+actual creation/payment/revert/recovery passed (92.113 seconds), and full
+unfiltered RH/CLI race regression passed (284.807/6.732 seconds). Vet and
+Linux/Windows amd64 builds passed, along with twenty-two exact publication-scope
+checks. Expanded actual compiler/custody/HTTP race checks passed
+(260.130/23.559 seconds). Production configuration, key custody/fencing, complete source fees,
+independent RH finality and financial activation remain refused or unverified.
+
+The final dispatch transition and detached export retain one account lock,
+preventing a concurrent observation from advancing between those steps. Final
+actual creation/payment/revert/recovery acceptance passed (158.112 seconds),
+along with old nonce/signing-book regression (17.158 seconds), vet and Linux
+amd64 compilation.
+
 The selected initial custody model is one founder controlling all seven member
 keys, not seven independent custodians; the contract's five-distinct-signature
 threshold is unchanged. New version-2 requests explicitly bind that declaration

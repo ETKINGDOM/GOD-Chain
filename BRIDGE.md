@@ -29,6 +29,21 @@ or observed history. Identical conditional observations are idempotent. No
 global source-account nonce coordination, production signer/broadcaster,
 independent RH finality or financial activation is installed.
 
+The shared bounded sender book now has a creation-aware opener instead of a
+parallel allocator. It binds original creation inputs to the same configured
+sender, first nonce, maximum execution-Gas budget, predicted custody, compiled
+runtime and seven members. Pre-retained signing/binding/dispatch/observation
+checkpoints survive lost replies; the signer never receives bytes before durable
+UNKNOWN. Method calls use nonce offset one and remain refused until matching
+successful conditional creation evidence. Creation consumes one of the existing
+64 transaction slots and never releases its maximum fee reservation. Retained
+method-only bytes stay compatible; the old opener refuses creation-bearing
+history without its mandatory original-input guard. This is cooperation within
+one book, not protection from external tools, other directories, unmanaged
+transactions or whole-history-and-checkpoint rollback. Production configuration,
+financial submission and hardware key custody remain disabled/unverified. See
+[CUSTODY_DEPLOYMENT.md](CUSTODY_DEPLOYMENT.md#one-source-account-for-creation-and-subsequent-custody-calls).
+
 ## Two-way asset flow and committed status queries
 
 RH-to-GOD locks source tokens in custody before an approved native reserve
@@ -120,7 +135,7 @@ keys, signed files and operational configurations are deliberately excluded.
 
 RH means Robinhood Chain. Independent signers must verify successful finalized source execution, not merely wait a timer. Read-only receipt observation does not implement independent source-finality verification.
 
-Five distinct approvals from seven configured signers authorize bridge actions. Signatures are canonical secp256k1 with low S. This is federated custody trust: a dishonest quorum can attest false source events. Limits constrain exposure but do not remove that trust. Seven keys do not prove independent operators.
+Five distinct approvals from seven configured signers authorize bridge actions. Signatures are canonical secp256k1 with low S. This is quorum-based custody trust: a dishonest quorum can attest false source events. Initial operation uses one founder controlling all seven keys. Limits constrain exposure but do not remove that trust. Seven keys do not prove independent operators.
 
 The offline `VerifyParentFinalityProof` checks committee inclusion, canonical
 prime-subgroup BLS keys and aggregate consistency, at least 342 participating

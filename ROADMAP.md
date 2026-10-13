@@ -32,6 +32,17 @@ promised as an automatic later change.
 
 ### Source custody creation preparation
 
+Creation now occupies the first nonce and execution-Gas reservation in the same
+bounded source sender book used by later custody calls. Original creator,
+source/native names, token, predicted custody, compiler-bound runtime and seven
+members must match. Pre-retained checkpoints cover signing, signed-file binding,
+one dispatch and conditional observation. A successful creation observation
+allows subsequent nonce-offset-one calls; unknown/reverted creation cannot.
+Existing method-only histories stay byte-compatible. This closes cooperative
+creation-versus-call reservation composition, not production account/key fencing,
+live nonce/fee availability, source finality, real signing or financial activation.
+The selected key-custody release gate no longer requires independent custodians.
+
 The reviewed contract now has an offline creation workflow: pinned actual
 compilation, fixed constructor ABI, seven ordered members, explicit sender/nonce
 and Gas execution-fee budget, predicted CREATE address and a privately retained

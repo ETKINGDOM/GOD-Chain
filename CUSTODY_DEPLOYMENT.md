@@ -165,6 +165,65 @@ financial statement even after a matching local observation. Production use
 still needs coordinated source-account ownership and authenticated receipt/
 state/finality handling. No production journal or submission CLI is installed.
 
+## One source account for creation and subsequent custody calls
+
+`NewCustodyNonceCreationBookForSimulation` and the private POSIX opener
+`OpenPrivateCustodyNonceCreationBookForSimulation` integrate creation into the
+**existing** shared sender book. They do not open a parallel creation nonce
+journal. The original pinned source configuration/account plan must match the
+creator, source/native names, token, predicted custody, exact compiled runtime
+code hash and seven members. New creation requires the declared version-2
+founder-controlled model and consumes the book's first nonce and its full
+maximum execution-Gas reservation before any signer receives unsigned bytes.
+
+The same immutable append-only inventory holds five creation steps:
+
+```text
+reserved -> signing-unknown -> signed -> dispatch-unknown -> observed
+```
+
+| Step | Required original material and retained next checkpoint |
+| --- | --- |
+| Sign | Independently retain `ExpectedCreationSigningPin`, then pass it to `SignCreationForSimulation` with one explicit local simulation adapter. |
+| Bind signed file | After signature/owner-private file validation, retain `ExpectedCreationRetentionPin` and explicitly call `ReconcileCreationSignedForSimulation`. Signing itself leaves the known UNKNOWN checkpoint unchanged. |
+| Export once | Retain `ExpectedCreationDispatchPin`, then pass it to `TakeCreationForSimulation`. UNKNOWN is synchronized before signed bytes are exported. |
+| Observe | Complete exact receipt material and same-header runtime proof produce `ExpectedCreationObservationPin`; retain it before `ObserveCreationForSimulation`. |
+
+All four expected-checkpoint methods are read-only. No method can verify that an
+operator actually saved a returned checkpoint separately; this is an explicit
+operator requirement, not a second automatic witness store. A lost signing reply
+can reopen the pre-retained signing UNKNOWN and review the original private file
+without a new signer call. Lost bind/dispatch/observation replies can reopen their
+pre-retained next checkpoint. Later method calls do not change creation's original
+checkpoints; identical verified creation observations remain idempotent.
+
+Subsequent calls use the same sender, lease, private config and fee budget, with
+nonce offset one. They are refused until matching successful conditional creation
+evidence is retained. Reverted/unknown creation keeps its slot and full fee
+reservation and cannot permit calls to an absent contract. Creation counts toward
+the existing 64-transaction cap, leaving at most 63 method-call slots; no unbounded
+journal, rollover, pruning or financial fee refund is supplied. Existing
+method-only histories remain byte-compatible. The old constructor refuses a
+creation-bearing history rather than dropping its mandatory original-input guard.
+
+The source/compiler/request/signed-file pins are rechecked throughout the
+lifecycle. Compilation runs at explicit open; the retained artifact remains opaque
+and original pinned files are checked before later steps. Input/output files must
+remain outside the owned journal directory. Failed construction leaves complete
+or partial state intact; no overwrite, key copy, file search or automatic repair
+exists. Unsafe or existing signing output is refused before reservation.
+
+This coordinates **cooperating callers of one book**, not other directories,
+unmanaged transactions, other machines, hardware signer ownership or rollback
+of all history and external checkpoints. Use a dedicated managed source account;
+unsupported transactions or external signing tools can bypass this protection.
+The standalone three-stage creation journal remains a separate inspection/recovery
+tool and must not act as a parallel allocator for this same account. Production
+configuration and unsupported private-filesystem platforms remain refused.
+Actual pinned God EVM execution checks creation followed by a signed custody
+payment using the same EOA; these are synthetic balances, not RH deployment or
+independently authenticated financial settlement.
+
 ## Financial boundary
 
 Preparation and retained-file verification leave signing, broadcasting,
