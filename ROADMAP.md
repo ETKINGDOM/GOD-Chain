@@ -27,7 +27,7 @@ promised as an automatic later change.
 | --- | --- | --- |
 | Production node assembly | Economic/runtime/bootstrap/owner-consent inputs compose into one privately staged candidate. Bounded rehearsal and a cancellable persistent service share the guarded runtime; four validator processes agree, stop with SIGTERM and restart using the same stores/witnesses. Continuous service rechecks original pins/profile and refuses changed input or signing rollback. Non-prototype configuration and ordinary `init`/`start` remain refused. | Reviewed economic/upgrade/control policy and production installation/launch entry point; authenticated source-funded genesis, fee/stake funding, immutable validator/bridge policy and intended-host replay/restart acceptance. No conversion of synthetic balances into backed balances. |
 | Live two-way bridge | Credit/return accounting and retained source/native evidence exist. The shared source book reserves unsigned nonce/Gas intent, durably consumes signing and recovers exact private output after interruption. A one-use loopback HTTP handoff now composes that same book with complete HTTP receipt recovery; compiled custody verifies token movement, lost responses and restart without redispatch. Production configuration, non-loopback writes and real-network financial activation remain refused. | Actual source/custody binding, current backing and finality, reviewed key custody, coordinated account/nonce use, bounded production broadcast, exact successful receipts, unknown-result recovery and delayed return/cancellation acceptance. A token CA alone does not supply this workflow. |
-| Production wallet and APIs | The hosted wallet, history, explorer and staking tools operate on the pilot; mainnet routing and real bridge submission are not enabled. | Official production configuration; committed GOD/G asset and NFT views; signed operations with exact TX links; bridge request/progress/failure views without synthetic balances or fake completion. |
+| Production wallet and APIs | The hosted wallet, history, explorer and staking tools operate on the pilot. A separate private launch observer now replicates the bridge-funded candidate and exposes bounded committed account/staking/G/bridge and block-history reads. It rejects write RPC and cached contract execution. Production wallet routing and real bridge submission are not enabled. | Official production configuration; committed GOD/G asset and NFT views; signed operations with exact TX links; bridge request/progress/failure views without synthetic balances or fake completion. |
 | Intended-host release and recovery | Local and isolated Linux process drills exist. Actual production installation, signing-safe restore and whole-host recovery are not accepted. | Bounded simultaneous load/resource measurement, alerts and retained backups, signing-safe recovery/reboot/rollback, followed by separately authorized limited real-asset acceptance. |
 
 ### Source custody creation preparation
@@ -59,6 +59,18 @@ and control policy, safe key custody and exact production financial handoff
 remain required. See [custody creation](CUSTODY_DEPLOYMENT.md).
 
 ### Launch materials compose into a private candidate
+
+`init-launch-observer` and `serve-launch-observer` bind a fresh non-validator
+identity to the same independently pinned assembly and staged candidate as the
+guarded validators. The observer cannot sign consensus. Explicit loopback HTTP
+serves committed network/account, staking/G, bridge/withdrawal and indexed
+block/transaction views under a positive read-method allowlist; transaction
+submission and cached contract execution remain closed. Exact ledger agreement,
+block-history agreement, retained restart and write/stale-input refusal have
+been tested with four validator processes and one observer on one computer.
+This connects the private running candidate to a query boundary, not the
+production browser wallet, public gateway, live source bridge or mainnet.
+See [candidate observer](NODE_RUNTIME.md#private-launch-candidate-observer).
 
 The stopped service preflight now checks the original candidate, signing
 witness and exact reviewed Linux executable under both existing leases.

@@ -269,6 +269,44 @@ func (g *custodyNonceCreationGuard) recheck(ctx context.Context, s custodyNonceS
 	return ctx.Err() == nil
 }
 
+// CustodyNonceCreationInitializationPins derives both possible complete
+// constructor checkpoints from the original private inputs. Retain them
+// independently BEFORE initialization: a header-only frame has not yet bound
+// its creation intent. This opens no journal and writes or signs nothing.
+func CustodyNonceCreationInitializationPins(ctx context.Context, i CustodyNonceInputs, creation CustodyNonceCreationInputs) (header, reserved [32]byte, err error) {
+	defer func() {
+		if recover() != nil {
+			header, reserved, err = [32]byte{}, [32]byte{}, ErrCustodyNonceState
+		}
+	}()
+	if ctx == nil || ctx.Err() != nil {
+		return header, reserved, ErrCustodyNonceState
+	}
+	deadline, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+	g, err := loadCustodyNonceCreationGuard(deadline, i, creation)
+	if err != nil {
+		return header, reserved, ErrCustodyNonceState
+	}
+	s, _, _, err := loadCustodyNonceInputs(i)
+	if err != nil {
+		return header, reserved, ErrCustodyNonceState
+	}
+	raw, err := encodeCustodyNonce(s)
+	if err != nil {
+		return header, reserved, ErrCustodyNonceState
+	}
+	next, err := custodyCreationFrame(s, g.intent, 1)
+	if err != nil {
+		return header, reserved, ErrCustodyNonceState
+	}
+	nextRaw, err := encodeCustodyNonce(next)
+	if err != nil || deadline.Err() != nil {
+		return header, reserved, ErrCustodyNonceState
+	}
+	return sha256.Sum256(raw), sha256.Sum256(nextRaw), nil
+}
+
 // Failed construction leaves storage ownership with the caller and any
 // complete/partial records intact. Reopen requires original creation inputs
 // and a separately retained exact latest pin; the legacy constructor refuses
@@ -306,19 +344,67 @@ func NewCustodyNonceCreationBookForSimulation(ctx context.Context, i CustodyNonc
 func (b *CustodyNonceBook) creationAllowsCalls() bool {
 	return b.creationGuard == nil || b.state.CreationRevision == 5 && b.state.Creation != nil && b.state.Creation.Succeeded
 }
-func (b *CustodyNonceBook) reserveCreation(ctx context.Context) error {
+
+// Retain this exact checkpoint before recovering a header-only initialization.
+// It is re-derived from the original guarded intent, without reserving, signing
+// or exporting anything. Later creation/call state cannot change this pin.
+func (b *CustodyNonceBook) ExpectedCreationReservationPin(ctx context.Context) ([32]byte, error) {
+	if b == nil {
+		return [32]byte{}, ErrCustodyNonceState
+	}
 	b.mu.Lock()
 	defer b.mu.Unlock()
-	if !b.ready(ctx) || b.creationGuard == nil || b.signingActive {
+	_, pin, err := b.creationReservationFrameLocked(ctx)
+	return pin, err
+}
+
+// ReserveCreationForSimulation explicitly recovers the complete header left
+// between the constructor's two writes. The original creation inputs and exact
+// next pin are mandatory; existing creation state is only acknowledged, never
+// rewound or re-signed. Partial storage still fails the ordinary reopen checks.
+func (b *CustodyNonceBook) ReserveCreationForSimulation(ctx context.Context, expected [32]byte) error {
+	if b == nil {
 		return ErrCustodyNonceState
 	}
+	return b.reserveCreationCheckpoint(ctx, expected, true)
+}
+
+func (b *CustodyNonceBook) creationReservationFrameLocked(ctx context.Context) (custodyNonceState, [32]byte, error) {
+	if !b.ready(ctx) || b.creationGuard == nil || b.signingActive {
+		return custodyNonceState{}, [32]byte{}, ErrCustodyNonceState
+	}
 	if err := b.recheck(ctx); err != nil {
+		return custodyNonceState{}, [32]byte{}, err
+	}
+	next, err := custodyCreationFrame(b.state, b.creationGuard.intent, 1)
+	if err != nil || b.state.Creation == nil && !custodyNonceTransition(b.state, next) {
+		return custodyNonceState{}, [32]byte{}, ErrCustodyNonceState
+	}
+	raw, err := encodeCustodyNonce(next)
+	if err != nil || ctx.Err() != nil {
+		return custodyNonceState{}, [32]byte{}, ErrCustodyNonceState
+	}
+	return next, sha256.Sum256(raw), nil
+}
+
+func (b *CustodyNonceBook) reserveCreation(ctx context.Context) error {
+	return b.reserveCreationCheckpoint(ctx, [32]byte{}, false)
+}
+
+func (b *CustodyNonceBook) reserveCreationCheckpoint(ctx context.Context, expected [32]byte, recovery bool) error {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+	next, pin, err := b.creationReservationFrameLocked(ctx)
+	if err != nil {
 		return err
 	}
-	next := b.nextState()
-	wanted := b.creationGuard.intent
-	next.Creation, next.CreationRevision = &wanted, 1
-	if !custodyNonceTransition(b.state, next) {
+	if recovery && (expected == ([32]byte{}) || expected != pin) {
+		return ErrCustodyNonceState
+	}
+	if b.state.Creation != nil {
+		if recovery {
+			return nil
+		}
 		return ErrCustodyNonceState
 	}
 	return b.write(next)

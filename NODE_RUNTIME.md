@@ -102,6 +102,48 @@ computer and one fixture custodian; they are not independent operators. Linux
 compilation does not install or run this candidate on the VPS. Public testnet
 startup remains bridge-disabled and cannot consume this private profile.
 
+## Private launch candidate observer
+
+A separate observer can replicate the same exact staged bridge-funded candidate
+as the four guarded validators. It uses fresh pre-existing consensus and peer
+identities that are distinct from each other and from all genesis validators;
+its persisted signing state must remain empty. The runtime replaces the supplied
+signer with a permanently refusing observer adapter. No signing witness is
+created or accepted for this role, and validator keys are never copied into it.
+
+```text
+godd init-launch-observer --home <fresh-non-validator-identity> --input <original-signed-assembly> --input-pin <reviewed-SHA256> --candidate <same-staged-candidate> --candidate-pin <reviewed-SHA256> --p2p <loopback-listen> --peers <loopback-peer-list> --rpc <loopback-listen> --hosts <exact-loopback-hosts> --origins <exact-loopback-browser-origins>
+godd serve-launch-observer --home <same-retained-observer> --input <same-original-assembly> --input-pin <same-reviewed-SHA256> --candidate <same-staged-candidate> --candidate-pin <same-reviewed-SHA256> --report-seconds <1..300>
+```
+
+Initialization checks the original signed assembly, candidate and identity-only
+home before creating a lease or profile; it repeats checks under ownership.
+Existing pilot/validator profiles, used signing state, data, aliases or partial
+files are not converted or repaired. Startup and periodic rechecks re-derive the
+candidate and retain the original profile, keys and endpoints. Coordinated key
+and profile replacement does not authorize changing a running service.
+
+The loopback listener shares existing body, connection, concurrency, rate and
+timeout limits. A positive read-method allowlist exposes committed account,
+staking/G, bridge/withdrawal and native/compatible block/transaction reads.
+The private persistent observer alone enables the consensus transaction index;
+validator indexer behavior is unchanged. `eth_sendRawTransaction`, native
+submission, pending sequences, `eth_call`, `eth_estimateGas`, signer/admin and
+future unknown methods remain refused. Exact host/origin checks admit only
+localhost or literal loopback addresses, with no network opt-in.
+
+SIGINT/SIGTERM joins HTTP requests before consensus, application stores and the
+retained home lease close. Reports identify actual increased committed height;
+unchanged/no committed state is a heartbeat, not progress or source backing.
+Four-validator integration verifies equal ledger/staking/bridge state and
+consensus block history, read-only refusal and restart with unchanged observer
+signing state. A validator-admitted signed synthetic GOD transfer separately
+verifies indexed native/compatible TX details, receipt and block summary at the
+exact successful inclusion height; the observer rejects that same signed wire.
+This remains local synthetic acceptance. Production wallet
+configuration, NFT contract reads, signed submission boundaries, public access,
+real source funding and intended-host installation are not enabled here.
+
 ## Private candidate supervisor preparation
 
 The stopped `check-launch-service` command holds the original home lease and

@@ -235,6 +235,12 @@ func startNode(ctx context.Context, a *App, o LocalOptions, network bool) (*Loca
 	config.Instrumentation.Prometheus = false
 	if !network {
 		config.TxIndex.Indexer = "null"
+		// Only the persistent, permanently non-signing bridge candidate observer
+		// needs the private transaction index for committed wallet/history reads.
+		// This does not enable engine RPC or any transaction submission route.
+		if o.Observer && o.Persistent && a.config.RequireValidatorProof && a.config.BridgeGenesis != nil {
+			config.TxIndex.Indexer = "kv"
+		}
 	}
 	config.Mempool.MaxTxBytes = a.config.Policy.MaxTxBytes
 	config.Mempool.MaxTxsBytes = a.config.MaxBlockBytes * 4

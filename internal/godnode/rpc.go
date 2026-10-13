@@ -47,8 +47,11 @@ type rpcResponse struct {
 }
 
 type TestnetRPC struct {
-	n              *LocalNode
-	client         *cmtlocal.Local
+	n      *LocalNode
+	client *cmtlocal.Local
+	// Set only by the separate launch observer constructor. A positive method
+	// allowlist rejects writes before native or compatible dispatch can run.
+	readOnly       bool
 	hosts, origins map[string]bool
 	slots          chan struct{}
 	mu             sync.Mutex
@@ -66,6 +69,50 @@ func NewTestnetRPC(n *LocalNode, options RPCOptions) (*TestnetRPC, error) {
 	}
 	r := &TestnetRPC{n: n, client: cmtlocal.New(n.node), hosts: hosts, origins: origins, slots: make(chan struct{}, 4), tokens: 20, last: time.Now()}
 	return r, nil
+}
+
+// NewLaunchCandidateRPC exposes only committed reads from the exact non-signing
+// local observer adapter. It does not relax synthetic testnet admission, supply
+// transaction execution/submission, or authorize network/real-asset activation.
+func NewLaunchCandidateRPC(n *LocalNode, options RPCOptions) (*TestnetRPC, error) {
+	if n == nil || n.node == nil || n.app == nil || !n.app.config.Prototype || !n.app.config.RequireValidatorProof || n.app.config.BridgeGenesis == nil {
+		return nil, ErrConfig
+	}
+	if _, observer := n.node.PrivValidator().(observerSigner); !observer {
+		return nil, ErrConfig
+	}
+	if ValidateLaunchCandidateRPCOptions(options) != nil {
+		return nil, ErrConfig
+	}
+	hosts, origins, err := rpcAccess(options)
+	if err != nil {
+		return nil, err
+	}
+	return &TestnetRPC{n: n, client: cmtlocal.New(n.node), readOnly: true, hosts: hosts, origins: origins, slots: make(chan struct{}, 4), tokens: 20, last: time.Now()}, nil
+}
+
+// ValidateLaunchCandidateRPCOptions accepts exact loopback hosts/origins only;
+// DNS names other than localhost and the network exposure opt-in are refused.
+func ValidateLaunchCandidateRPCOptions(options RPCOptions) error {
+	if options.AllowNetwork {
+		return ErrConfig
+	}
+	if _, _, err := rpcAccess(options); err != nil {
+		return err
+	}
+	loopback := func(host string) bool { return host == "localhost" || net.ParseIP(host).IsLoopback() }
+	for _, host := range options.Hosts {
+		if !loopback(host) {
+			return ErrConfig
+		}
+	}
+	for _, origin := range options.Origins {
+		u, err := url.Parse(origin)
+		if err != nil || (u.Scheme != "http" && u.Scheme != "https") || !loopback(u.Hostname()) {
+			return ErrConfig
+		}
+	}
+	return nil
 }
 
 func ValidateRPCOptions(options RPCOptions) error { _, _, err := rpcAccess(options); return err }
@@ -315,6 +362,9 @@ func (r *TestnetRPC) dispatch(ctx context.Context, call rpcRequest) (result any,
 	}()
 	bad := &rpcError{-32602, "invalid parameters"}
 	unavailable := &rpcError{-32000, "synthetic node result unavailable"}
+	if r.readOnly && !launchCandidateReadMethod(call) {
+		return nil, &rpcError{-32601, "method not supported"}
+	}
 	switch call.Method {
 	case "god_blocks", "god_block", "god_transactionDetails":
 		return r.explorer(ctx, call)
@@ -550,6 +600,26 @@ func (r *TestnetRPC) dispatch(ctx context.Context, call rpcRequest) (result any,
 	}
 }
 
+func launchCandidateReadMethod(call rpcRequest) bool {
+	switch call.Method {
+	case "god_blocks", "god_block", "god_transactionDetails", "god_liveness", "god_stakingSnapshot", "god_validators", "god_validator", "god_delegation", "god_unbonding", "god_bridge", "god_bridgeWithdrawal", "god_network", "god_account", "god_transaction",
+		"web3_clientVersion", "eth_chainId", "net_version", "eth_blockNumber", "eth_syncing", "eth_accounts", "eth_getTransactionReceipt", "eth_getBlockByNumber", "eth_gasPrice", "eth_maxPriorityFeePerGas", "eth_getBalance", "eth_getCode", "eth_getStorageAt":
+		return true
+	case "eth_getTransactionCount":
+		// This observer boundary reports committed sequence state only.
+		if len(call.Params) == 2 {
+			if tag, ok := rpcString(call.Params[1]); ok && tag == "pending" {
+				return false
+			}
+		}
+		return true
+	default:
+		// A future dispatcher route remains closed until explicitly reviewed.
+		// Cached eth_call/eth_estimateGas execution is also outside this surface.
+		return false
+	}
+}
+
 func submissionFailure(err error) *rpcError {
 	if errors.Is(err, ErrCommitPending) {
 		return &rpcError{-32001, "retry after application commit; transaction not admitted"}
@@ -574,6 +644,27 @@ func ServeTestnetRPC(ctx context.Context, n *LocalNode, listener net.Listener, o
 	if err != nil {
 		return err
 	}
+	return serveRPC(ctx, listener, handler)
+}
+
+// ServeLaunchCandidateRPC shares the bounded HTTP lifecycle but always requires
+// a literal loopback TCP listener and the separate read-only observer policy.
+func ServeLaunchCandidateRPC(ctx context.Context, n *LocalNode, listener net.Listener, options RPCOptions) error {
+	if ctx == nil || listener == nil {
+		return ErrConfig
+	}
+	address, ok := listener.Addr().(*net.TCPAddr)
+	if !ok || !address.IP.IsLoopback() {
+		return ErrConfig
+	}
+	handler, err := NewLaunchCandidateRPC(n, options)
+	if err != nil {
+		return err
+	}
+	return serveRPC(ctx, listener, handler)
+}
+
+func serveRPC(ctx context.Context, listener net.Listener, handler *TestnetRPC) error {
 	listener = &rpcListener{Listener: listener, slots: make(chan struct{}, 64), closed: make(chan struct{})}
 	server := &http.Server{Handler: handler, ErrorLog: log.New(io.Discard, "", 0), ReadHeaderTimeout: 3 * time.Second, ReadTimeout: 5 * time.Second, WriteTimeout: 10 * time.Second, IdleTimeout: 15 * time.Second, MaxHeaderBytes: 8 << 10,
 		BaseContext: func(net.Listener) context.Context { return ctx }}

@@ -22,6 +22,9 @@ import (
 )
 
 func run(args []string, out io.Writer) error {
+	if len(args) > 0 && (args[0] == "init-launch-observer" || args[0] == "serve-launch-observer") {
+		return runLaunchObserver(args[0], args[1:], out)
+	}
 	if len(args) > 0 && (args[0] == "rh-custody-deployment-template" || args[0] == "review-rh-custody-deployment" || args[0] == "prepare-rh-custody-deployment" || args[0] == "check-rh-custody-deployment" || args[0] == "check-rh-custody-deployment-transaction") {
 		return runCustodyDeployment(args[0], args[1:], out)
 	}
@@ -73,6 +76,9 @@ func run(args []string, out io.Writer) error {
 		return runTestnet(args[1:], out)
 	}
 	if len(args) == 0 || (len(args) == 1 && args[0] == "help") {
+		if _, err := fmt.Fprintln(out, "Private candidate observer: init-launch-observer --home <fresh-non-validator-identity> --input <original-signed-assembly> --input-pin <reviewed-SHA256> --candidate <same-staged-candidate> --candidate-pin <reviewed-SHA256> --p2p <loopback-listen> --peers <loopback-peers> --rpc <loopback-listen> --hosts <loopback-hosts> --origins <loopback-browser-origins>\nserve-launch-observer --home <same-retained-observer> --input <same-original-assembly> --input-pin <same-reviewed-SHA256> --candidate <same-staged-candidate> --candidate-pin <same-reviewed-SHA256> --report-seconds <1..300>\nReplicates the guarded validators' exact synthetic bridge-funded ledger and exposes bounded committed reads, history and bridge status. Observer cannot sign consensus; no write RPC, public exposure, source client, production mode, real assets, key generation/copy/reset or automatic repair. Does not enable the production wallet or financial bridge."); err != nil {
+			return err
+		}
 		if _, err := fmt.Fprintln(out, "Private stopped candidate supervisor: check-launch-service --home <same-home> --signer-guard <retained-separate-witness> --input <original-assembly> --input-pin <reviewed-SHA256> --candidate <original-candidate> --candidate-pin <reviewed-SHA256> --binary <reviewed-static-linux-godd> --binary-pin <reviewed-SHA256> --arch <amd64|arm64>\nprepare-launch-supervisor adds --uid <current-non-root-UID> --gid <current-GID> --report-seconds <1..300> --memory-bytes <explicit-budget> --cpu-percent <explicit-budget> --tasks <explicit-budget> --open-files <explicit-budget> --start-seconds <15..300> --stop-seconds <15..300> --output <new-owner-only-unit-file>\nHolds original stopped home/key-wide leases; rechecks original candidate and exact binary. Stages private no-restart loopback-only resource-limited systemd unit, never installs or starts it. No shell, account creation, key copy/reset, public RPC, production or real-asset activation. Budget choices and supervisor compatibility require intended-host acceptance."); err != nil {
 			return err
 		}

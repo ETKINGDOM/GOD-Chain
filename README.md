@@ -1,5 +1,13 @@
 # GOD Chain
 
+The private bridge-funded launch candidate now has a non-signing observer with
+bounded loopback committed account, staking/G, bridge and history reads. Four
+validator processes and the observer agree at exact committed heights and retain
+state across restart. Writes and contract execution remain closed at this query
+boundary. This is not a production wallet connection or an activated RH bridge;
+mainnet and real assets remain disabled. See
+[candidate observer](NODE_RUNTIME.md#private-launch-candidate-observer).
+
 Source custody creation and later calls now share one bounded cooperative
 sender book, nonce sequence and maximum execution-Gas budget. Exact creation
 binding and pre-retained checkpoints cover one local signing attempt, signed-file

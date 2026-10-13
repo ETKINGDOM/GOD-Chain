@@ -1,5 +1,33 @@
 # GOD Chain core verification
 
+## Private launch observer and initialization recovery
+
+The same synthetic bridge-funded launch candidate now runs four guarded
+validators and a permanently non-signing observer in separate local processes.
+The observer's bounded loopback RPC accepts only explicit committed read
+methods. Accounts, staking/G, bridge accounting and consensus block history
+match the validators at an exact retained height. Stop/restart, duplicate
+ownership, stale candidate/profile, write-method and invalid-input refusal are
+covered. Unchanged height is a heartbeat, not progress; coordinated identity
+and profile replacement stops without repair. HTTP shutdown joins before
+consensus and store closure. Public access, production wallet configuration,
+contract execution and financial submission are not enabled by this adapter.
+
+A separately signed synthetic GOD transfer, admitted only by a validator,
+also verifies the observer's transaction index. Native/compatible transaction
+details, receipt and block summary agree on exact hashes, inclusion height,
+block hash and successful status. Both valid signed envelopes remain rejected
+at the observer's read-only boundary.
+
+The custody creation book can explicitly recover the complete header left
+between its two initialization writes. Pure original-input derivation supplies
+both checkpoints before creation. Recovery requires the exact independently
+retained pin; old/new error and panic outcomes, partial history and changed
+inputs fail closed. Forced process exits and exact replay preserve later
+signing/dispatch uncertainty without a second reservation, signature or export.
+Scoped pinned compiler/execution and sender-book race checks pass. These checks
+do not authenticate real RH state, grant spending authority or activate assets.
+
 This record separates exact public-core source checks from acceptance of the
 separately deployed synthetic pilot. It is not an independent audit, source-
 finality proof or mainnet safety certification. Private tests, browser/extension

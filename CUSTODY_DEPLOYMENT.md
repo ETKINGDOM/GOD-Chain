@@ -167,6 +167,18 @@ state/finality handling. No production journal or submission CLI is installed.
 
 ## One source account for creation and subsequent custody calls
 
+Before creating a book, independently retain both hashes returned by
+`CustodyNonceCreationInitializationPins`: the initial header and first creation
+reservation. The two constructor writes are not one filesystem transaction.
+If interrupted after the header, reopen only with that exact retained header pin
+and the original pinned creation materials. Explicitly derive/check
+`ExpectedCreationReservationPin`, then call `ReserveCreationForSimulation` with
+the retained reservation pin. Exact already-reserved replay acknowledges without
+rewinding later signing/dispatch UNKNOWN or history. There is no automatic
+repair, inferred intent, second reservation or signing during this recovery;
+uncertain writes require exact pinned reopen. The original method-only book
+encoding is unchanged. A header alone does not record creation intent.
+
 `NewCustodyNonceCreationBookForSimulation` and the private POSIX opener
 `OpenPrivateCustodyNonceCreationBookForSimulation` integrate creation into the
 **existing** shared sender book. They do not open a parallel creation nonce
@@ -189,7 +201,7 @@ reserved -> signing-unknown -> signed -> dispatch-unknown -> observed
 | Export once | Retain `ExpectedCreationDispatchPin`, then pass it to `TakeCreationForSimulation`. UNKNOWN is synchronized before signed bytes are exported. |
 | Observe | Complete exact receipt material and same-header runtime proof produce `ExpectedCreationObservationPin`; retain it before `ObserveCreationForSimulation`. |
 
-All four expected-checkpoint methods are read-only. No method can verify that an
+All five expected-checkpoint methods are read-only. No method can verify that an
 operator actually saved a returned checkpoint separately; this is an explicit
 operator requirement, not a second automatic witness store. A lost signing reply
 can reopen the pre-retained signing UNKNOWN and review the original private file
